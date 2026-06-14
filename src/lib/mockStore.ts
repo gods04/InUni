@@ -1,5 +1,6 @@
 import { mockComments, mockPosts } from './mockData';
 import { getDisplayName } from './format';
+import { isUctVerifiedEmail } from './permissions';
 import type {
   Category,
   ForumComment,
@@ -99,6 +100,10 @@ export const mockForumStore = {
       authorName: input.isAnonymous
         ? 'Anonymous'
         : user.profile.displayName || getDisplayName(user.email),
+      authorIsUctVerified: isUctVerifiedEmail(
+        user.email,
+        user.emailConfirmed,
+      ),
       isAnonymous: input.isAnonymous,
       createdAt: new Date().toISOString(),
       commentCount: 0,
@@ -115,6 +120,10 @@ export const mockForumStore = {
       postId: input.postId,
       authorId: user.id,
       authorName: user.profile.displayName || getDisplayName(user.email),
+      authorIsUctVerified: isUctVerifiedEmail(
+        user.email,
+        user.emailConfirmed,
+      ),
       content: input.content,
       createdAt: new Date().toISOString(),
     };

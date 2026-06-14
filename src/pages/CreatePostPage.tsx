@@ -1,10 +1,13 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { BanNotice } from '../components/BanNotice';
 import { ErrorState } from '../components/ErrorState';
 import { LoginPrompt } from '../components/LoginPrompt';
 import { useAuth } from '../hooks/useAuth';
 import { createPost } from '../lib/forumApi';
+import { canParticipate } from '../lib/permissions';
+import { validatePost } from '../lib/validation';
 import { categories, type Category } from '../types/forum';
 
 export function CreatePostPage() {
@@ -26,8 +29,9 @@ export function CreatePostPage() {
       return;
     }
 
-    if (!title.trim() || !content.trim()) {
-      setError('Title and content are required.');
+    const validationError = validatePost({ title, content });
+    if (validationError) {
+      setError(validationError);
       return;
     }
 
@@ -54,6 +58,10 @@ export function CreatePostPage() {
 
   if (!user) {
     return <LoginPrompt message="Log in or create an account before posting to InUni." />;
+  }
+
+  if (!canParticipate(user.profile)) {
+    return <BanNotice reason={user.profile.banReason} />;
   }
 
   return (
@@ -122,7 +130,7 @@ export function CreatePostPage() {
 
         <div className="flex justify-end">
           <button className="primary-button" type="submit" disabled={submitting}>
-            {submitting ? 'Submitting...' : 'Submit post'}
+            {submitting ? 'Publishing...' : 'Publish post'}
           </button>
         </div>
       </form>

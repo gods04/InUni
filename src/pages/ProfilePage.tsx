@@ -1,12 +1,15 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { BanNotice } from '../components/BanNotice';
 import { EmptyState } from '../components/EmptyState';
 import { ErrorState } from '../components/ErrorState';
 import { LoadingState } from '../components/LoadingState';
 import { LoginPrompt } from '../components/LoginPrompt';
 import { PostCard } from '../components/PostCard';
+import { UctVerifiedBadge } from '../components/UctVerifiedBadge';
 import { useAuth } from '../hooks/useAuth';
 import { getUserPosts } from '../lib/forumApi';
+import { isUctVerifiedEmail } from '../lib/permissions';
 import type { Post } from '../types/forum';
 
 export function ProfilePage() {
@@ -63,6 +66,18 @@ export function ProfilePage() {
             {user.profile.displayName}
           </h1>
           <p className="mt-1 text-sm text-slate-600">{user.email}</p>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            {isUctVerifiedEmail(user.email, user.emailConfirmed) ? (
+              <UctVerifiedBadge />
+            ) : (
+              <span className="badge bg-slate-100 text-slate-600">
+                Email not UCT verified
+              </span>
+            )}
+            {user.profile.role === 'admin' ? (
+              <span className="badge bg-slate-950 text-white">Administrator</span>
+            ) : null}
+          </div>
           {isDemoMode ? (
             <p className="mt-3 text-sm leading-6 text-amber-800">
               This profile is local demo data. Connect Supabase to use real accounts.
@@ -73,6 +88,10 @@ export function ProfilePage() {
           Create post
         </Link>
       </section>
+
+      {user.profile.isBanned ? (
+        <BanNotice reason={user.profile.banReason} />
+      ) : null}
 
       <section className="grid gap-4">
         <div>

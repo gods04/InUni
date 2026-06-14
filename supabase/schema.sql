@@ -12,6 +12,7 @@ create table public.profiles (
     check (char_length(trim(username)) between 2 and 40),
   display_name text not null
     check (char_length(trim(display_name)) between 1 and 80),
+  is_uct_verified boolean not null default false,
   role public.user_role not null default 'student',
   is_banned boolean not null default false,
   ban_reason text,
@@ -234,6 +235,7 @@ begin
     id,
     username,
     display_name,
+    is_uct_verified,
     role,
     is_banned
   )
@@ -241,6 +243,10 @@ begin
     new.id,
     left(safe_username, 40),
     left(display_value, 80),
+    (
+      new.email_confirmed_at is not null
+      and lower(coalesce(new.email, '')) like '%@uct.ac.za'
+    ),
     'student',
     false
   )
@@ -253,6 +259,28 @@ $$;
 create trigger on_auth_user_created
 after insert on auth.users
 for each row execute function public.handle_new_user();
+
+create or replace function public.sync_uct_verification()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  update public.profiles
+  set is_uct_verified = (
+    new.email_confirmed_at is not null
+    and lower(coalesce(new.email, '')) like '%@uct.ac.za'
+  )
+  where id = new.id;
+
+  return new;
+end;
+$$;
+
+create trigger on_auth_user_verification_changed
+after update of email, email_confirmed_at on auth.users
+for each row execute function public.sync_uct_verification();
 
 alter table public.profiles enable row level security;
 alter table public.posts enable row level security;
@@ -369,7 +397,7 @@ using (public.current_profile_is_admin());
 create view public.public_profiles
 with (security_barrier = true)
 as
-select id, username, display_name, created_at
+select id, username, display_name, is_uct_verified, created_at
 from public.profiles;
 
 revoke all on table public.profiles from anon, authenticated;

@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { AdSlot } from '../components/AdSlot';
 import { CategoryTabs } from '../components/CategoryTabs';
 import { EmptyState } from '../components/EmptyState';
 import { ErrorState } from '../components/ErrorState';
@@ -81,8 +80,7 @@ export function HomePage() {
         </div>
       </section>
 
-      <section className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_18rem] lg:items-start">
-        <div className="space-y-4">
+      <section className="space-y-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h2 className="section-title">Home feed</h2>
@@ -112,12 +110,6 @@ export function HomePage() {
               ))}
             </div>
           ) : null}
-        </div>
-
-        <div className="space-y-4 lg:sticky lg:top-28">
-          <AdSlot />
-          <AdSlot label="Sponsored" size="300 x 100" />
-        </div>
       </section>
     </>
   );

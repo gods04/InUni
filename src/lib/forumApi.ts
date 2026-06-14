@@ -14,6 +14,7 @@ interface ProfileRow {
   id: string;
   username: string | null;
   display_name: string | null;
+  is_uct_verified: boolean;
 }
 
 interface PostRow {
@@ -59,8 +60,8 @@ async function getProfilesMap(userIds: string[]): Promise<Map<string, ProfileRow
   }
 
   const { data, error } = await client
-    .from('profiles')
-    .select('id, username, display_name')
+    .from('public_profiles')
+    .select('id, username, display_name, is_uct_verified')
     .in('id', uniqueIds);
 
   if (error) {
@@ -99,6 +100,7 @@ function mapPost(row: PostRow, profile: ProfileRow | undefined, commentCount: nu
     category: row.category,
     authorId: row.author_id,
     authorName: getAuthorName(row, profile),
+    authorIsUctVerified: profile?.is_uct_verified ?? false,
     isAnonymous: row.is_anonymous,
     createdAt: row.created_at,
     commentCount,
@@ -111,6 +113,7 @@ function mapComment(row: CommentRow, profile: ProfileRow | undefined): ForumComm
     postId: row.post_id,
     authorId: row.author_id,
     authorName: profile?.display_name || profile?.username || 'Student',
+    authorIsUctVerified: profile?.is_uct_verified ?? false,
     content: row.content,
     createdAt: row.created_at,
   };

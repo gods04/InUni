@@ -37,6 +37,7 @@ export interface Post {
   category: Category;
   authorId: string;
   authorName: string;
+  authorIsUctVerified: boolean;
   isAnonymous: boolean;
   createdAt: string;
   commentCount: number;
@@ -47,6 +48,7 @@ export interface ForumComment {
   postId: string;
   authorId: string;
   authorName: string;
+  authorIsUctVerified: boolean;
   content: string;
   createdAt: string;
 }

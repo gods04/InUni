@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { formatRelativeTime, getPreview } from '../lib/format';
 import type { Category, Post } from '../types/forum';
 import { ReportButton } from './ReportButton';
+import { UctVerifiedBadge } from './UctVerifiedBadge';
 
 const categoryStyles: Record<Category, string> = {
   Study: 'bg-emerald-100 text-emerald-800',
@@ -31,8 +32,14 @@ export function PostCard({ post }: { post: Post }) {
         </Link>
 
         <div className="flex flex-col gap-3 border-t border-slate-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="text-sm text-slate-500">
-            By <span className="font-bold text-slate-700">{post.authorName}</span> ·{' '}
+          <div className="flex flex-wrap items-center gap-2 text-sm text-slate-500">
+            <span>
+              By <span className="font-bold text-slate-700">{post.authorName}</span>
+            </span>
+            {!post.isAnonymous && post.authorIsUctVerified ? (
+              <UctVerifiedBadge />
+            ) : null}
+            <span>·</span>
             <span>{post.commentCount} comments</span>
           </div>
           <ReportButton postId={post.id} />

@@ -1,5 +1,6 @@
 import { formatRelativeTime } from '../lib/format';
 import type { ForumComment } from '../types/forum';
+import { UctVerifiedBadge } from './UctVerifiedBadge';
 
 export function CommentList({ comments }: { comments: ForumComment[] }) {
   if (comments.length === 0) {
@@ -16,6 +17,7 @@ export function CommentList({ comments }: { comments: ForumComment[] }) {
         <article className="rounded-lg border border-white/80 bg-white/90 p-4 shadow-sm" key={comment.id}>
           <div className="flex flex-wrap items-center gap-2 text-sm">
             <span className="font-bold text-slate-900">{comment.authorName}</span>
+            {comment.authorIsUctVerified ? <UctVerifiedBadge /> : null}
             <span className="text-slate-400">·</span>
             <span className="text-slate-500">{formatRelativeTime(comment.createdAt)}</span>
           </div>

@@ -1,15 +1,18 @@
 import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { AdSlot } from '../components/AdSlot';
+import { BanNotice } from '../components/BanNotice';
 import { CommentList } from '../components/CommentList';
 import { EmptyState } from '../components/EmptyState';
 import { ErrorState } from '../components/ErrorState';
 import { LoadingState } from '../components/LoadingState';
 import { ReportButton } from '../components/ReportButton';
+import { UctVerifiedBadge } from '../components/UctVerifiedBadge';
 import { useAuth } from '../hooks/useAuth';
 import { createComment, getComments, getPost } from '../lib/forumApi';
 import { formatRelativeTime } from '../lib/format';
+import { canParticipate } from '../lib/permissions';
+import { validateComment } from '../lib/validation';
 import type { ForumComment, Post } from '../types/forum';
 
 export function PostDetailPage() {
@@ -68,8 +71,14 @@ export function PostDetailPage() {
       return;
     }
 
-    if (!post || !commentText.trim()) {
-      setCommentError('Write a comment before submitting.');
+    if (!post) {
+      setCommentError('This post is no longer available.');
+      return;
+    }
+
+    const validationError = validateComment(commentText);
+    if (validationError) {
+      setCommentError(validationError);
       return;
     }
 
@@ -126,7 +135,11 @@ export function PostDetailPage() {
 
         <h1 className="mt-4 text-3xl font-black tracking-normal text-slate-950">{post.title}</h1>
         <div className="mt-3 text-sm text-slate-500">
-          By <span className="font-bold text-slate-800">{post.authorName}</span> ·{' '}
+          By <span className="font-bold text-slate-800">{post.authorName}</span>{' '}
+          {!post.isAnonymous && post.authorIsUctVerified ? (
+            <UctVerifiedBadge />
+          ) : null}{' '}
+          ·{' '}
           <span>{post.commentCount} comments</span>
         </div>
 
@@ -147,6 +160,9 @@ export function PostDetailPage() {
 
         <CommentList comments={comments} />
 
+        {user && !canParticipate(user.profile) ? (
+          <BanNotice reason={user.profile.banReason} />
+        ) : (
         <form className="panel grid gap-4 p-4 sm:p-5" onSubmit={handleSubmit}>
           <label className="grid gap-2">
             <span className="field-label">Add a comment</span>
@@ -172,11 +188,8 @@ export function PostDetailPage() {
             </button>
           </div>
         </form>
+        )}
       </section>
-
-      <div className="mx-auto w-full max-w-xl">
-        <AdSlot label="Advertisement" size="responsive banner" />
-      </div>
     </div>
   );
 }
