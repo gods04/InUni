@@ -8,20 +8,13 @@ import type {
   NewCommentInput,
   NewPostInput,
   Post,
-  ReportInput,
+  Report,
+  ReportTarget,
 } from '../types/forum';
 
 const postsKey = 'inuni.posts';
 const commentsKey = 'inuni.comments';
 const reportsKey = 'inuni.reports';
-
-interface StoredReport {
-  id: string;
-  postId: string;
-  reporterId: string;
-  reason: string;
-  createdAt: string;
-}
 
 function createId(prefix: string): string {
   if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
@@ -133,14 +126,32 @@ export const mockForumStore = {
     return comment;
   },
 
-  async reportPost(input: ReportInput, user: ForumUser): Promise<void> {
-    const reports = readList<StoredReport>(reportsKey, []);
-    const report: StoredReport = {
+  async createReport(
+    target: ReportTarget,
+    reason: string,
+    user: ForumUser,
+  ): Promise<void> {
+    const reports = readList<Report>(reportsKey, []);
+    const duplicate = reports.some(
+      (report) =>
+        report.reporterId === user.id &&
+        JSON.stringify(report.target) === JSON.stringify(target),
+    );
+
+    if (duplicate) {
+      throw new Error('You have already reported this content.');
+    }
+
+    const report: Report = {
       id: createId('report'),
-      postId: input.postId,
       reporterId: user.id,
-      reason: input.reason,
+      target,
+      reason: reason.trim(),
+      status: 'open',
+      resolvedBy: null,
+      resolutionNote: null,
       createdAt: new Date().toISOString(),
+      resolvedAt: null,
     };
 
     writeList(reportsKey, [...reports, report]);

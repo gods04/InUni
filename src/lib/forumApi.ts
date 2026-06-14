@@ -7,7 +7,7 @@ import type {
   NewCommentInput,
   NewPostInput,
   Post,
-  ReportInput,
+  ReportTarget,
 } from '../types/forum';
 
 interface ProfileRow {
@@ -251,19 +251,27 @@ export async function createComment(input: NewCommentInput, user: ForumUser): Pr
   return mapComment(row, profiles.get(row.author_id));
 }
 
-export async function reportPost(input: ReportInput, user: ForumUser): Promise<void> {
+export async function createReport(
+  target: ReportTarget,
+  reason: string,
+  user: ForumUser,
+): Promise<void> {
   if (!isSupabaseConfigured) {
-    return mockForumStore.reportPost(input, user);
+    return mockForumStore.createReport(target, reason, user);
   }
 
   const client = requireSupabase();
   const { error } = await client.from('reports').insert({
-    post_id: input.postId,
     reporter_id: user.id,
-    reason: input.reason,
+    post_id: target.type === 'post' ? target.postId : null,
+    comment_id: target.type === 'comment' ? target.commentId : null,
+    reason: reason.trim(),
   });
 
   if (error) {
+    if (error.code === '23505') {
+      throw new Error('You have already reported this content.');
+    }
     throw new Error(error.message);
   }
 }

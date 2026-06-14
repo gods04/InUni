@@ -1,7 +1,11 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../hooks/useAuth';
 import { formatRelativeTime, getPreview } from '../lib/format';
-import type { Category, Post } from '../types/forum';
-import { ReportButton } from './ReportButton';
+import { createReport } from '../lib/forumApi';
+import { canParticipate } from '../lib/permissions';
+import type { Category, Post, ReportTarget } from '../types/forum';
+import { ReportDialog } from './ReportDialog';
 import { UctVerifiedBadge } from './UctVerifiedBadge';
 
 const categoryStyles: Record<Category, string> = {
@@ -14,6 +18,26 @@ const categoryStyles: Record<Category, string> = {
 };
 
 export function PostCard({ post }: { post: Post }) {
+  const { user } = useAuth();
+  const [reportOpen, setReportOpen] = useState(false);
+  const [reportStatus, setReportStatus] = useState<string | null>(null);
+  const target: ReportTarget = { type: 'post', postId: post.id };
+
+  function openReport() {
+    setReportStatus(null);
+    if (user && !canParticipate(user.profile)) {
+      setReportStatus('Your restricted account cannot submit reports.');
+      return;
+    }
+    setReportOpen(true);
+  }
+
+  async function submitReport(nextTarget: ReportTarget, reason: string) {
+    if (!user) return;
+    await createReport(nextTarget, reason, user);
+    setReportStatus('Report submitted. Thank you.');
+  }
+
   return (
     <article className="panel relative overflow-hidden p-4 transition hover:-translate-y-0.5 hover:border-emerald-100 hover:bg-white sm:p-5">
       <div className="absolute inset-y-0 left-0 w-1 bg-emerald-500" />
@@ -42,9 +66,34 @@ export function PostCard({ post }: { post: Post }) {
             <span>·</span>
             <span>{post.commentCount} comments</span>
           </div>
-          <ReportButton postId={post.id} />
+          <div className="flex flex-wrap items-center gap-2">
+            {user ? (
+              <button
+                className="danger-button"
+                onClick={openReport}
+                type="button"
+              >
+                Report
+              </button>
+            ) : (
+              <Link className="secondary-button" to="/login">
+                Log in to report
+              </Link>
+            )}
+            {reportStatus ? (
+              <span className="text-xs font-semibold text-slate-500">
+                {reportStatus}
+              </span>
+            ) : null}
+          </div>
         </div>
       </div>
+      <ReportDialog
+        onClose={() => setReportOpen(false)}
+        onSubmit={submitReport}
+        open={reportOpen}
+        target={target}
+      />
     </article>
   );
 }

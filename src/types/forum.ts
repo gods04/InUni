@@ -65,7 +65,20 @@ export interface NewCommentInput {
   content: string;
 }
 
-export interface ReportInput {
-  postId: string;
+export type ReportStatus = 'open' | 'resolved' | 'dismissed';
+
+export type ReportTarget =
+  | { type: 'post'; postId: string }
+  | { type: 'comment'; commentId: string };
+
+export interface Report {
+  id: string;
+  reporterId: string;
+  target: ReportTarget;
   reason: string;
+  status: ReportStatus;
+  resolvedBy: string | null;
+  resolutionNote: string | null;
+  createdAt: string;
+  resolvedAt: string | null;
 }

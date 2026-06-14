@@ -6,14 +6,19 @@ import { CommentList } from '../components/CommentList';
 import { EmptyState } from '../components/EmptyState';
 import { ErrorState } from '../components/ErrorState';
 import { LoadingState } from '../components/LoadingState';
-import { ReportButton } from '../components/ReportButton';
+import { ReportDialog } from '../components/ReportDialog';
 import { UctVerifiedBadge } from '../components/UctVerifiedBadge';
 import { useAuth } from '../hooks/useAuth';
-import { createComment, getComments, getPost } from '../lib/forumApi';
+import {
+  createComment,
+  createReport,
+  getComments,
+  getPost,
+} from '../lib/forumApi';
 import { formatRelativeTime } from '../lib/format';
 import { canParticipate } from '../lib/permissions';
 import { validateComment } from '../lib/validation';
-import type { ForumComment, Post } from '../types/forum';
+import type { ForumComment, Post, ReportTarget } from '../types/forum';
 
 export function PostDetailPage() {
   const { id } = useParams();
@@ -25,6 +30,8 @@ export function PostDetailPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [commentError, setCommentError] = useState<string | null>(null);
+  const [reportTarget, setReportTarget] = useState<ReportTarget | null>(null);
+  const [reportStatus, setReportStatus] = useState<string | null>(null);
 
   useEffect(() => {
     let isActive = true;
@@ -98,6 +105,21 @@ export function PostDetailPage() {
     }
   }
 
+  function openReport(target: ReportTarget) {
+    setReportStatus(null);
+    if (user && !canParticipate(user.profile)) {
+      setReportStatus('Your restricted account cannot submit reports.');
+      return;
+    }
+    setReportTarget(target);
+  }
+
+  async function submitReport(target: ReportTarget, reason: string) {
+    if (!user) return;
+    await createReport(target, reason, user);
+    setReportStatus('Report submitted. Thank you.');
+  }
+
   if (loading) {
     return <LoadingState label="Loading post..." />;
   }
@@ -148,7 +170,28 @@ export function PostDetailPage() {
         </div>
 
         <div className="mt-6 border-t border-slate-100 pt-5">
-          <ReportButton postId={post.id} />
+          <div className="flex flex-wrap items-center gap-3">
+            {user ? (
+              <button
+                className="danger-button"
+                onClick={() =>
+                  openReport({ type: 'post', postId: post.id })
+                }
+                type="button"
+              >
+                Report
+              </button>
+            ) : (
+              <Link className="secondary-button" to="/login">
+                Log in to report
+              </Link>
+            )}
+            {reportStatus ? (
+              <span className="text-sm font-semibold text-slate-600">
+                {reportStatus}
+              </span>
+            ) : null}
+          </div>
         </div>
       </article>
 
@@ -158,7 +201,11 @@ export function PostDetailPage() {
           <p className="mt-1 text-sm text-slate-600">Add context, answer questions, or help a classmate out.</p>
         </div>
 
-        <CommentList comments={comments} />
+        <CommentList
+          comments={comments}
+          onReport={user ? openReport : undefined}
+          reportDisabled={Boolean(user && !canParticipate(user.profile))}
+        />
 
         {user && !canParticipate(user.profile) ? (
           <BanNotice reason={user.profile.banReason} />
@@ -190,6 +237,15 @@ export function PostDetailPage() {
         </form>
         )}
       </section>
+
+      {reportTarget ? (
+        <ReportDialog
+          onClose={() => setReportTarget(null)}
+          onSubmit={submitReport}
+          open
+          target={reportTarget}
+        />
+      ) : null}
     </div>
   );
 }
