@@ -59,10 +59,23 @@ The schema creates:
 - `profiles`
 - `posts`
 - `comments`
-- `post_likes`
 - `reports`
 
-RLS policies allow anyone to read posts/comments, logged-in users to create posts/comments, users to manage their own posts/comments, and logged-in users to report posts.
+RLS policies allow anyone to read posts/comments, active logged-in users to
+participate, users to manage their own content, and administrators to moderate.
+Banned users cannot create posts, comments, or reports.
+
+## Create the first administrator
+
+After signing up normally, run this once in the Supabase SQL editor:
+
+```sql
+update public.profiles
+set role = 'admin'
+where id = '<your-auth-user-uuid>';
+```
+
+Never add an admin role to signup metadata or expose the service-role key.
 
 ## Routes
 
