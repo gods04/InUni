@@ -1,6 +1,45 @@
-import type { ForumComment, Post } from '../types/forum';
+import type { ForumComment, Post, Profile } from '../types/forum';
 
 const now = Date.now();
+
+export const mockProfiles: Profile[] = [
+  {
+    id: 'demo-admin@inuni.local',
+    username: 'admin',
+    displayName: 'InUni Moderator',
+    role: 'admin',
+    isBanned: false,
+    banReason: null,
+    createdAt: new Date(now - 1000 * 60 * 60 * 24 * 90).toISOString(),
+  },
+  {
+    id: 'mock-user-a',
+    username: 'maya',
+    displayName: 'Maya',
+    role: 'student',
+    isBanned: false,
+    banReason: null,
+    createdAt: new Date(now - 1000 * 60 * 60 * 24 * 30).toISOString(),
+  },
+  {
+    id: 'mock-user-b',
+    username: 'liam',
+    displayName: 'Liam',
+    role: 'student',
+    isBanned: false,
+    banReason: null,
+    createdAt: new Date(now - 1000 * 60 * 60 * 24 * 20).toISOString(),
+  },
+  {
+    id: 'mock-user-d',
+    username: 'nandi',
+    displayName: 'Nandi',
+    role: 'student',
+    isBanned: false,
+    banReason: null,
+    createdAt: new Date(now - 1000 * 60 * 60 * 24 * 10).toISOString(),
+  },
+];
 
 export const mockPosts: Post[] = [
   {

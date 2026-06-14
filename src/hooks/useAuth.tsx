@@ -73,12 +73,26 @@ function createDemoUser(email: string): ForumUser {
   const normalizedEmail = email.trim().toLowerCase();
   const displayName = getDisplayName(normalizedEmail);
   const id = `demo-${normalizedEmail}`;
+  let storedProfile: Profile | undefined;
+
+  if (typeof window !== 'undefined') {
+    const rawProfiles = window.localStorage.getItem('inuni.profiles');
+    if (rawProfiles) {
+      try {
+        storedProfile = (JSON.parse(rawProfiles) as Profile[]).find(
+          (profile) => profile.id === id,
+        );
+      } catch {
+        storedProfile = undefined;
+      }
+    }
+  }
 
   return {
     id,
     email: normalizedEmail,
     emailConfirmed: true,
-    profile: {
+    profile: storedProfile ?? {
       id,
       username: displayName.toLowerCase().replace(/\s+/g, '_'),
       displayName,
