@@ -25,3 +25,6 @@ dist-ssr
 
 # Local Superpowers visual brainstorming sessions
 .superpowers/
+
+# Local isolated development worktrees
+.worktrees/
