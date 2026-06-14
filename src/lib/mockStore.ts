@@ -96,7 +96,9 @@ export const mockForumStore = {
       content: input.content,
       category: input.category,
       authorId: user.id,
-      authorName: input.isAnonymous ? 'Anonymous' : user.displayName || getDisplayName(user.email),
+      authorName: input.isAnonymous
+        ? 'Anonymous'
+        : user.profile.displayName || getDisplayName(user.email),
       isAnonymous: input.isAnonymous,
       createdAt: new Date().toISOString(),
       commentCount: 0,
@@ -112,7 +114,7 @@ export const mockForumStore = {
       id: createId('comment'),
       postId: input.postId,
       authorId: user.id,
-      authorName: user.displayName || getDisplayName(user.email),
+      authorName: user.profile.displayName || getDisplayName(user.email),
       content: input.content,
       createdAt: new Date().toISOString(),
     };

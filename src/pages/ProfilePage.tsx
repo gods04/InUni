@@ -59,7 +59,9 @@ export function ProfilePage() {
         <img src="/brand/inuni-logo-mark-dark.png" alt="" className="h-20 w-20 rounded-lg bg-emerald-50 object-contain p-2" />
         <div>
           <p className="text-sm font-bold text-emerald-700">Current user</p>
-          <h1 className="mt-1 text-2xl font-black tracking-normal text-slate-950">{user.displayName}</h1>
+          <h1 className="mt-1 text-2xl font-black tracking-normal text-slate-950">
+            {user.profile.displayName}
+          </h1>
           <p className="mt-1 text-sm text-slate-600">{user.email}</p>
           {isDemoMode ? (
             <p className="mt-3 text-sm leading-6 text-amber-800">

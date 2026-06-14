@@ -163,7 +163,9 @@ export function PostDetailPage() {
 
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm text-slate-500">
-              {user ? `Posting as ${user.displayName}` : 'Only logged-in users can comment.'}
+              {user
+                ? `Posting as ${user.profile.displayName}`
+                : 'Only logged-in users can comment.'}
             </p>
             <button className="primary-button" type="submit" disabled={!user || submitting}>
               {submitting ? 'Posting...' : 'Post comment'}

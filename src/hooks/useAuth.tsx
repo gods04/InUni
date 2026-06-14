@@ -32,7 +32,16 @@ function mapUser(user: SupabaseUser): ForumUser {
   return {
     id: user.id,
     email,
-    displayName,
+    emailConfirmed: Boolean(user.email_confirmed_at),
+    profile: {
+      id: user.id,
+      username: getDisplayName(email),
+      displayName,
+      role: 'student',
+      isBanned: false,
+      banReason: null,
+      createdAt: user.created_at,
+    },
   };
 }
 
@@ -72,7 +81,16 @@ function createDemoUser(email: string): ForumUser {
   return {
     id: `demo-${normalizedEmail}`,
     email: normalizedEmail,
-    displayName: getDisplayName(normalizedEmail),
+    emailConfirmed: true,
+    profile: {
+      id: `demo-${normalizedEmail}`,
+      username: getDisplayName(normalizedEmail),
+      displayName: getDisplayName(normalizedEmail),
+      role: 'student',
+      isBanned: false,
+      banReason: null,
+      createdAt: new Date().toISOString(),
+    },
   };
 }
 
@@ -85,7 +103,7 @@ async function ensureProfile(user: ForumUser): Promise<void> {
     {
       id: user.id,
       username: getDisplayName(user.email),
-      display_name: user.displayName,
+      display_name: user.profile.displayName,
     },
     { onConflict: 'id' },
   );

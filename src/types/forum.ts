@@ -11,10 +11,23 @@ export type Category = (typeof categories)[number];
 
 export type CategoryFilter = Category | 'All';
 
+export type UserRole = 'student' | 'admin';
+
+export interface Profile {
+  id: string;
+  username: string;
+  displayName: string;
+  role: UserRole;
+  isBanned: boolean;
+  banReason: string | null;
+  createdAt: string;
+}
+
 export interface ForumUser {
   id: string;
   email: string;
-  displayName: string;
+  emailConfirmed: boolean;
+  profile: Profile;
 }
 
 export interface Post {
