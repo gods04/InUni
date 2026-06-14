@@ -3,14 +3,14 @@ import type { ReactNode } from 'react';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 import { getDisplayName } from '../lib/format';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
-import type { ForumUser } from '../types/forum';
+import type { ForumUser, Profile, UserRole } from '../types/forum';
 
 interface AuthResult {
   error?: string;
   message?: string;
 }
 
-interface AuthContextValue {
+export interface AuthContextValue {
   user: ForumUser | null;
   loading: boolean;
   isDemoMode: boolean;
@@ -19,28 +19,73 @@ interface AuthContextValue {
   signOut: () => Promise<void>;
 }
 
+interface ProfileRow {
+  id: string;
+  username: string;
+  display_name: string;
+  role: UserRole;
+  is_banned: boolean;
+  ban_reason: string | null;
+  created_at: string;
+}
+
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 const demoUserKey = 'inuni.demoUser';
 
-function mapUser(user: SupabaseUser): ForumUser {
-  const email = user.email ?? 'student@inuni.local';
-  const displayName =
-    (user.user_metadata.display_name as string | undefined) ||
-    (user.user_metadata.username as string | undefined) ||
-    getDisplayName(email);
+function mapProfile(row: ProfileRow): Profile {
+  return {
+    id: row.id,
+    username: row.username,
+    displayName: row.display_name,
+    role: row.role,
+    isBanned: row.is_banned,
+    banReason: row.ban_reason,
+    createdAt: row.created_at,
+  };
+}
+
+async function loadSupabaseUser(user: SupabaseUser): Promise<ForumUser> {
+  if (!supabase) {
+    throw new Error('Supabase is not configured.');
+  }
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .select(
+      'id, username, display_name, role, is_banned, ban_reason, created_at',
+    )
+    .eq('id', user.id)
+    .single();
+
+  if (error) {
+    throw new Error(`Could not load your profile: ${error.message}`);
+  }
 
   return {
     id: user.id,
-    email,
+    email: user.email ?? 'student@inuni.local',
     emailConfirmed: Boolean(user.email_confirmed_at),
+    profile: mapProfile(data as ProfileRow),
+  };
+}
+
+function createDemoUser(email: string): ForumUser {
+  const normalizedEmail = email.trim().toLowerCase();
+  const displayName = getDisplayName(normalizedEmail);
+  const id = `demo-${normalizedEmail}`;
+
+  return {
+    id,
+    email: normalizedEmail,
+    emailConfirmed: true,
     profile: {
-      id: user.id,
-      username: getDisplayName(email),
+      id,
+      username: displayName.toLowerCase().replace(/\s+/g, '_'),
       displayName,
-      role: 'student',
+      role: normalizedEmail === 'admin@inuni.local' ? 'admin' : 'student',
       isBanned: false,
       banReason: null,
-      createdAt: user.created_at,
+      createdAt: new Date().toISOString(),
     },
   };
 }
@@ -56,7 +101,12 @@ function readDemoUser(): ForumUser | null {
   }
 
   try {
-    return JSON.parse(raw) as ForumUser;
+    const stored = JSON.parse(raw) as Partial<ForumUser>;
+    if (stored.email && stored.profile) {
+      return stored as ForumUser;
+    }
+
+    return stored.email ? createDemoUser(stored.email) : null;
   } catch {
     return null;
   }
@@ -75,40 +125,6 @@ function writeDemoUser(user: ForumUser | null): void {
   window.localStorage.setItem(demoUserKey, JSON.stringify(user));
 }
 
-function createDemoUser(email: string): ForumUser {
-  const normalizedEmail = email.trim().toLowerCase();
-
-  return {
-    id: `demo-${normalizedEmail}`,
-    email: normalizedEmail,
-    emailConfirmed: true,
-    profile: {
-      id: `demo-${normalizedEmail}`,
-      username: getDisplayName(normalizedEmail),
-      displayName: getDisplayName(normalizedEmail),
-      role: 'student',
-      isBanned: false,
-      banReason: null,
-      createdAt: new Date().toISOString(),
-    },
-  };
-}
-
-async function ensureProfile(user: ForumUser): Promise<void> {
-  if (!supabase) {
-    return;
-  }
-
-  await supabase.from('profiles').upsert(
-    {
-      id: user.id,
-      username: getDisplayName(user.email),
-      display_name: user.profile.displayName,
-    },
-    { onConflict: 'id' },
-  );
-}
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<ForumUser | null>(null);
   const [loading, setLoading] = useState(true);
@@ -124,32 +140,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       };
     }
 
-    supabase.auth
-      .getSession()
-      .then(({ data }) => {
-        if (!isMounted) {
-          return;
+    const hydrate = async (sessionUser: SupabaseUser | null) => {
+      if (!sessionUser) {
+        if (isMounted) {
+          setUser(null);
+          setLoading(false);
         }
+        return;
+      }
 
-        const sessionUser = data.session?.user ? mapUser(data.session.user) : null;
-        setUser(sessionUser);
-        if (sessionUser) {
-          void ensureProfile(sessionUser);
+      try {
+        const nextUser = await loadSupabaseUser(sessionUser);
+        if (isMounted) {
+          setUser(nextUser);
         }
-      })
-      .finally(() => {
+      } catch {
+        if (isMounted) {
+          setUser(null);
+        }
+      } finally {
         if (isMounted) {
           setLoading(false);
         }
-      });
-
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      const sessionUser = session?.user ? mapUser(session.user) : null;
-      setUser(sessionUser);
-      if (sessionUser) {
-        void ensureProfile(sessionUser);
       }
+    };
+
+    void supabase.auth.getSession().then(({ data }) => {
+      void hydrate(data.session?.user ?? null);
     });
+
+    const { data: listener } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        setLoading(true);
+        window.setTimeout(() => {
+          void hydrate(session?.user ?? null);
+        }, 0);
+      },
+    );
 
     return () => {
       isMounted = false;
@@ -170,15 +197,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           return {};
         }
 
-        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
         if (error) {
           return { error: error.message };
         }
 
         if (data.user) {
-          const nextUser = mapUser(data.user);
-          await ensureProfile(nextUser);
-          setUser(nextUser);
+          try {
+            setUser(await loadSupabaseUser(data.user));
+          } catch (profileError) {
+            return {
+              error:
+                profileError instanceof Error
+                  ? profileError.message
+                  : 'Could not load your profile.',
+            };
+          }
         }
 
         return {};
@@ -208,14 +245,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
 
         if (data.user && data.session) {
-          const nextUser = mapUser(data.user);
-          await ensureProfile(nextUser);
-          setUser(nextUser);
-          return {};
+          try {
+            setUser(await loadSupabaseUser(data.user));
+            return {};
+          } catch (profileError) {
+            return {
+              error:
+                profileError instanceof Error
+                  ? profileError.message
+                  : 'Could not load your profile.',
+            };
+          }
         }
 
         return {
-          message: 'Account created. If email confirmation is enabled, check your inbox before logging in.',
+          message:
+            'Account created. Check your inbox to confirm your email before logging in.',
         };
       },
       async signOut() {

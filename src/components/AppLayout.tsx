@@ -42,6 +42,11 @@ export function AppLayout() {
               <NavLink to="/profile" className={navClass}>
                 Profile
               </NavLink>
+              {user?.profile.role === 'admin' ? (
+                <NavLink to="/admin" className={navClass}>
+                  Admin
+                </NavLink>
+              ) : null}
               {user ? (
                 <button className="secondary-button" type="button" onClick={() => void signOut()}>
                   Log out
