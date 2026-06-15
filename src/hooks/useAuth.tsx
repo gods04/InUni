@@ -47,20 +47,21 @@ const passwordRecoverySessionKey = 'inuni.passwordRecoverySession';
 const passwordRecoveryConfigurationMessage =
   'Password recovery requires Supabase configuration.';
 
-function readPasswordRecoverySession(): boolean {
-  return (
-    typeof window !== 'undefined' &&
-    window.sessionStorage.getItem(passwordRecoverySessionKey) === 'true'
-  );
+function readPasswordRecoverySessionUserId(): string | null {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+
+  return window.sessionStorage.getItem(passwordRecoverySessionKey);
 }
 
-function writePasswordRecoverySession(isActive: boolean): void {
+function writePasswordRecoverySession(userId: string | null): void {
   if (typeof window === 'undefined') {
     return;
   }
 
-  if (isActive) {
-    window.sessionStorage.setItem(passwordRecoverySessionKey, 'true');
+  if (userId) {
+    window.sessionStorage.setItem(passwordRecoverySessionKey, userId);
     return;
   }
 
@@ -179,9 +180,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isSupabaseConfigured ? null : readDemoUser(),
   );
   const [hasAuthSession, setHasAuthSession] = useState(Boolean(user));
-  const [hasPasswordRecoverySession, setHasPasswordRecoverySession] = useState(
-    () => isSupabaseConfigured && readPasswordRecoverySession(),
-  );
+  const [hasPasswordRecoverySession, setHasPasswordRecoverySession] =
+    useState(false);
   const [loading, setLoading] = useState(true);
   const hydrationGeneration = useRef(0);
 
@@ -232,7 +232,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const initialGeneration = ++hydrationGeneration.current;
     void supabase.auth.getSession().then(({ data }) => {
-      void hydrate(data.session?.user ?? null, initialGeneration);
+      const sessionUser = data.session?.user ?? null;
+      if (
+        isMounted &&
+        initialGeneration === hydrationGeneration.current
+      ) {
+        const recoveryUserId = readPasswordRecoverySessionUserId();
+        const isRecoverySession =
+          Boolean(sessionUser) && recoveryUserId === sessionUser?.id;
+
+        if (!isRecoverySession) {
+          writePasswordRecoverySession(null);
+        }
+        setHasPasswordRecoverySession(isRecoverySession);
+      }
+
+      void hydrate(sessionUser, initialGeneration);
     });
 
     const { data: listener } = supabase.auth.onAuthStateChange(
@@ -240,10 +255,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const generation = ++hydrationGeneration.current;
 
         if (event === 'PASSWORD_RECOVERY') {
-          writePasswordRecoverySession(true);
-          setHasPasswordRecoverySession(true);
-        } else if (event === 'SIGNED_OUT') {
-          writePasswordRecoverySession(false);
+          const recoveryUserId = session?.user.id ?? null;
+          writePasswordRecoverySession(recoveryUserId);
+          setHasPasswordRecoverySession(Boolean(recoveryUserId));
+        } else if (event === 'INITIAL_SESSION') {
+          const recoveryUserId = readPasswordRecoverySessionUserId();
+          const isRecoverySession =
+            Boolean(session?.user) && recoveryUserId === session?.user.id;
+
+          if (!isRecoverySession) {
+            writePasswordRecoverySession(null);
+          }
+          setHasPasswordRecoverySession(isRecoverySession);
+        } else if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
+          writePasswordRecoverySession(null);
           setHasPasswordRecoverySession(false);
         }
 
@@ -378,7 +403,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           return { error: error.message };
         }
 
-        writePasswordRecoverySession(false);
+        writePasswordRecoverySession(null);
         setHasPasswordRecoverySession(false);
         return {};
       },
@@ -388,7 +413,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
 
         writeDemoUser(null);
-        writePasswordRecoverySession(false);
+        writePasswordRecoverySession(null);
         setUser(null);
         setHasAuthSession(false);
         setHasPasswordRecoverySession(false);

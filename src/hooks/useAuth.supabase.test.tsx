@@ -58,6 +58,8 @@ const profileRow = {
   created_at: '2026-06-15T00:00:00.000Z',
 };
 
+const passwordRecoverySessionKey = 'inuni.passwordRecoverySession';
+
 function createDeferred<T>() {
   let resolve!: (value: T) => void;
   const promise = new Promise<T>((nextResolve) => {
@@ -202,7 +204,9 @@ describe('configured Supabase authentication', () => {
     emitAuthEvent('PASSWORD_RECOVERY', supabaseUser);
 
     expect(await screen.findByText('recovery session')).toBeInTheDocument();
-    expect(window.sessionStorage.length).toBe(1);
+    expect(
+      window.sessionStorage.getItem(passwordRecoverySessionKey),
+    ).toBe(supabaseUser.id);
 
     await user.click(screen.getByRole('button', { name: 'Update password' }));
 
@@ -245,7 +249,7 @@ describe('configured Supabase authentication', () => {
     expect(window.sessionStorage.length).toBe(0);
   });
 
-  it('uses only PASSWORD_RECOVERY for readiness and restores its marker on reload', async () => {
+  it('restores recovery readiness on reload when the marker matches the session user', async () => {
     supabaseMocks.getSession.mockResolvedValue({
       data: { session: { user: supabaseUser } },
     });
@@ -260,10 +264,47 @@ describe('configured Supabase authentication', () => {
 
     emitAuthEvent('PASSWORD_RECOVERY', supabaseUser);
     expect(await screen.findByText('recovery session')).toBeInTheDocument();
-    expect(window.sessionStorage.length).toBe(1);
+    expect(
+      window.sessionStorage.getItem(passwordRecoverySessionKey),
+    ).toBe(supabaseUser.id);
 
     firstRender.unmount();
     renderAuthProvider();
+
+    expect(await screen.findByText('recovery session')).toBeInTheDocument();
+  });
+
+  it('clears a stale recovery marker when the initial session is missing', async () => {
+    window.sessionStorage.setItem(passwordRecoverySessionKey, 'student-1');
+
+    renderAuthProvider();
+
+    await waitFor(() => {
+      expect(screen.getByText('no recovery session')).toBeInTheDocument();
+      expect(
+        window.sessionStorage.getItem(passwordRecoverySessionKey),
+      ).toBeNull();
+    });
+  });
+
+  it('clears recovery readiness when an ordinary signed-in event arrives', async () => {
+    renderAuthProvider();
+    emitAuthEvent('PASSWORD_RECOVERY', supabaseUser);
+    expect(await screen.findByText('recovery session')).toBeInTheDocument();
+
+    emitAuthEvent('SIGNED_IN', supabaseUser);
+
+    expect(await screen.findByText('no recovery session')).toBeInTheDocument();
+    expect(
+      window.sessionStorage.getItem(passwordRecoverySessionKey),
+    ).toBeNull();
+  });
+
+  it('restores readiness on INITIAL_SESSION only for the marked user', async () => {
+    window.sessionStorage.setItem(passwordRecoverySessionKey, supabaseUser.id);
+    renderAuthProvider();
+
+    emitAuthEvent('INITIAL_SESSION', supabaseUser);
 
     expect(await screen.findByText('recovery session')).toBeInTheDocument();
   });
