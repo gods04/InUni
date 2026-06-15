@@ -208,6 +208,23 @@ create trigger comments_set_updated_at
 before update on public.comments
 for each row execute function public.set_updated_at();
 
+create or replace function public.is_uct_email(
+  email text,
+  email_confirmed_at timestamptz
+)
+returns boolean
+language sql
+immutable
+set search_path = public
+as $$
+  select
+    email_confirmed_at is not null
+    and (
+      lower(coalesce(email, '')) like '%@uct.ac.za'
+      or lower(coalesce(email, '')) like '%@myuct.ac.za'
+    );
+$$;
+
 create or replace function public.handle_new_user()
 returns trigger
 language plpgsql
@@ -243,10 +260,7 @@ begin
     new.id,
     left(safe_username, 40),
     left(display_value, 80),
-    (
-      new.email_confirmed_at is not null
-      and lower(coalesce(new.email, '')) like '%@uct.ac.za'
-    ),
+    public.is_uct_email(new.email, new.email_confirmed_at),
     'student',
     false
   )
@@ -268,9 +282,9 @@ set search_path = public
 as $$
 begin
   update public.profiles
-  set is_uct_verified = (
-    new.email_confirmed_at is not null
-    and lower(coalesce(new.email, '')) like '%@uct.ac.za'
+  set is_uct_verified = public.is_uct_email(
+    new.email,
+    new.email_confirmed_at
   )
   where id = new.id;
 
@@ -415,6 +429,7 @@ grant select, insert, update, delete on table public.reports to authenticated;
 
 revoke all on function public.current_profile_is_admin() from public;
 revoke all on function public.current_profile_can_participate() from public;
+revoke all on function public.is_uct_email(text, timestamptz) from public;
 revoke all on function public.update_own_profile(text, text) from public;
 revoke all on function public.set_user_ban(uuid, boolean, text) from public;
 

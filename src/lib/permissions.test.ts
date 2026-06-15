@@ -21,6 +21,10 @@ describe('isUctVerifiedEmail', () => {
     expect(isUctVerifiedEmail('Name@UCT.AC.ZA', true)).toBe(true);
   });
 
+  it('accepts a confirmed myUCT student address case-insensitively', () => {
+    expect(isUctVerifiedEmail('YXXCHE006@MYUCT.AC.ZA', true)).toBe(true);
+  });
+
   it('rejects unconfirmed and non-UCT addresses', () => {
     expect(isUctVerifiedEmail('name@uct.ac.za', false)).toBe(false);
     expect(isUctVerifiedEmail('name@gmail.com', true)).toBe(false);

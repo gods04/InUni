@@ -6,7 +6,7 @@ React, Vite, TypeScript, Tailwind CSS, React Router, and Supabase.
 ## MVP features
 
 - Email registration, login, logout, and session restoration
-- UCT Verified status for confirmed `@uct.ac.za` accounts
+- UCT Verified status for confirmed `@uct.ac.za` and `@myuct.ac.za` accounts
 - Six forum categories
 - Named and anonymous posts
 - Comments

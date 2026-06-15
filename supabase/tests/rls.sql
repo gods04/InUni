@@ -38,3 +38,9 @@ select
     as has_ban_rpc,
   to_regprocedure('public.update_own_profile(text,text)') is not null
     as has_profile_rpc;
+
+select
+  public.is_uct_email('student@uct.ac.za', now()) as accepts_uct,
+  public.is_uct_email('student@myuct.ac.za', now()) as accepts_myuct,
+  not public.is_uct_email('student@gmail.com', now()) as rejects_other_domain,
+  not public.is_uct_email('student@myuct.ac.za', null) as requires_confirmation;

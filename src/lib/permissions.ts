@@ -4,8 +4,12 @@ export function isUctVerifiedEmail(
   email: string | null | undefined,
   emailConfirmed: boolean,
 ): boolean {
+  const normalizedEmail = email?.trim().toLowerCase();
+
   return Boolean(
-    emailConfirmed && email?.trim().toLowerCase().endsWith('@uct.ac.za'),
+    emailConfirmed &&
+      (normalizedEmail?.endsWith('@uct.ac.za') ||
+        normalizedEmail?.endsWith('@myuct.ac.za')),
   );
 }
 
