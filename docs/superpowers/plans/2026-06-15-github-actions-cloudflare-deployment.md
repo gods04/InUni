@@ -32,7 +32,6 @@ concurrency:
 
 permissions:
   contents: read
-  deployments: write
 
 jobs:
   deploy:
@@ -63,17 +62,14 @@ jobs:
         run: npm run build
 
       - name: Deploy to Cloudflare Pages
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: >-
-            pages deploy dist
-            --project-name=inuni-uct
-            --branch=master
-            --commit-hash=${{ github.sha }}
-            --commit-message="${{ github.event.head_commit.message || 'Manual production deployment' }}"
-          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+        run: >-
+          npx wrangler pages deploy dist
+          --project-name=inuni-uct
+          --branch=master
+          --commit-hash="${GITHUB_SHA}"
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 ```
 
 - [ ] **Step 2: Parse the workflow as YAML**
