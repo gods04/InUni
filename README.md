@@ -104,13 +104,25 @@ Push this repository to GitHub first. Vercel is the simplest initial host:
 4. Add the two `VITE_SUPABASE_*` environment variables.
 5. Deploy.
 
-For Cloudflare Pages:
+The existing Cloudflare Pages project is deployed automatically by GitHub
+Actions whenever a commit reaches `master`. The workflow runs the complete
+test suite and production build before deploying `dist` to `inuni-uct`.
 
-1. Connect the GitHub repository.
-2. Select the Vite framework preset.
-3. Use build command `npm run build`.
-4. Use output directory `dist`.
-5. Add the same environment variables.
+Configure these GitHub repository secrets:
+
+```text
+CLOUDFLARE_ACCOUNT_ID
+CLOUDFLARE_API_TOKEN
+VITE_SUPABASE_URL
+VITE_SUPABASE_ANON_KEY
+```
+
+The Cloudflare token needs Cloudflare Pages edit permission for the project
+account. Never add a database password, Supabase secret key, or service-role
+key to GitHub Actions or frontend environment variables.
+
+The workflow can also be started manually from the repository's Actions page.
+Manual Wrangler deployment remains available as a fallback.
 
 `vercel.json` and `public/_redirects` keep React Router URLs working after a
 page refresh on Vercel and Cloudflare Pages.
