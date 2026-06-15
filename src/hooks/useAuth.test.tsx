@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it } from 'vitest';
@@ -14,6 +15,46 @@ function SignInHarness() {
     >
       {user ? String(user.profile.isBanned) : 'Sign in'}
     </button>
+  );
+}
+
+function PasswordRecoveryHarness() {
+  const { hasAuthSession, requestPasswordReset, updatePassword } = useAuth();
+  const [resetResult, setResetResult] = useState('');
+  const [updateResult, setUpdateResult] = useState('');
+
+  return (
+    <>
+      <p>
+        {hasAuthSession === false
+          ? 'no session'
+          : hasAuthSession
+            ? 'session'
+            : 'missing session state'}
+      </p>
+      <button
+        onClick={() => {
+          void requestPasswordReset('student@demo.local').then((result) => {
+            setResetResult(result.error ?? result.message ?? '');
+          });
+        }}
+        type="button"
+      >
+        Request password reset
+      </button>
+      <output aria-label="password reset result">{resetResult}</output>
+      <button
+        onClick={() => {
+          void updatePassword('new-password123').then((result) => {
+            setUpdateResult(result.error ?? result.message ?? '');
+          });
+        }}
+        type="button"
+      >
+        Update password
+      </button>
+      <output aria-label="password update result">{updateResult}</output>
+    </>
   );
 }
 
@@ -45,5 +86,28 @@ describe('demo authentication', () => {
     expect(
       await screen.findByRole('button', { name: 'true' }),
     ).toBeInTheDocument();
+  });
+
+  it('reports that password recovery requires Supabase configuration', async () => {
+    const user = userEvent.setup();
+    render(
+      <AuthProvider>
+        <PasswordRecoveryHarness />
+      </AuthProvider>,
+    );
+
+    expect(await screen.findByText('no session')).toBeInTheDocument();
+
+    await user.click(
+      screen.getByRole('button', { name: 'Request password reset' }),
+    );
+    expect(
+      await screen.findByRole('status', { name: 'password reset result' }),
+    ).toHaveTextContent('Password recovery requires Supabase configuration.');
+
+    await user.click(screen.getByRole('button', { name: 'Update password' }));
+    expect(
+      await screen.findByRole('status', { name: 'password update result' }),
+    ).toHaveTextContent('Password recovery requires Supabase configuration.');
   });
 });

@@ -15,8 +15,11 @@ export interface AuthContextValue {
   user: ForumUser | null;
   loading: boolean;
   isDemoMode: boolean;
+  hasAuthSession: boolean;
   signIn: (email: string, password: string) => Promise<AuthResult>;
   signUp: (email: string, password: string) => Promise<AuthResult>;
+  requestPasswordReset: (email: string) => Promise<AuthResult>;
+  updatePassword: (password: string) => Promise<AuthResult>;
   signOut: () => Promise<void>;
 }
 
@@ -32,6 +35,8 @@ interface ProfileRow {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 const demoUserKey = 'inuni.demoUser';
+const passwordRecoveryConfigurationError =
+  'Password recovery requires Supabase configuration.';
 
 function mapProfile(row: ProfileRow): Profile {
   return {
@@ -141,14 +146,19 @@ function writeDemoUser(user: ForumUser | null): void {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<ForumUser | null>(null);
+  const [user, setUser] = useState<ForumUser | null>(() =>
+    isSupabaseConfigured ? null : readDemoUser(),
+  );
+  const [hasAuthSession, setHasAuthSession] = useState(Boolean(user));
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let isMounted = true;
 
     if (!isSupabaseConfigured || !supabase) {
-      setUser(readDemoUser());
+      const demoUser = readDemoUser();
+      setUser(demoUser);
+      setHasAuthSession(Boolean(demoUser));
       setLoading(false);
       return () => {
         isMounted = false;
@@ -156,6 +166,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     const hydrate = async (sessionUser: SupabaseUser | null) => {
+      if (isMounted) {
+        setHasAuthSession(Boolean(sessionUser));
+      }
+
       if (!sessionUser) {
         if (isMounted) {
           setUser(null);
@@ -204,11 +218,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user,
       loading,
       isDemoMode: !isSupabaseConfigured,
+      hasAuthSession,
       async signIn(email: string, password: string) {
         if (!isSupabaseConfigured || !supabase) {
           const demoUser = createDemoUser(email);
           writeDemoUser(demoUser);
           setUser(demoUser);
+          setHasAuthSession(true);
           return {};
         }
 
@@ -223,6 +239,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (data.user) {
           try {
             setUser(await loadSupabaseUser(data.user));
+            setHasAuthSession(true);
           } catch (profileError) {
             return {
               error:
@@ -240,6 +257,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const demoUser = createDemoUser(email);
           writeDemoUser(demoUser);
           setUser(demoUser);
+          setHasAuthSession(true);
           return {};
         }
 
@@ -263,6 +281,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (data.user && data.session) {
           try {
             setUser(await loadSupabaseUser(data.user));
+            setHasAuthSession(true);
             return {};
           } catch (profileError) {
             return {
@@ -279,6 +298,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             'Account created. Check your inbox to confirm your email before logging in.',
         };
       },
+      async requestPasswordReset(email: string) {
+        if (!isSupabaseConfigured || !supabase) {
+          return { error: passwordRecoveryConfigurationError };
+        }
+
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: getAuthRedirectUrl(
+            window.location.origin,
+            '/reset-password',
+          ),
+        });
+
+        if (error) {
+          return { error: error.message };
+        }
+
+        return {
+          message:
+            'If an account exists for that email, a password reset link has been sent.',
+        };
+      },
+      async updatePassword(password: string) {
+        if (!isSupabaseConfigured || !supabase) {
+          return { error: passwordRecoveryConfigurationError };
+        }
+
+        const { error } = await supabase.auth.updateUser({ password });
+        return error ? { error: error.message } : {};
+      },
       async signOut() {
         if (isSupabaseConfigured && supabase) {
           await supabase.auth.signOut();
@@ -286,9 +334,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         writeDemoUser(null);
         setUser(null);
+        setHasAuthSession(false);
       },
     }),
-    [loading, user],
+    [hasAuthSession, loading, user],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
