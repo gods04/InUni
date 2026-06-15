@@ -19,9 +19,16 @@ function SignInHarness() {
 }
 
 function PasswordRecoveryHarness() {
-  const { hasAuthSession, requestPasswordReset, updatePassword } = useAuth();
-  const [resetResult, setResetResult] = useState('');
-  const [updateResult, setUpdateResult] = useState('');
+  const {
+    hasAuthSession,
+    hasPasswordRecoverySession,
+    requestPasswordReset,
+    updatePassword,
+  } = useAuth();
+  const [resetMessage, setResetMessage] = useState('');
+  const [resetError, setResetError] = useState('');
+  const [updateMessage, setUpdateMessage] = useState('');
+  const [updateError, setUpdateError] = useState('');
 
   return (
     <>
@@ -32,28 +39,39 @@ function PasswordRecoveryHarness() {
             ? 'session'
             : 'missing session state'}
       </p>
+      <p>
+        {hasPasswordRecoverySession === false
+          ? 'no recovery session'
+          : hasPasswordRecoverySession
+            ? 'recovery session'
+            : 'missing recovery session state'}
+      </p>
       <button
         onClick={() => {
           void requestPasswordReset('student@demo.local').then((result) => {
-            setResetResult(result.error ?? result.message ?? '');
+            setResetMessage(result.message ?? '');
+            setResetError(result.error ?? '');
           });
         }}
         type="button"
       >
         Request password reset
       </button>
-      <output aria-label="password reset result">{resetResult}</output>
+      <output aria-label="password reset message">{resetMessage}</output>
+      <output aria-label="password reset error">{resetError}</output>
       <button
         onClick={() => {
           void updatePassword('new-password123').then((result) => {
-            setUpdateResult(result.error ?? result.message ?? '');
+            setUpdateMessage(result.message ?? '');
+            setUpdateError(result.error ?? '');
           });
         }}
         type="button"
       >
         Update password
       </button>
-      <output aria-label="password update result">{updateResult}</output>
+      <output aria-label="password update message">{updateMessage}</output>
+      <output aria-label="password update error">{updateError}</output>
     </>
   );
 }
@@ -97,17 +115,24 @@ describe('demo authentication', () => {
     );
 
     expect(await screen.findByText('no session')).toBeInTheDocument();
+    expect(screen.getByText('no recovery session')).toBeInTheDocument();
 
     await user.click(
       screen.getByRole('button', { name: 'Request password reset' }),
     );
     expect(
-      await screen.findByRole('status', { name: 'password reset result' }),
+      await screen.findByRole('status', { name: 'password reset message' }),
     ).toHaveTextContent('Password recovery requires Supabase configuration.');
+    expect(
+      screen.getByRole('status', { name: 'password reset error' }),
+    ).toBeEmptyDOMElement();
 
     await user.click(screen.getByRole('button', { name: 'Update password' }));
     expect(
-      await screen.findByRole('status', { name: 'password update result' }),
+      await screen.findByRole('status', { name: 'password update message' }),
     ).toHaveTextContent('Password recovery requires Supabase configuration.');
+    expect(
+      screen.getByRole('status', { name: 'password update error' }),
+    ).toBeEmptyDOMElement();
   });
 });

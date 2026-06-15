@@ -1,4 +1,11 @@
-import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import type { ReactNode } from 'react';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 import { getAuthRedirectUrl } from '../lib/authRedirect';
@@ -16,6 +23,7 @@ export interface AuthContextValue {
   loading: boolean;
   isDemoMode: boolean;
   hasAuthSession: boolean;
+  hasPasswordRecoverySession: boolean;
   signIn: (email: string, password: string) => Promise<AuthResult>;
   signUp: (email: string, password: string) => Promise<AuthResult>;
   requestPasswordReset: (email: string) => Promise<AuthResult>;
@@ -35,8 +43,29 @@ interface ProfileRow {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 const demoUserKey = 'inuni.demoUser';
-const passwordRecoveryConfigurationError =
+const passwordRecoverySessionKey = 'inuni.passwordRecoverySession';
+const passwordRecoveryConfigurationMessage =
   'Password recovery requires Supabase configuration.';
+
+function readPasswordRecoverySession(): boolean {
+  return (
+    typeof window !== 'undefined' &&
+    window.sessionStorage.getItem(passwordRecoverySessionKey) === 'true'
+  );
+}
+
+function writePasswordRecoverySession(isActive: boolean): void {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  if (isActive) {
+    window.sessionStorage.setItem(passwordRecoverySessionKey, 'true');
+    return;
+  }
+
+  window.sessionStorage.removeItem(passwordRecoverySessionKey);
+}
 
 function mapProfile(row: ProfileRow): Profile {
   return {
@@ -150,7 +179,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isSupabaseConfigured ? null : readDemoUser(),
   );
   const [hasAuthSession, setHasAuthSession] = useState(Boolean(user));
+  const [hasPasswordRecoverySession, setHasPasswordRecoverySession] = useState(
+    () => isSupabaseConfigured && readPasswordRecoverySession(),
+  );
   const [loading, setLoading] = useState(true);
+  const hydrationGeneration = useRef(0);
 
   useEffect(() => {
     let isMounted = true;
@@ -165,50 +198,65 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       };
     }
 
-    const hydrate = async (sessionUser: SupabaseUser | null) => {
-      if (isMounted) {
-        setHasAuthSession(Boolean(sessionUser));
+    const hydrate = async (
+      sessionUser: SupabaseUser | null,
+      generation: number,
+    ) => {
+      if (!isMounted || generation !== hydrationGeneration.current) {
+        return;
       }
 
+      setHasAuthSession(Boolean(sessionUser));
+
       if (!sessionUser) {
-        if (isMounted) {
-          setUser(null);
-          setLoading(false);
-        }
+        setUser(null);
+        setLoading(false);
         return;
       }
 
       try {
         const nextUser = await loadSupabaseUser(sessionUser);
-        if (isMounted) {
+        if (isMounted && generation === hydrationGeneration.current) {
           setUser(nextUser);
         }
       } catch {
-        if (isMounted) {
+        if (isMounted && generation === hydrationGeneration.current) {
           setUser(null);
         }
       } finally {
-        if (isMounted) {
+        if (isMounted && generation === hydrationGeneration.current) {
           setLoading(false);
         }
       }
     };
 
+    const initialGeneration = ++hydrationGeneration.current;
     void supabase.auth.getSession().then(({ data }) => {
-      void hydrate(data.session?.user ?? null);
+      void hydrate(data.session?.user ?? null, initialGeneration);
     });
 
     const { data: listener } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
+      (event, session) => {
+        const generation = ++hydrationGeneration.current;
+
+        if (event === 'PASSWORD_RECOVERY') {
+          writePasswordRecoverySession(true);
+          setHasPasswordRecoverySession(true);
+        } else if (event === 'SIGNED_OUT') {
+          writePasswordRecoverySession(false);
+          setHasPasswordRecoverySession(false);
+        }
+
         setLoading(true);
         window.setTimeout(() => {
-          void hydrate(session?.user ?? null);
+          void hydrate(session?.user ?? null, generation);
         }, 0);
       },
     );
 
     return () => {
       isMounted = false;
+      hydrationGeneration.current += 1;
       listener.subscription.unsubscribe();
     };
   }, []);
@@ -219,6 +267,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       loading,
       isDemoMode: !isSupabaseConfigured,
       hasAuthSession,
+      hasPasswordRecoverySession,
       async signIn(email: string, password: string) {
         if (!isSupabaseConfigured || !supabase) {
           const demoUser = createDemoUser(email);
@@ -300,7 +349,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
       async requestPasswordReset(email: string) {
         if (!isSupabaseConfigured || !supabase) {
-          return { error: passwordRecoveryConfigurationError };
+          return { message: passwordRecoveryConfigurationMessage };
         }
 
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
@@ -321,11 +370,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
       async updatePassword(password: string) {
         if (!isSupabaseConfigured || !supabase) {
-          return { error: passwordRecoveryConfigurationError };
+          return { message: passwordRecoveryConfigurationMessage };
         }
 
         const { error } = await supabase.auth.updateUser({ password });
-        return error ? { error: error.message } : {};
+        if (error) {
+          return { error: error.message };
+        }
+
+        writePasswordRecoverySession(false);
+        setHasPasswordRecoverySession(false);
+        return {};
       },
       async signOut() {
         if (isSupabaseConfigured && supabase) {
@@ -333,11 +388,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
 
         writeDemoUser(null);
+        writePasswordRecoverySession(false);
         setUser(null);
         setHasAuthSession(false);
+        setHasPasswordRecoverySession(false);
       },
     }),
-    [hasAuthSession, loading, user],
+    [hasAuthSession, hasPasswordRecoverySession, loading, user],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
