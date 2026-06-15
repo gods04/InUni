@@ -45,72 +45,61 @@ export function HomePage() {
   }, [category]);
 
   return (
-    <>
-      <section className="panel grid overflow-hidden bg-white/82 sm:grid-cols-[1fr_260px]">
-        <div className="p-5 sm:p-7">
-          <img
-            src="/brand/inuni-logo-horizontal-dark.png"
-            alt="InUni"
-            className="h-24 w-auto max-w-full object-contain sm:h-28"
-          />
-          <p className="text-sm font-bold text-emerald-700">Student conversations, sorted simply.</p>
-          <h1 className="sr-only">InUni</h1>
-          <p className="mt-3 max-w-2xl text-base leading-7 text-slate-600">
-            Ask questions, share campus updates, post lost items, or talk anonymously when you need a little
-            room.
-          </p>
-          <div className="mt-5 flex flex-wrap gap-2 text-xs font-bold text-slate-600">
-            <span className="rounded-full bg-emerald-50 px-3 py-2 text-emerald-800">Study help</span>
-            <span className="rounded-full bg-sky-50 px-3 py-2 text-sky-800">Campus life</span>
-            <span className="rounded-full bg-amber-50 px-3 py-2 text-amber-900">Lost & Found</span>
-          </div>
-        </div>
-        <div className="flex flex-col justify-between gap-5 border-t border-slate-100 bg-slate-950 p-5 text-white sm:border-l sm:border-t-0 sm:p-6">
+    <div className="grid gap-7">
+      <section className="flex flex-col gap-5 border-b border-line pb-7 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-4">
           <img
             src="/brand/inuni-logo-mark-dark.png"
             alt=""
-            className="h-28 w-28 rounded-lg bg-[#f8fbf5] object-contain p-3"
+            className="h-14 w-14 shrink-0 object-contain"
           />
           <div>
-            <p className="text-sm leading-6 text-slate-300">Start useful conversations without turning the forum into noise.</p>
-            <Link className="primary-button mt-4 bg-emerald-500 text-slate-950 hover:bg-emerald-400" to="/create">
-              Create post
-            </Link>
+            <h1 className="text-2xl font-semibold text-ink">
+              UCT community forum
+            </h1>
+            <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-600">
+              Questions, campus updates, study help, and honest student conversations.
+            </p>
           </div>
         </div>
+        <Link className="primary-button shrink-0" to="/create">
+          Create post
+        </Link>
       </section>
 
       <section className="space-y-4">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h2 className="section-title">Home feed</h2>
-              <p className="mt-1 text-sm text-slate-600">Browse the latest posts from your university.</p>
-            </div>
-            <CategoryTabs value={category} onChange={setCategory} />
+        <div className="grid gap-4">
+          <div>
+            <h2 className="section-title">Latest conversations</h2>
+            <p className="mt-1 text-sm text-slate-600">
+              Browse the newest posts from the UCT community.
+            </p>
           </div>
+          <CategoryTabs value={category} onChange={setCategory} />
+        </div>
 
-          {error ? <ErrorState message={error} /> : null}
-          {loading ? <LoadingState label="Loading posts..." /> : null}
-          {!loading && !error && posts.length === 0 ? (
-            <EmptyState
-              title="No posts here yet"
-              message="Start the first conversation in this category."
-              action={
-                <Link className="primary-button" to="/create">
-                  Create post
-                </Link>
-              }
-            />
-          ) : null}
+        {error ? <ErrorState message={error} /> : null}
+        {loading ? <LoadingState label="Loading posts..." /> : null}
+        {!loading && !error && posts.length === 0 ? (
+          <EmptyState
+            title="No posts here yet"
+            message="Start the first conversation in this category."
+            action={
+              <Link className="primary-button" to="/create">
+                Create post
+              </Link>
+            }
+          />
+        ) : null}
 
-          {!loading && !error && posts.length > 0 ? (
-            <div className="grid gap-4">
-              {posts.map((post) => (
-                <PostCard key={post.id} post={post} />
-              ))}
-            </div>
-          ) : null}
+        {!loading && !error && posts.length > 0 ? (
+          <div className="grid gap-4">
+            {posts.map((post) => (
+              <PostCard key={post.id} post={post} />
+            ))}
+          </div>
+        ) : null}
       </section>
-    </>
+    </div>
   );
 }

@@ -78,11 +78,11 @@ export function ReportDialog({
       <section
         aria-labelledby="report-dialog-title"
         aria-modal="true"
-        className="w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-5 shadow-2xl sm:p-6"
+        className="w-full max-w-lg rounded-lg border border-line bg-white p-5 shadow-2xl sm:p-6"
         role="dialog"
       >
         <h2
-          className="text-xl font-bold text-slate-950"
+          className="text-xl font-semibold text-ink"
           id="report-dialog-title"
         >
           Report content

@@ -101,7 +101,7 @@ export function AdminPage() {
     <div className="grid gap-5">
       <section className="panel flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
         <div>
-          <p className="text-sm font-semibold text-emerald-700">
+          <p className="text-sm font-semibold text-brand-700">
             Administrator
           </p>
           <h1 className="section-title">Moderation</h1>
@@ -136,7 +136,7 @@ export function AdminPage() {
                   {formatRelativeTime(report.createdAt)}
                 </span>
               </div>
-              <h2 className="mt-3 text-lg font-bold text-slate-950">
+              <h2 className="mt-3 text-lg font-semibold text-ink">
                 {report.contentTitle}
               </h2>
               <p className="mt-2 text-sm leading-6 text-slate-600">

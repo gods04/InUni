@@ -3,10 +3,10 @@ import { useAuth } from '../hooks/useAuth';
 
 function navClass({ isActive }: { isActive: boolean }) {
   return [
-    'rounded-lg px-3 py-2 text-sm font-bold transition',
+    'shrink-0 rounded-full px-3 py-2 text-sm font-semibold transition',
     isActive
-      ? 'bg-slate-950 text-white shadow-sm'
-      : 'text-slate-600 hover:bg-emerald-50 hover:text-slate-950',
+      ? 'bg-brand-50 text-brand-700'
+      : 'text-slate-600 hover:bg-slate-100 hover:text-ink',
   ].join(' ');
 }
 
@@ -15,26 +15,26 @@ export function AppLayout() {
 
   return (
     <div className="min-h-screen">
-      <header className="sticky top-0 z-30 border-b border-white/80 bg-[#f8fbf5]/90 backdrop-blur-xl">
-        <div className="mx-auto flex w-full max-w-6xl flex-col gap-3 px-4 py-3 sm:px-6 lg:px-8">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <NavLink to="/" className="flex items-center gap-3">
-              <span className="flex h-12 w-[148px] items-center justify-start overflow-hidden">
+      <header className="sticky top-0 z-30 border-b border-line bg-white/90 backdrop-blur-xl">
+        <div className="mx-auto flex w-full max-w-5xl flex-col gap-2 px-4 py-3 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between gap-4">
+            <NavLink
+              aria-label="InUni home"
+              className="shrink-0"
+              to="/"
+            >
+              <span className="flex h-10 w-[124px] items-center overflow-hidden">
                 <img
-                  src="/brand/inuni-logo-horizontal-dark.png"
                   alt="InUni"
-                  className="h-12 w-auto object-contain"
+                  className="h-10 w-auto object-contain"
+                  src="/brand/inuni-logo-horizontal-dark.png"
                 />
-              </span>
-              <span className="hidden sm:block">
-                <span className="block text-xs font-bold uppercase text-emerald-700">Campus forum</span>
-                <span className="block text-sm font-medium text-slate-600">Student conversations</span>
               </span>
             </NavLink>
 
-            <nav className="flex flex-wrap items-center gap-1.5 rounded-lg border border-white/90 bg-white/75 p-1 shadow-sm">
+            <nav className="flex min-w-0 items-center gap-1 overflow-x-auto">
               <NavLink to="/" className={navClass} end>
-                Feed
+                Forum
               </NavLink>
               <NavLink to="/create" className={navClass}>
                 Create
@@ -48,7 +48,11 @@ export function AppLayout() {
                 </NavLink>
               ) : null}
               {user ? (
-                <button className="secondary-button" type="button" onClick={() => void signOut()}>
+                <button
+                  className="secondary-button shrink-0"
+                  onClick={() => void signOut()}
+                  type="button"
+                >
                   Log out
                 </button>
               ) : (
@@ -60,9 +64,8 @@ export function AppLayout() {
           </div>
 
           {isDemoMode ? (
-            <div className="rounded-lg border border-amber-200 bg-amber-50/90 px-3 py-2 text-sm font-semibold text-amber-900">
-              Demo mode is active because Supabase env vars are empty. Posts and comments use local browser
-              storage until you connect Supabase.
+            <div className="rounded-lg border border-brand-100 bg-brand-50 px-3 py-2 text-xs font-medium text-brand-700">
+              Demo mode: forum data is stored in this browser until Supabase is connected.
             </div>
           ) : null}
         </div>

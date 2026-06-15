@@ -59,10 +59,10 @@ export function ProfilePage() {
   return (
     <div className="grid gap-5">
       <section className="panel grid gap-4 overflow-hidden p-5 sm:grid-cols-[auto_1fr_auto] sm:items-center sm:p-7">
-        <img src="/brand/inuni-logo-mark-dark.png" alt="" className="h-20 w-20 rounded-lg bg-emerald-50 object-contain p-2" />
+        <img src="/brand/inuni-logo-mark-dark.png" alt="" className="h-20 w-20 rounded-lg bg-brand-50 object-contain p-2" />
         <div>
-          <p className="text-sm font-bold text-emerald-700">Current user</p>
-          <h1 className="mt-1 text-2xl font-black tracking-normal text-slate-950">
+          <p className="text-sm font-semibold text-brand-700">Current user</p>
+          <h1 className="mt-1 text-2xl font-semibold tracking-normal text-ink">
             {user.profile.displayName}
           </h1>
           <p className="mt-1 text-sm text-slate-600">{user.email}</p>

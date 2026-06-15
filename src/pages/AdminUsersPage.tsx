@@ -112,7 +112,7 @@ export function AdminUsersPage() {
     <div className="grid gap-5">
       <section className="panel p-5 sm:p-6">
         <Link
-          className="text-sm font-semibold text-emerald-700 hover:text-emerald-900"
+          className="text-sm font-semibold text-brand-700 hover:text-brand-600"
           to="/admin"
         >
           Back to moderation
@@ -160,7 +160,7 @@ export function AdminUsersPage() {
             >
               <div>
                 <div className="flex flex-wrap items-center gap-2">
-                  <h2 className="font-bold text-slate-950">
+                  <h2 className="font-semibold text-ink">
                     {profile.displayName}
                   </h2>
                   <span className="badge bg-slate-100 text-slate-700">
@@ -211,7 +211,7 @@ export function AdminUsersPage() {
       {pending?.banned && !confirmOpen ? (
         <section className="panel grid gap-4 p-5">
           <div>
-            <h2 className="text-lg font-bold text-slate-950">
+            <h2 className="text-lg font-semibold text-ink">
               Ban {pending.profile.displayName}
             </h2>
             <p className="mt-1 text-sm text-slate-600">

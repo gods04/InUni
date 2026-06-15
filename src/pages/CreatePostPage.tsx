@@ -67,7 +67,7 @@ export function CreatePostPage() {
   return (
     <div className="mx-auto grid w-full max-w-3xl gap-5">
       <div className="panel flex items-center gap-4 p-5">
-        <img src="/brand/inuni-logo-mark-dark.png" alt="" className="h-16 w-16 object-contain" />
+        <img src="/brand/inuni-logo-mark-dark.png" alt="" className="h-14 w-14 object-contain" />
         <div>
         <h1 className="section-title">Create post</h1>
         <p className="mt-1 text-sm text-slate-600">Share something useful, ask a question, or post anonymously.</p>
@@ -111,9 +111,9 @@ export function CreatePostPage() {
           />
         </label>
 
-        <label className="flex items-start gap-3 rounded-lg border border-emerald-100 bg-emerald-50/70 p-4">
+        <label className="flex items-start gap-3 rounded-lg border border-brand-100 bg-brand-50 p-4">
           <input
-            className="mt-1 h-4 w-4 accent-emerald-600"
+            className="mt-1 h-4 w-4 accent-brand-700"
             type="checkbox"
             checked={isAnonymous}
             onChange={(event) => setIsAnonymous(event.target.checked)}

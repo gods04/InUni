@@ -52,8 +52,8 @@ export function AuthPage() {
 
   return (
     <div className="mx-auto grid w-full max-w-md gap-5">
-      <div className="panel p-5">
-        <img src="/brand/inuni-logo-horizontal-dark.png" alt="InUni" className="h-20 w-auto object-contain" />
+      <div className="panel p-5 sm:p-6">
+        <img src="/brand/inuni-logo-horizontal-dark.png" alt="InUni" className="h-16 w-auto object-contain" />
         <h1 className="section-title">{mode === 'login' ? 'Log in' : 'Sign up'}</h1>
         <p className="mt-1 text-sm text-slate-600">
           {isDemoMode
@@ -89,7 +89,7 @@ export function AuthPage() {
 
         {error ? <ErrorState message={error} /> : null}
         {message ? (
-          <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800">
+          <div className="rounded-lg border border-brand-100 bg-brand-50 px-4 py-3 text-sm font-semibold text-brand-700">
             {message}
           </div>
         ) : null}

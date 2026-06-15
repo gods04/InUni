@@ -9,11 +9,11 @@ import { ReportDialog } from './ReportDialog';
 import { UctVerifiedBadge } from './UctVerifiedBadge';
 
 const categoryStyles: Record<Category, string> = {
-  Study: 'bg-emerald-100 text-emerald-800',
-  'Campus Life': 'bg-sky-100 text-sky-800',
-  Questions: 'bg-violet-100 text-violet-800',
-  'Lost & Found': 'bg-amber-100 text-amber-900',
-  Confessions: 'bg-rose-100 text-rose-800',
+  Study: 'bg-emerald-50 text-emerald-800',
+  'Campus Life': 'bg-brand-50 text-brand-700',
+  Questions: 'bg-indigo-50 text-indigo-700',
+  'Lost & Found': 'bg-amber-50 text-amber-800',
+  Confessions: 'bg-rose-50 text-rose-700',
   General: 'bg-slate-100 text-slate-700',
 };
 
@@ -39,8 +39,7 @@ export function PostCard({ post }: { post: Post }) {
   }
 
   return (
-    <article className="panel relative overflow-hidden p-4 transition hover:-translate-y-0.5 hover:border-emerald-100 hover:bg-white sm:p-5">
-      <div className="absolute inset-y-0 left-0 w-1 bg-emerald-500" />
+    <article className="panel relative overflow-hidden p-4 transition hover:border-brand-100 sm:p-5">
       <div className="flex flex-col gap-4">
         <div className="flex flex-wrap items-center gap-2">
           <span className={`badge ${categoryStyles[post.category]}`}>{post.category}</span>
@@ -49,7 +48,7 @@ export function PostCard({ post }: { post: Post }) {
         </div>
 
         <Link to={`/post/${post.id}`} className="group">
-          <h2 className="text-xl font-black tracking-normal text-slate-950 group-hover:text-emerald-700">
+          <h2 className="text-xl font-semibold tracking-normal text-ink group-hover:text-brand-700">
             {post.title}
           </h2>
           <p className="mt-2 text-sm leading-6 text-slate-600">{getPreview(post.content)}</p>

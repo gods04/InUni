@@ -16,7 +16,7 @@ export function CommentList({
 }: CommentListProps) {
   if (comments.length === 0) {
     return (
-      <div className="rounded-lg border border-dashed border-emerald-200 bg-white/70 px-4 py-6 text-sm text-slate-600">
+      <div className="rounded-lg border border-dashed border-line bg-white px-4 py-6 text-sm text-slate-600">
         No comments yet. Be the first to add something useful.
       </div>
     );
@@ -25,7 +25,7 @@ export function CommentList({
   return (
     <div className="space-y-3">
       {comments.map((comment) => (
-        <article className="rounded-lg border border-white/80 bg-white/90 p-4 shadow-sm" key={comment.id}>
+        <article className="rounded-lg border border-line bg-white p-4 shadow-sm" key={comment.id}>
           <div className="flex items-start justify-between gap-3">
             <div className="flex flex-wrap items-center gap-2 text-sm">
               <span className="font-bold text-slate-900">{comment.authorName}</span>

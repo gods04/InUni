@@ -144,18 +144,18 @@ export function PostDetailPage() {
 
   return (
     <div className="grid gap-5">
-      <Link className="w-fit text-sm font-bold text-emerald-700 hover:text-emerald-800" to="/">
+      <Link className="w-fit text-sm font-semibold text-brand-700 hover:text-brand-600" to="/">
         Back to feed
       </Link>
 
       <article className="panel p-5 sm:p-7">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="badge bg-emerald-100 text-emerald-800">{post.category}</span>
+          <span className="badge bg-brand-50 text-brand-700">{post.category}</span>
           {post.isAnonymous ? <span className="badge bg-slate-100 text-slate-700">Anonymous</span> : null}
           <span className="text-xs font-semibold text-slate-500">{formatRelativeTime(post.createdAt)}</span>
         </div>
 
-        <h1 className="mt-4 text-3xl font-black tracking-normal text-slate-950">{post.title}</h1>
+        <h1 className="mt-4 text-3xl font-semibold tracking-normal text-ink">{post.title}</h1>
         <div className="mt-3 text-sm text-slate-500">
           By <span className="font-bold text-slate-800">{post.authorName}</span>{' '}
           {!post.isAnonymous && post.authorIsUctVerified ? (
@@ -197,7 +197,7 @@ export function PostDetailPage() {
 
       <section className="grid gap-4">
         <div>
-          <h2 className="text-2xl font-black tracking-normal text-slate-950">Comments</h2>
+          <h2 className="text-2xl font-semibold tracking-normal text-ink">Comments</h2>
           <p className="mt-1 text-sm text-slate-600">Add context, answer questions, or help a classmate out.</p>
         </div>
 

@@ -10,7 +10,7 @@ export function CategoryTabs({ value, onChange }: CategoryTabsProps) {
 
   return (
     <div
-      className="flex gap-2 overflow-x-auto rounded-lg border border-white/90 bg-white/70 p-1 shadow-sm"
+      className="flex gap-1 overflow-x-auto rounded-lg border border-line bg-white p-1"
       aria-label="Filter posts by category"
     >
       {options.map((category) => {
@@ -19,10 +19,10 @@ export function CategoryTabs({ value, onChange }: CategoryTabsProps) {
         return (
           <button
             className={[
-              'shrink-0 rounded-lg border px-3 py-2 text-sm font-bold transition',
+              'shrink-0 rounded-full border px-3 py-2 text-sm font-semibold transition',
               isActive
-                ? 'border-slate-950 bg-slate-950 text-white shadow-sm'
-                : 'border-transparent bg-transparent text-slate-600 hover:border-emerald-100 hover:bg-emerald-50 hover:text-slate-950',
+                ? 'border-brand-100 bg-brand-50 text-brand-700'
+                : 'border-transparent bg-transparent text-slate-600 hover:bg-slate-100 hover:text-ink',
             ].join(' ')}
             key={category}
             type="button"
