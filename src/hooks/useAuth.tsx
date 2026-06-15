@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
+import { getAuthRedirectUrl } from '../lib/authRedirect';
 import { getDisplayName } from '../lib/format';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
 import type { ForumUser, Profile, UserRole } from '../types/forum';
@@ -247,6 +248,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           email,
           password,
           options: {
+            emailRedirectTo: getAuthRedirectUrl(),
             data: {
               display_name: displayName,
               username: displayName,
