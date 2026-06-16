@@ -105,4 +105,36 @@ describe('AuthPage', () => {
     expect(screen.getByText('Email is required.')).toBeInTheDocument();
     expect(requestPasswordReset).not.toHaveBeenCalled();
   });
+
+  it('opens recovery mode from navigation state', () => {
+    render(
+      <MemoryRouter
+        initialEntries={[
+          { pathname: '/login', state: { authMode: 'recovery' } },
+        ]}
+      >
+        <AuthPage />
+      </MemoryRouter>,
+    );
+
+    expect(
+      screen.getByRole('heading', { name: 'Reset your password' }),
+    ).toBeInTheDocument();
+  });
+
+  it('shows confirmation after a successful password update', () => {
+    render(
+      <MemoryRouter
+        initialEntries={[
+          { pathname: '/login', state: { passwordReset: true } },
+        ]}
+      >
+        <AuthPage />
+      </MemoryRouter>,
+    );
+
+    expect(
+      screen.getByText('Password updated. You can now log in.'),
+    ).toBeInTheDocument();
+  });
 });

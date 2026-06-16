@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { ErrorState } from '../components/ErrorState';
 import { useAuth } from '../hooks/useAuth';
 
@@ -8,13 +8,23 @@ type AuthMode = 'login' | 'signup' | 'recovery';
 
 export function AuthPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const authState = location.state as {
+    authMode?: AuthMode;
+    passwordReset?: boolean;
+  } | null;
+  const passwordReset = authState?.passwordReset;
   const { requestPasswordReset, signIn, signUp, isDemoMode } = useAuth();
-  const [mode, setMode] = useState<AuthMode>('login');
+  const [mode, setMode] = useState<AuthMode>(
+    authState?.authMode === 'recovery' ? 'recovery' : 'login',
+  );
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [message, setMessage] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(
+    passwordReset ? 'Password updated. You can now log in.' : null,
+  );
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
