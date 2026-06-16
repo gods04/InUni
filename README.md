@@ -80,6 +80,11 @@ The schema creates `profiles`, `posts`, `comments`, `reports`, `files`,
 active authenticated users can participate. Banned users can still read posts
 and comments but cannot post, comment, upload, download, or report files.
 
+If the project already has the older InUni schema, do not run the full schema
+again. Run
+[`supabase/migrations/20260616_existing_project_files_upgrade.sql`](supabase/migrations/20260616_existing_project_files_upgrade.sql)
+instead.
+
 ## File storage setup
 
 The first files phase uses a private Supabase Storage bucket named
