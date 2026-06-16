@@ -3,6 +3,7 @@ import { AppLayout } from './components/AppLayout';
 import { AdminRoute } from './components/AdminRoute';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { AdminPage } from './pages/AdminPage';
+import { AdminFilesPage } from './pages/AdminFilesPage';
 import { AdminUsersPage } from './pages/AdminUsersPage';
 import { AuthPage } from './pages/AuthPage';
 import { CreatePostPage } from './pages/CreatePostPage';
@@ -50,6 +51,14 @@ export default function App() {
           element={
             <AdminRoute>
               <AdminUsersPage />
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/admin/files"
+          element={
+            <AdminRoute>
+              <AdminFilesPage />
             </AdminRoute>
           }
         />

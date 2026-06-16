@@ -109,9 +109,14 @@ export function AdminPage() {
             {reports.length} open {reports.length === 1 ? 'report' : 'reports'}
           </p>
         </div>
-        <Link className="secondary-button" to="/admin/users">
-          Manage users
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          <Link className="secondary-button" to="/admin/files">
+            Review files
+          </Link>
+          <Link className="secondary-button" to="/admin/users">
+            Manage users
+          </Link>
+        </div>
       </section>
 
       {error ? <ErrorState message={error} /> : null}

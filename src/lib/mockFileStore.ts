@@ -435,6 +435,24 @@ export const mockFileStore = {
     return linkFiles(files, links);
   },
 
+  async getPendingSharedFiles(): Promise<LinkedFile[]> {
+    const links = getLinks();
+    const pendingFileIds = new Set(
+      links
+        .filter(
+          (link): link is SharedFileLink =>
+            link.linkType === 'shared_file' && link.sharedStatus === 'pending',
+        )
+        .map((link) => link.fileId),
+    );
+    const files = getFiles().filter((file) => pendingFileIds.has(file.id));
+
+    return linkFiles(files, links).sort(
+      (left, right) =>
+        new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime(),
+    );
+  },
+
   async approveSharedFile(fileId: string): Promise<void> {
     const links = getLinks();
     const nextLinks = links.map((link) =>
@@ -496,6 +514,29 @@ export const mockFileStore = {
       );
 
     return linkFiles(files, links);
+  },
+
+  async restoreHiddenFile(fileId: string): Promise<void> {
+    updateFile(fileId, (file) => ({
+      ...file,
+      status: 'available',
+      updatedAt: new Date().toISOString(),
+    }));
+  },
+
+  async deleteFile(fileId: string): Promise<void> {
+    writeList(
+      filesKey,
+      getFiles().filter((file) => file.id !== fileId),
+    );
+    writeList(
+      linksKey,
+      getLinks().filter((link) => link.fileId !== fileId),
+    );
+    writeList(
+      reportsKey,
+      getReports().filter((report) => report.fileId !== fileId),
+    );
   },
 
   async createSignedDownloadUrl(fileId: string): Promise<SignedFileUrl> {

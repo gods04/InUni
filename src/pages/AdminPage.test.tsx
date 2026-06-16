@@ -39,6 +39,9 @@ describe('AdminPage', () => {
     );
     expect(await screen.findByText('Reported post')).toBeInTheDocument();
     expect(
+      screen.getByRole('link', { name: 'Review files' }),
+    ).toBeInTheDocument();
+    expect(
       screen.getByRole('button', { name: 'Delete post' }),
     ).toBeInTheDocument();
   });
