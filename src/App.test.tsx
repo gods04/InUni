@@ -21,13 +21,14 @@ vi.mock('./hooks/useAuth', () => ({
 }));
 
 describe('MVP navigation', () => {
-  it('shows only forum MVP destinations for a signed-out visitor', () => {
+  it('shows approved public destinations for a signed-out visitor', () => {
     render(
       <MemoryRouter initialEntries={['/']}>
         <App />
       </MemoryRouter>,
     );
     expect(screen.getByRole('link', { name: 'Forum' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Files' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Login' })).toBeInTheDocument();
     expect(screen.queryByText('Tools')).not.toBeInTheDocument();
     expect(screen.queryByText('Shared Files')).not.toBeInTheDocument();

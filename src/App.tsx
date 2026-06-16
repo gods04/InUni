@@ -6,6 +6,7 @@ import { AdminPage } from './pages/AdminPage';
 import { AdminUsersPage } from './pages/AdminUsersPage';
 import { AuthPage } from './pages/AuthPage';
 import { CreatePostPage } from './pages/CreatePostPage';
+import { FilesPage } from './pages/FilesPage';
 import { HomePage } from './pages/HomePage';
 import { PostDetailPage } from './pages/PostDetailPage';
 import { ProfilePage } from './pages/ProfilePage';
@@ -16,6 +17,7 @@ export default function App() {
     <Routes>
       <Route element={<AppLayout />}>
         <Route index element={<HomePage />} />
+        <Route path="/files" element={<FilesPage />} />
         <Route path="/post/:id" element={<PostDetailPage />} />
         <Route
           path="/create"

@@ -36,6 +36,9 @@ export function AppLayout() {
               <NavLink to="/" className={navClass} end>
                 Forum
               </NavLink>
+              <NavLink to="/files" className={navClass}>
+                Files
+              </NavLink>
               <NavLink to="/create" className={navClass}>
                 Create
               </NavLink>
