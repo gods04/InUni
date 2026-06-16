@@ -5,6 +5,28 @@ create extension if not exists "pgcrypto";
 
 create type public.user_role as enum ('student', 'admin');
 create type public.report_status as enum ('open', 'resolved', 'dismissed');
+create type public.file_status as enum (
+  'uploading',
+  'available',
+  'pending_review',
+  'hidden_by_reports'
+);
+create type public.shared_file_status as enum ('pending', 'approved');
+create type public.file_scan_status as enum (
+  'not_scanned',
+  'pending',
+  'clean',
+  'flagged',
+  'failed'
+);
+create type public.file_link_type as enum ('post', 'comment', 'shared_file');
+create type public.file_report_type as enum (
+  'copyright',
+  'malicious_file',
+  'privacy',
+  'harassment',
+  'other'
+);
 
 create table public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
@@ -76,12 +98,85 @@ create unique index reports_unique_comment_reporter
 on public.reports (reporter_id, comment_id)
 where comment_id is not null;
 
+create table public.files (
+  id uuid primary key default gen_random_uuid(),
+  owner_id uuid not null references public.profiles(id) on delete cascade,
+  storage_provider text not null default 'supabase',
+  storage_bucket text not null,
+  storage_path text not null unique,
+  original_filename text not null,
+  display_filename text not null,
+  mime_type text not null,
+  extension text not null,
+  size_bytes bigint not null check (
+    size_bytes > 0 and size_bytes <= 104857600
+  ),
+  description text not null default '' check (char_length(description) <= 200),
+  status public.file_status not null default 'available',
+  scan_status public.file_scan_status not null default 'not_scanned',
+  download_count integer not null default 0,
+  report_count integer not null default 0,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table public.file_links (
+  id uuid primary key default gen_random_uuid(),
+  file_id uuid not null references public.files(id) on delete cascade,
+  link_type public.file_link_type not null,
+  post_id uuid references public.posts(id) on delete cascade,
+  comment_id uuid references public.comments(id) on delete cascade,
+  shared_status public.shared_file_status,
+  course_code text,
+  campus_or_faculty text,
+  tags text[] not null default '{}',
+  created_at timestamptz not null default now(),
+  constraint file_links_context check (
+    (
+      link_type = 'post'
+      and post_id is not null
+      and comment_id is null
+      and shared_status is null
+    )
+    or (
+      link_type = 'comment'
+      and comment_id is not null
+      and post_id is null
+      and shared_status is null
+    )
+    or (
+      link_type = 'shared_file'
+      and post_id is null
+      and comment_id is null
+      and shared_status is not null
+    )
+  )
+);
+
+create table public.file_reports (
+  id uuid primary key default gen_random_uuid(),
+  file_id uuid not null references public.files(id) on delete cascade,
+  reporter_id uuid not null references public.profiles(id) on delete cascade,
+  report_type public.file_report_type not null,
+  note text not null default '' check (char_length(note) <= 500),
+  created_at timestamptz not null default now(),
+  unique (file_id, reporter_id)
+);
+
 create index posts_created_at_idx on public.posts (created_at desc);
 create index posts_category_idx on public.posts (category);
 create index posts_author_id_idx on public.posts (author_id);
 create index comments_post_id_idx on public.comments (post_id, created_at);
 create index reports_status_created_at_idx
 on public.reports (status, created_at desc);
+create index files_owner_created_idx on public.files (owner_id, created_at desc);
+create index files_status_created_idx on public.files (status, created_at desc);
+create index file_links_file_id_idx on public.file_links (file_id);
+create index file_links_post_id_idx on public.file_links (post_id);
+create index file_links_comment_id_idx on public.file_links (comment_id);
+create index file_links_shared_idx
+on public.file_links (shared_status, created_at desc);
+create index file_reports_file_id_idx on public.file_reports (file_id);
 
 create or replace function public.current_profile_is_admin()
 returns boolean
@@ -109,6 +204,56 @@ as $$
     from public.profiles
     where id = auth.uid() and is_banned = false
   );
+$$;
+
+create or replace function public.current_profile_daily_upload_bytes()
+returns bigint
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select coalesce(sum(size_bytes), 0)::bigint
+  from public.files
+  where owner_id = auth.uid()
+    and created_at >= now() - interval '1 day';
+$$;
+
+create or replace function public.refresh_file_report_count(target_file uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  unique_reports integer;
+begin
+  select count(distinct reporter_id)
+  into unique_reports
+  from public.file_reports
+  where file_id = target_file;
+
+  update public.files
+  set
+    report_count = unique_reports,
+    status = case
+      when unique_reports >= 3 then 'hidden_by_reports'::public.file_status
+      else status
+    end
+  where id = target_file;
+end;
+$$;
+
+create or replace function public.after_file_report_insert()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  perform public.refresh_file_report_count(new.file_id);
+  return new;
+end;
 $$;
 
 create or replace function public.update_own_profile(
@@ -208,6 +353,14 @@ create trigger comments_set_updated_at
 before update on public.comments
 for each row execute function public.set_updated_at();
 
+create trigger files_set_updated_at
+before update on public.files
+for each row execute function public.set_updated_at();
+
+create trigger file_reports_refresh_count
+after insert on public.file_reports
+for each row execute function public.after_file_report_insert();
+
 create or replace function public.is_uct_email(
   email text,
   email_confirmed_at timestamptz
@@ -300,6 +453,9 @@ alter table public.profiles enable row level security;
 alter table public.posts enable row level security;
 alter table public.comments enable row level security;
 alter table public.reports enable row level security;
+alter table public.files enable row level security;
+alter table public.file_links enable row level security;
+alter table public.file_reports enable row level security;
 
 create policy "Users can read own profile"
 on public.profiles for select
@@ -406,6 +562,164 @@ on public.reports for delete
 to authenticated
 using (public.current_profile_is_admin());
 
+create policy "Users can read available own and public files"
+on public.files for select
+to authenticated
+using (
+  public.current_profile_is_admin()
+  or (
+    public.current_profile_can_participate()
+    and (
+      owner_id = auth.uid()
+      or status = 'available'
+    )
+  )
+);
+
+create policy "Active users can insert own files within quota"
+on public.files for insert
+to authenticated
+with check (
+  owner_id = auth.uid()
+  and public.current_profile_can_participate()
+  and size_bytes <= 104857600
+  and public.current_profile_daily_upload_bytes() + size_bytes <= 1073741824
+);
+
+create policy "Owners and admins can update files"
+on public.files for update
+to authenticated
+using (
+  public.current_profile_is_admin()
+  or (
+    owner_id = auth.uid()
+    and public.current_profile_can_participate()
+  )
+)
+with check (
+  public.current_profile_is_admin()
+  or (
+    owner_id = auth.uid()
+    and public.current_profile_can_participate()
+  )
+);
+
+create policy "Owners and admins can delete files"
+on public.files for delete
+to authenticated
+using (
+  public.current_profile_is_admin()
+  or (
+    owner_id = auth.uid()
+    and public.current_profile_can_participate()
+  )
+);
+
+create policy "Authenticated active users can read file links"
+on public.file_links for select
+to authenticated
+using (
+  public.current_profile_can_participate()
+  or public.current_profile_is_admin()
+);
+
+create policy "Active users can create file links"
+on public.file_links for insert
+to authenticated
+with check (
+  public.current_profile_can_participate()
+  and exists (
+    select 1
+    from public.files
+    where files.id = file_id
+      and files.owner_id = auth.uid()
+  )
+);
+
+create policy "Admins can update file links"
+on public.file_links for update
+to authenticated
+using (public.current_profile_is_admin())
+with check (public.current_profile_is_admin());
+
+create policy "Owners and admins can delete file links"
+on public.file_links for delete
+to authenticated
+using (
+  public.current_profile_is_admin()
+  or exists (
+    select 1
+    from public.files
+    where files.id = file_id
+      and files.owner_id = auth.uid()
+      and public.current_profile_can_participate()
+  )
+);
+
+create policy "Users can read own file reports"
+on public.file_reports for select
+to authenticated
+using (
+  reporter_id = auth.uid()
+  or public.current_profile_is_admin()
+);
+
+create policy "Active users can report files"
+on public.file_reports for insert
+to authenticated
+with check (
+  reporter_id = auth.uid()
+  and public.current_profile_can_participate()
+);
+
+create policy "Admins can delete file reports"
+on public.file_reports for delete
+to authenticated
+using (public.current_profile_is_admin());
+
+create policy "Active users can upload own file objects"
+on storage.objects for insert
+to authenticated
+with check (
+  bucket_id = 'inuni-files'
+  and public.current_profile_can_participate()
+  and (storage.foldername(name))[1] = auth.uid()::text
+);
+
+create policy "Active users can create signed file URLs"
+on storage.objects for select
+to authenticated
+using (
+  bucket_id = 'inuni-files'
+  and (
+    public.current_profile_is_admin()
+    or (
+      public.current_profile_can_participate()
+      and exists (
+        select 1
+        from public.files
+        where files.storage_bucket = 'inuni-files'
+          and files.storage_path = storage.objects.name
+          and files.status = 'available'
+      )
+    )
+  )
+);
+
+create policy "Owners and admins can delete file objects"
+on storage.objects for delete
+to authenticated
+using (
+  bucket_id = 'inuni-files'
+  and (
+    public.current_profile_is_admin()
+    or (
+      public.current_profile_can_participate()
+      and (storage.foldername(name))[1] = auth.uid()::text
+    )
+  )
+);
+
 -- This view intentionally exposes only public profile fields. The base profiles
 -- table remains restricted to the profile owner and administrators.
 create view public.public_profiles
@@ -418,6 +732,9 @@ revoke all on table public.profiles from anon, authenticated;
 revoke all on table public.posts from anon, authenticated;
 revoke all on table public.comments from anon, authenticated;
 revoke all on table public.reports from anon, authenticated;
+revoke all on table public.files from anon, authenticated;
+revoke all on table public.file_links from anon, authenticated;
+revoke all on table public.file_reports from anon, authenticated;
 
 grant select on table public.profiles to authenticated;
 grant select on table public.public_profiles to anon, authenticated;
@@ -426,14 +743,21 @@ grant insert, update, delete on table public.posts to authenticated;
 grant select on table public.comments to anon, authenticated;
 grant insert, update, delete on table public.comments to authenticated;
 grant select, insert, update, delete on table public.reports to authenticated;
+grant select, insert, update, delete on table public.files to authenticated;
+grant select, insert, update, delete on table public.file_links to authenticated;
+grant select, insert, delete on table public.file_reports to authenticated;
 
 revoke all on function public.current_profile_is_admin() from public;
 revoke all on function public.current_profile_can_participate() from public;
+revoke all on function public.current_profile_daily_upload_bytes() from public;
+revoke all on function public.refresh_file_report_count(uuid) from public;
 revoke all on function public.is_uct_email(text, timestamptz) from public;
 revoke all on function public.update_own_profile(text, text) from public;
 revoke all on function public.set_user_ban(uuid, boolean, text) from public;
 
 grant execute on function public.current_profile_is_admin() to authenticated;
 grant execute on function public.current_profile_can_participate() to authenticated;
+grant execute on function public.current_profile_daily_upload_bytes() to authenticated;
+grant execute on function public.refresh_file_report_count(uuid) to authenticated;
 grant execute on function public.update_own_profile(text, text) to authenticated;
 grant execute on function public.set_user_ban(uuid, boolean, text) to authenticated;

@@ -10,9 +10,11 @@ React, Vite, TypeScript, Tailwind CSS, React Router, and Supabase.
 - Six forum categories
 - Named and anonymous posts
 - Comments
+- Post and comment file attachments
+- Shared Files browsing, reporting, and admin approval
 - Post and comment reporting with duplicate protection
-- A simple profile with account status and own posts
-- Administrator report review, content deletion, and user bans
+- A simple profile with account status, own posts, and uploaded files
+- Administrator report review, file review, content deletion, and user bans
 - Supabase Row Level Security for public reading and protected participation
 - Browser-based demo mode when Supabase is not configured
 
@@ -23,7 +25,7 @@ Confessions, and General.
 
 These ideas are intentionally outside version 1 and are recorded for later:
 Word-to-PDF, food tools, budget meals, South African recipes, advertising,
-post attachments, shared files, and complex analytics.
+self-hosted virus scanning, and complex analytics.
 
 ## Run locally
 
@@ -51,7 +53,8 @@ service-role key to this repository, Vite variables, or hosting settings.
 ## Demo mode
 
 Leave both environment variables blank to use local demo data. Posts,
-comments, reports, and moderation state are stored in browser localStorage.
+comments, files, reports, and moderation state are stored in browser
+localStorage.
 
 - Any email and password can be used for a demo student account.
 - Use `admin@inuni.local` to open the demo administrator pages.
@@ -62,18 +65,39 @@ comments, reports, and moderation state are stored in browser localStorage.
 1. Create a free Supabase project.
 2. Open its SQL Editor.
 3. Run [`supabase/schema.sql`](supabase/schema.sql).
-4. Add the project URL and public anon key to `.env`.
-5. In Authentication > URL Configuration, add the local and production
+4. Create the private file bucket described in File storage setup.
+5. Add the project URL and public anon key to `.env`.
+6. In Authentication > URL Configuration, add the local and production
    redirect URLs listed below.
-6. Restart the Vite development server.
-7. Sign up, confirm the email, test password recovery, and test posting and
+7. Restart the Vite development server.
+8. Sign up, confirm the email, test password recovery, and test posting and
    comments.
-8. Run the scenarios in [`supabase/tests/rls.sql`](supabase/tests/rls.sql)
+9. Run the scenarios in [`supabase/tests/rls.sql`](supabase/tests/rls.sql)
    in a disposable project before production use.
 
-The schema creates `profiles`, `posts`, `comments`, and `reports`. RLS lets
-anyone read forum content, while active authenticated users can participate.
-Banned users can still read but cannot post, comment, or report.
+The schema creates `profiles`, `posts`, `comments`, `reports`, `files`,
+`file_links`, and `file_reports`. RLS lets anyone read forum content, while
+active authenticated users can participate. Banned users can still read posts
+and comments but cannot post, comment, upload, download, or report files.
+
+## File storage setup
+
+The first files phase uses a private Supabase Storage bucket named
+`inuni-files`.
+
+Create the bucket in Supabase Storage:
+
+- Name: `inuni-files`
+- Public bucket: off
+- File size limit: `100MB`
+
+Downloads and previews use short-lived signed URLs generated after login.
+Do not make the bucket public. The database schema adds Storage object
+policies for uploads, signed URL creation, and moderator deletion in this
+bucket.
+
+The app keeps file metadata in Postgres so storage can later move to a
+self-hosted S3-compatible service or a server with ClamAV scanning.
 
 ### Auth redirect URLs
 
@@ -109,11 +133,13 @@ Never put an admin role in signup metadata.
 
 - `/` forum feed
 - `/post/:id` post and comments
+- `/files` shared file library
 - `/create` create a post
 - `/login` registration and login
 - `/reset-password` password reset link landing page
 - `/profile` current user profile
 - `/admin` open report queue
+- `/admin/files` file review queue
 - `/admin/users` user search and bans
 
 ## Free deployment
