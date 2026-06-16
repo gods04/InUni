@@ -1,14 +1,21 @@
 import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { AttachmentPicker } from '../components/AttachmentPicker';
 import { BanNotice } from '../components/BanNotice';
 import { CommentList } from '../components/CommentList';
 import { EmptyState } from '../components/EmptyState';
 import { ErrorState } from '../components/ErrorState';
+import { FileList } from '../components/FileList';
 import { LoadingState } from '../components/LoadingState';
 import { ReportDialog } from '../components/ReportDialog';
 import { UctVerifiedBadge } from '../components/UctVerifiedBadge';
 import { useAuth } from '../hooks/useAuth';
+import {
+  getFilesForComment,
+  getFilesForPost,
+  uploadLinkedFiles,
+} from '../lib/fileApi';
 import {
   createComment,
   createReport,
@@ -18,6 +25,7 @@ import {
 import { formatRelativeTime } from '../lib/format';
 import { canParticipate } from '../lib/permissions';
 import { validateComment } from '../lib/validation';
+import type { FileUploadDraft, LinkedFile } from '../types/files';
 import type { ForumComment, Post, ReportTarget } from '../types/forum';
 
 export function PostDetailPage() {
@@ -25,7 +33,10 @@ export function PostDetailPage() {
   const { user } = useAuth();
   const [post, setPost] = useState<Post | null>(null);
   const [comments, setComments] = useState<ForumComment[]>([]);
+  const [postFiles, setPostFiles] = useState<LinkedFile[]>([]);
+  const [commentFiles, setCommentFiles] = useState<Record<string, LinkedFile[]>>({});
   const [commentText, setCommentText] = useState('');
+  const [commentAttachments, setCommentAttachments] = useState<FileUploadDraft[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -47,9 +58,23 @@ export function PostDetailPage() {
 
       try {
         const [nextPost, nextComments] = await Promise.all([getPost(id), getComments(id)]);
+        const [nextPostFiles, nextCommentFileEntries] = nextPost
+          ? await Promise.all([
+              getFilesForPost(id),
+              Promise.all(
+                nextComments.map(async (comment) => [
+                  comment.id,
+                  await getFilesForComment(comment.id),
+                ] as const),
+              ),
+            ])
+          : [[], []];
+
         if (isActive) {
           setPost(nextPost);
           setComments(nextComments);
+          setPostFiles(nextPostFiles);
+          setCommentFiles(Object.fromEntries(nextCommentFileEntries));
         }
       } catch (caughtError) {
         if (isActive) {
@@ -93,11 +118,25 @@ export function PostDetailPage() {
 
     try {
       const comment = await createComment({ postId: post.id, content: commentText.trim() }, user);
+      const uploadedFiles =
+        commentAttachments.length > 0
+          ? await uploadLinkedFiles(
+              { type: 'comment', commentId: comment.id },
+              commentAttachments,
+              user,
+            )
+          : [];
       setComments((current) => [...current, comment]);
+      setCommentFiles((current) =>
+        uploadedFiles.length > 0
+          ? { ...current, [comment.id]: uploadedFiles }
+          : current,
+      );
       setPost((current) =>
         current ? { ...current, commentCount: current.commentCount + 1 } : current,
       );
       setCommentText('');
+      setCommentAttachments([]);
     } catch (caughtError) {
       setCommentError(caughtError instanceof Error ? caughtError.message : 'Could not add comment.');
     } finally {
@@ -169,6 +208,15 @@ export function PostDetailPage() {
           {post.content}
         </div>
 
+        {postFiles.length > 0 ? (
+          <div className="mt-6">
+            <h2 className="text-base font-semibold text-ink">Attachments</h2>
+            <div className="mt-3">
+              <FileList files={postFiles} variant="embedded" />
+            </div>
+          </div>
+        ) : null}
+
         <div className="mt-6 border-t border-slate-100 pt-5">
           <div className="flex flex-wrap items-center gap-3">
             {user ? (
@@ -203,6 +251,7 @@ export function PostDetailPage() {
 
         <CommentList
           comments={comments}
+          filesByCommentId={commentFiles}
           onReport={user ? openReport : undefined}
           reportDisabled={Boolean(user && !canParticipate(user.profile))}
         />
@@ -221,6 +270,13 @@ export function PostDetailPage() {
               disabled={!user || submitting}
             />
           </label>
+
+          <AttachmentPicker
+            disabled={!user || submitting}
+            maxFiles={5}
+            onChange={setCommentAttachments}
+            value={commentAttachments}
+          />
 
           {commentError ? <ErrorState message={commentError} /> : null}
 

@@ -1,13 +1,16 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { AttachmentPicker } from '../components/AttachmentPicker';
 import { BanNotice } from '../components/BanNotice';
 import { ErrorState } from '../components/ErrorState';
 import { LoginPrompt } from '../components/LoginPrompt';
 import { useAuth } from '../hooks/useAuth';
+import { uploadLinkedFiles } from '../lib/fileApi';
 import { createPost } from '../lib/forumApi';
 import { canParticipate } from '../lib/permissions';
 import { validatePost } from '../lib/validation';
+import type { FileUploadDraft } from '../types/files';
 import { categories, type Category } from '../types/forum';
 
 export function CreatePostPage() {
@@ -17,6 +20,7 @@ export function CreatePostPage() {
   const [content, setContent] = useState('');
   const [category, setCategory] = useState<Category>('General');
   const [isAnonymous, setIsAnonymous] = useState(false);
+  const [attachments, setAttachments] = useState<FileUploadDraft[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -47,6 +51,10 @@ export function CreatePostPage() {
         },
         user,
       );
+
+      if (attachments.length > 0) {
+        await uploadLinkedFiles({ type: 'post', postId: post.id }, attachments, user);
+      }
 
       navigate(`/post/${post.id}`);
     } catch (caughtError) {
@@ -125,6 +133,12 @@ export function CreatePostPage() {
             </span>
           </span>
         </label>
+
+        <AttachmentPicker
+          disabled={submitting}
+          onChange={setAttachments}
+          value={attachments}
+        />
 
         {error ? <ErrorState message={error} /> : null}
 

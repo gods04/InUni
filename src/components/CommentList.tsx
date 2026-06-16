@@ -1,16 +1,20 @@
 import { Link } from 'react-router-dom';
 import { formatRelativeTime } from '../lib/format';
+import type { LinkedFile } from '../types/files';
 import type { ForumComment, ReportTarget } from '../types/forum';
+import { FileList } from './FileList';
 import { UctVerifiedBadge } from './UctVerifiedBadge';
 
 interface CommentListProps {
   comments: ForumComment[];
+  filesByCommentId?: Record<string, LinkedFile[]>;
   onReport?: (target: ReportTarget) => void;
   reportDisabled?: boolean;
 }
 
 export function CommentList({
   comments,
+  filesByCommentId = {},
   onReport,
   reportDisabled = false,
 }: CommentListProps) {
@@ -59,6 +63,11 @@ export function CommentList({
             )}
           </div>
           <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-700">{comment.content}</p>
+          {filesByCommentId[comment.id]?.length ? (
+            <div className="mt-3">
+              <FileList files={filesByCommentId[comment.id]} variant="embedded" />
+            </div>
+          ) : null}
         </article>
       ))}
     </div>

@@ -1,3 +1,5 @@
+import type { FileUploadDraft, LinkedFile } from './files';
+
 export const categories = [
   'Study',
   'Campus Life',
@@ -41,6 +43,7 @@ export interface Post {
   isAnonymous: boolean;
   createdAt: string;
   commentCount: number;
+  attachments?: LinkedFile[];
 }
 
 export interface ForumComment {
@@ -51,6 +54,7 @@ export interface ForumComment {
   authorIsUctVerified: boolean;
   content: string;
   createdAt: string;
+  attachments?: LinkedFile[];
 }
 
 export interface NewPostInput {
@@ -58,11 +62,13 @@ export interface NewPostInput {
   content: string;
   category: Category;
   isAnonymous: boolean;
+  attachments?: FileUploadDraft[];
 }
 
 export interface NewCommentInput {
   postId: string;
   content: string;
+  attachments?: FileUploadDraft[];
 }
 
 export type ReportStatus = 'open' | 'resolved' | 'dismissed';

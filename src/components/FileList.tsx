@@ -8,6 +8,7 @@ interface FileListProps {
   onDownload?: (file: LinkedFile) => Promise<void> | void;
   onPreview?: (file: LinkedFile) => Promise<void> | void;
   onReport?: (file: LinkedFile) => void;
+  variant?: 'panel' | 'embedded';
 }
 
 function formatFileSize(sizeBytes: number): string {
@@ -38,6 +39,7 @@ export function FileList({
   onDownload,
   onPreview,
   onReport,
+  variant = 'panel',
 }: FileListProps) {
   if (files.length === 0) {
     return (
@@ -54,7 +56,11 @@ export function FileList({
         return (
           <article
             aria-label={`File ${file.displayFilename}`}
-            className="panel grid gap-4 p-4 sm:grid-cols-[1fr_auto] sm:items-center"
+            className={
+              variant === 'panel'
+                ? 'panel grid gap-4 p-4 sm:grid-cols-[1fr_auto] sm:items-center'
+                : 'grid gap-4 rounded-lg border border-line bg-slate-50 p-3 sm:grid-cols-[1fr_auto] sm:items-center'
+            }
             key={file.id}
           >
             <div className="min-w-0">
