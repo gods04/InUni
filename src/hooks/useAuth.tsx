@@ -1,4 +1,11 @@
-import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import type { ReactNode } from 'react';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 import { getAuthRedirectUrl } from '../lib/authRedirect';
@@ -15,8 +22,12 @@ export interface AuthContextValue {
   user: ForumUser | null;
   loading: boolean;
   isDemoMode: boolean;
+  hasAuthSession: boolean;
+  hasPasswordRecoverySession: boolean;
   signIn: (email: string, password: string) => Promise<AuthResult>;
   signUp: (email: string, password: string) => Promise<AuthResult>;
+  requestPasswordReset: (email: string) => Promise<AuthResult>;
+  updatePassword: (password: string) => Promise<AuthResult>;
   signOut: () => Promise<void>;
 }
 
@@ -32,6 +43,30 @@ interface ProfileRow {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 const demoUserKey = 'inuni.demoUser';
+const passwordRecoverySessionKey = 'inuni.passwordRecoverySession';
+const passwordRecoveryConfigurationMessage =
+  'Password recovery requires Supabase configuration.';
+
+function readPasswordRecoverySessionUserId(): string | null {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+
+  return window.sessionStorage.getItem(passwordRecoverySessionKey);
+}
+
+function writePasswordRecoverySession(userId: string | null): void {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  if (userId) {
+    window.sessionStorage.setItem(passwordRecoverySessionKey, userId);
+    return;
+  }
+
+  window.sessionStorage.removeItem(passwordRecoverySessionKey);
+}
 
 function mapProfile(row: ProfileRow): Profile {
   return {
@@ -141,60 +176,112 @@ function writeDemoUser(user: ForumUser | null): void {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<ForumUser | null>(null);
+  const [user, setUser] = useState<ForumUser | null>(() =>
+    isSupabaseConfigured ? null : readDemoUser(),
+  );
+  const [hasAuthSession, setHasAuthSession] = useState(Boolean(user));
+  const [hasPasswordRecoverySession, setHasPasswordRecoverySession] =
+    useState(false);
   const [loading, setLoading] = useState(true);
+  const hydrationGeneration = useRef(0);
 
   useEffect(() => {
     let isMounted = true;
 
     if (!isSupabaseConfigured || !supabase) {
-      setUser(readDemoUser());
+      const demoUser = readDemoUser();
+      setUser(demoUser);
+      setHasAuthSession(Boolean(demoUser));
       setLoading(false);
       return () => {
         isMounted = false;
       };
     }
 
-    const hydrate = async (sessionUser: SupabaseUser | null) => {
+    const hydrate = async (
+      sessionUser: SupabaseUser | null,
+      generation: number,
+    ) => {
+      if (!isMounted || generation !== hydrationGeneration.current) {
+        return;
+      }
+
+      setHasAuthSession(Boolean(sessionUser));
+
       if (!sessionUser) {
-        if (isMounted) {
-          setUser(null);
-          setLoading(false);
-        }
+        setUser(null);
+        setLoading(false);
         return;
       }
 
       try {
         const nextUser = await loadSupabaseUser(sessionUser);
-        if (isMounted) {
+        if (isMounted && generation === hydrationGeneration.current) {
           setUser(nextUser);
         }
       } catch {
-        if (isMounted) {
+        if (isMounted && generation === hydrationGeneration.current) {
           setUser(null);
         }
       } finally {
-        if (isMounted) {
+        if (isMounted && generation === hydrationGeneration.current) {
           setLoading(false);
         }
       }
     };
 
+    const initialGeneration = ++hydrationGeneration.current;
     void supabase.auth.getSession().then(({ data }) => {
-      void hydrate(data.session?.user ?? null);
+      const sessionUser = data.session?.user ?? null;
+      if (
+        isMounted &&
+        initialGeneration === hydrationGeneration.current
+      ) {
+        const recoveryUserId = readPasswordRecoverySessionUserId();
+        const isRecoverySession =
+          Boolean(sessionUser) && recoveryUserId === sessionUser?.id;
+
+        if (!isRecoverySession) {
+          writePasswordRecoverySession(null);
+        }
+        setHasPasswordRecoverySession(isRecoverySession);
+      }
+
+      void hydrate(sessionUser, initialGeneration);
     });
 
     const { data: listener } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
+      (event, session) => {
+        const generation = ++hydrationGeneration.current;
+
+        if (event === 'PASSWORD_RECOVERY') {
+          const recoveryUserId = session?.user.id ?? null;
+          writePasswordRecoverySession(recoveryUserId);
+          setHasPasswordRecoverySession(Boolean(recoveryUserId));
+        } else if (event === 'INITIAL_SESSION') {
+          const recoveryUserId = readPasswordRecoverySessionUserId();
+          const isRecoverySession =
+            Boolean(session?.user) && recoveryUserId === session?.user.id;
+
+          if (!isRecoverySession) {
+            writePasswordRecoverySession(null);
+          }
+          setHasPasswordRecoverySession(isRecoverySession);
+        } else if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
+          writePasswordRecoverySession(null);
+          setHasPasswordRecoverySession(false);
+        }
+
         setLoading(true);
         window.setTimeout(() => {
-          void hydrate(session?.user ?? null);
+          void hydrate(session?.user ?? null, generation);
         }, 0);
       },
     );
 
     return () => {
       isMounted = false;
+      hydrationGeneration.current += 1;
       listener.subscription.unsubscribe();
     };
   }, []);
@@ -204,11 +291,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user,
       loading,
       isDemoMode: !isSupabaseConfigured,
+      hasAuthSession,
+      hasPasswordRecoverySession,
       async signIn(email: string, password: string) {
         if (!isSupabaseConfigured || !supabase) {
           const demoUser = createDemoUser(email);
           writeDemoUser(demoUser);
           setUser(demoUser);
+          setHasAuthSession(true);
           return {};
         }
 
@@ -223,6 +313,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (data.user) {
           try {
             setUser(await loadSupabaseUser(data.user));
+            setHasAuthSession(true);
           } catch (profileError) {
             return {
               error:
@@ -240,6 +331,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const demoUser = createDemoUser(email);
           writeDemoUser(demoUser);
           setUser(demoUser);
+          setHasAuthSession(true);
           return {};
         }
 
@@ -263,6 +355,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (data.user && data.session) {
           try {
             setUser(await loadSupabaseUser(data.user));
+            setHasAuthSession(true);
             return {};
           } catch (profileError) {
             return {
@@ -279,16 +372,54 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             'Account created. Check your inbox to confirm your email before logging in.',
         };
       },
+      async requestPasswordReset(email: string) {
+        if (!isSupabaseConfigured || !supabase) {
+          return { message: passwordRecoveryConfigurationMessage };
+        }
+
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: getAuthRedirectUrl(
+            window.location.origin,
+            '/reset-password',
+          ),
+        });
+
+        if (error) {
+          return { error: error.message };
+        }
+
+        return {
+          message:
+            'If an account exists for that email, a password reset link has been sent.',
+        };
+      },
+      async updatePassword(password: string) {
+        if (!isSupabaseConfigured || !supabase) {
+          return { message: passwordRecoveryConfigurationMessage };
+        }
+
+        const { error } = await supabase.auth.updateUser({ password });
+        if (error) {
+          return { error: error.message };
+        }
+
+        writePasswordRecoverySession(null);
+        setHasPasswordRecoverySession(false);
+        return {};
+      },
       async signOut() {
         if (isSupabaseConfigured && supabase) {
           await supabase.auth.signOut();
         }
 
         writeDemoUser(null);
+        writePasswordRecoverySession(null);
         setUser(null);
+        setHasAuthSession(false);
+        setHasPasswordRecoverySession(false);
       },
     }),
-    [loading, user],
+    [hasAuthSession, hasPasswordRecoverySession, loading, user],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -28,8 +28,12 @@ describe('AdminRoute', () => {
       },
       loading: false,
       isDemoMode: true,
+      hasAuthSession: true,
+      hasPasswordRecoverySession: false,
       signIn: vi.fn(),
       signUp: vi.fn(),
+      requestPasswordReset: vi.fn(),
+      updatePassword: vi.fn(),
       signOut: vi.fn(),
     });
 

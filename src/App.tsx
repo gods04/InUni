@@ -9,6 +9,7 @@ import { CreatePostPage } from './pages/CreatePostPage';
 import { HomePage } from './pages/HomePage';
 import { PostDetailPage } from './pages/PostDetailPage';
 import { ProfilePage } from './pages/ProfilePage';
+import { ResetPasswordPage } from './pages/ResetPasswordPage';
 
 export default function App() {
   return (
@@ -25,6 +26,7 @@ export default function App() {
           }
         />
         <Route path="/login" element={<AuthPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route
           path="/profile"
           element={
