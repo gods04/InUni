@@ -5,7 +5,7 @@ React, Vite, TypeScript, Tailwind CSS, React Router, and Supabase.
 
 ## MVP features
 
-- Email registration, login, logout, and session restoration
+- Email registration, login, password recovery, logout, and session restoration
 - UCT Verified status for confirmed `@uct.ac.za` and `@myuct.ac.za` accounts
 - Six forum categories
 - Named and anonymous posts
@@ -63,14 +63,35 @@ comments, reports, and moderation state are stored in browser localStorage.
 2. Open its SQL Editor.
 3. Run [`supabase/schema.sql`](supabase/schema.sql).
 4. Add the project URL and public anon key to `.env`.
-5. Restart the Vite development server.
-6. Sign up, confirm the email, and test posting and comments.
-7. Run the scenarios in [`supabase/tests/rls.sql`](supabase/tests/rls.sql)
+5. In Authentication > URL Configuration, add the local and production
+   redirect URLs listed below.
+6. Restart the Vite development server.
+7. Sign up, confirm the email, test password recovery, and test posting and
+   comments.
+8. Run the scenarios in [`supabase/tests/rls.sql`](supabase/tests/rls.sql)
    in a disposable project before production use.
 
 The schema creates `profiles`, `posts`, `comments`, and `reports`. RLS lets
 anyone read forum content, while active authenticated users can participate.
 Banned users can still read but cannot post, comment, or report.
+
+### Auth redirect URLs
+
+Add these Supabase redirect URLs before testing email links:
+
+```text
+https://inuni.co.za/profile
+https://inuni.co.za/reset-password
+https://inuni-uct.pages.dev/profile
+https://inuni-uct.pages.dev/reset-password
+http://localhost:5173/profile
+http://localhost:5173/reset-password
+http://127.0.0.1:5173/profile
+http://127.0.0.1:5173/reset-password
+```
+
+If password reset emails time out, check Supabase Authentication SMTP settings.
+For Brevo, port `2525` is usually safer than port `587` on Supabase.
 
 ## Create the first administrator
 
@@ -90,6 +111,7 @@ Never put an admin role in signup metadata.
 - `/post/:id` post and comments
 - `/create` create a post
 - `/login` registration and login
+- `/reset-password` password reset link landing page
 - `/profile` current user profile
 - `/admin` open report queue
 - `/admin/users` user search and bans
