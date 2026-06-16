@@ -1,40 +1,123 @@
+import { lazy, Suspense } from 'react';
+import type { ReactNode } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { AppLayout } from './components/AppLayout';
 import { AdminRoute } from './components/AdminRoute';
+import { LoadingState } from './components/LoadingState';
 import { ProtectedRoute } from './components/ProtectedRoute';
-import { AdminPage } from './pages/AdminPage';
-import { AdminFilesPage } from './pages/AdminFilesPage';
-import { AdminUsersPage } from './pages/AdminUsersPage';
-import { AuthPage } from './pages/AuthPage';
-import { CreatePostPage } from './pages/CreatePostPage';
-import { FilesPage } from './pages/FilesPage';
-import { HomePage } from './pages/HomePage';
-import { PostDetailPage } from './pages/PostDetailPage';
-import { ProfilePage } from './pages/ProfilePage';
-import { ResetPasswordPage } from './pages/ResetPasswordPage';
+
+const AdminPage = lazy(() =>
+  import('./pages/AdminPage').then((module) => ({ default: module.AdminPage })),
+);
+const AdminFilesPage = lazy(() =>
+  import('./pages/AdminFilesPage').then((module) => ({
+    default: module.AdminFilesPage,
+  })),
+);
+const AdminUsersPage = lazy(() =>
+  import('./pages/AdminUsersPage').then((module) => ({
+    default: module.AdminUsersPage,
+  })),
+);
+const AuthPage = lazy(() =>
+  import('./pages/AuthPage').then((module) => ({ default: module.AuthPage })),
+);
+const CreatePostPage = lazy(() =>
+  import('./pages/CreatePostPage').then((module) => ({
+    default: module.CreatePostPage,
+  })),
+);
+const FilesPage = lazy(() =>
+  import('./pages/FilesPage').then((module) => ({ default: module.FilesPage })),
+);
+const HomePage = lazy(() =>
+  import('./pages/HomePage').then((module) => ({ default: module.HomePage })),
+);
+const PostDetailPage = lazy(() =>
+  import('./pages/PostDetailPage').then((module) => ({
+    default: module.PostDetailPage,
+  })),
+);
+const ProfilePage = lazy(() =>
+  import('./pages/ProfilePage').then((module) => ({
+    default: module.ProfilePage,
+  })),
+);
+const ResetPasswordPage = lazy(() =>
+  import('./pages/ResetPasswordPage').then((module) => ({
+    default: module.ResetPasswordPage,
+  })),
+);
+
+function PageSuspense({ children }: { children: ReactNode }) {
+  return (
+    <Suspense fallback={<LoadingState label="Loading page..." />}>
+      {children}
+    </Suspense>
+  );
+}
 
 export default function App() {
   return (
     <Routes>
       <Route element={<AppLayout />}>
-        <Route index element={<HomePage />} />
-        <Route path="/files" element={<FilesPage />} />
-        <Route path="/post/:id" element={<PostDetailPage />} />
+        <Route
+          index
+          element={
+            <PageSuspense>
+              <HomePage />
+            </PageSuspense>
+          }
+        />
+        <Route
+          path="/files"
+          element={
+            <PageSuspense>
+              <FilesPage />
+            </PageSuspense>
+          }
+        />
+        <Route
+          path="/post/:id"
+          element={
+            <PageSuspense>
+              <PostDetailPage />
+            </PageSuspense>
+          }
+        />
         <Route
           path="/create"
           element={
             <ProtectedRoute>
-              <CreatePostPage />
+              <PageSuspense>
+                <CreatePostPage />
+              </PageSuspense>
             </ProtectedRoute>
           }
         />
-        <Route path="/login" element={<AuthPage />} />
-        <Route path="/reset-password" element={<ResetPasswordPage />} />
+        <Route
+          path="/login"
+          element={
+            <PageSuspense>
+              <AuthPage />
+            </PageSuspense>
+          }
+        />
+        <Route
+          path="/reset-password"
+          element={
+            <PageSuspense>
+              <ResetPasswordPage />
+            </PageSuspense>
+          }
+        />
         <Route
           path="/profile"
           element={
             <ProtectedRoute>
-              <ProfilePage />
+              <PageSuspense>
+                <ProfilePage />
+              </PageSuspense>
             </ProtectedRoute>
           }
         />
@@ -42,7 +125,9 @@ export default function App() {
           path="/admin"
           element={
             <AdminRoute>
-              <AdminPage />
+              <PageSuspense>
+                <AdminPage />
+              </PageSuspense>
             </AdminRoute>
           }
         />
@@ -50,7 +135,9 @@ export default function App() {
           path="/admin/users"
           element={
             <AdminRoute>
-              <AdminUsersPage />
+              <PageSuspense>
+                <AdminUsersPage />
+              </PageSuspense>
             </AdminRoute>
           }
         />
@@ -58,7 +145,9 @@ export default function App() {
           path="/admin/files"
           element={
             <AdminRoute>
-              <AdminFilesPage />
+              <PageSuspense>
+                <AdminFilesPage />
+              </PageSuspense>
             </AdminRoute>
           }
         />

@@ -21,20 +21,22 @@ vi.mock('./hooks/useAuth', () => ({
 }));
 
 describe('MVP navigation', () => {
-  it('shows approved public destinations for a signed-out visitor', () => {
+  it('shows approved public destinations for a signed-out visitor', async () => {
     render(
       <MemoryRouter initialEntries={['/']}>
         <App />
       </MemoryRouter>,
     );
-    expect(screen.getByRole('link', { name: 'Forum' })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('link', { name: 'Forum' }),
+    ).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Files' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Login' })).toBeInTheDocument();
     expect(screen.queryByText('Tools')).not.toBeInTheDocument();
     expect(screen.queryByText('Shared Files')).not.toBeInTheDocument();
   });
 
-  it('renders the public password reset route', () => {
+  it('renders the public password reset route', async () => {
     render(
       <MemoryRouter initialEntries={['/reset-password']}>
         <App />
@@ -42,7 +44,7 @@ describe('MVP navigation', () => {
     );
 
     expect(
-      screen.getByRole('heading', { name: 'Reset link expired' }),
+      await screen.findByRole('heading', { name: 'Reset link expired' }),
     ).toBeInTheDocument();
   });
 });
