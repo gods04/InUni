@@ -423,6 +423,18 @@ export const mockFileStore = {
     return sortLinkedFiles(sharedFiles, filters.sort ?? 'newest');
   },
 
+  async getUserFiles(userId: string): Promise<LinkedFile[]> {
+    const links = getLinks();
+    const files = getFiles()
+      .filter((file) => file.ownerId === userId)
+      .sort(
+        (left, right) =>
+          new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime(),
+      );
+
+    return linkFiles(files, links);
+  },
+
   async approveSharedFile(fileId: string): Promise<void> {
     const links = getLinks();
     const nextLinks = links.map((link) =>

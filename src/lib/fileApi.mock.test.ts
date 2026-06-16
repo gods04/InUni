@@ -1,7 +1,9 @@
 import { beforeEach, describe, expect, it } from 'vitest';
+import { getUserFiles } from './fileApi';
 import { createDemoUserForFiles, mockFileStore } from './mockFileStore';
 
 const student = createDemoUserForFiles('student@uct.ac.za');
+const otherStudent = createDemoUserForFiles('other-student@uct.ac.za');
 const reporterA = createDemoUserForFiles('reporter-a@uct.ac.za');
 const reporterB = createDemoUserForFiles('reporter-b@uct.ac.za');
 const reporterC = createDemoUserForFiles('reporter-c@uct.ac.za');
@@ -126,5 +128,40 @@ describe('mockFileStore', () => {
         user: reporterA,
       }),
     ).rejects.toThrow('You have already reported this file.');
+  });
+
+  it('returns files uploaded by one owner', async () => {
+    await mockFileStore.uploadLinkedFiles({
+      context: { type: 'post', postId: 'post-1' },
+      drafts: [
+        {
+          file: makeFile('mine.pdf', 'application/pdf'),
+          description: '',
+          submitToSharedFiles: false,
+          courseCode: '',
+          campusOrFaculty: '',
+          tags: '',
+        },
+      ],
+      user: student,
+    });
+    await mockFileStore.uploadLinkedFiles({
+      context: { type: 'post', postId: 'post-2' },
+      drafts: [
+        {
+          file: makeFile('theirs.pdf', 'application/pdf'),
+          description: '',
+          submitToSharedFiles: false,
+          courseCode: '',
+          campusOrFaculty: '',
+          tags: '',
+        },
+      ],
+      user: otherStudent,
+    });
+
+    const files = await getUserFiles(student.id);
+
+    expect(files.map((file) => file.displayFilename)).toEqual(['mine.pdf']);
   });
 });

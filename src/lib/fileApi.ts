@@ -44,6 +44,11 @@ export async function getSharedFiles(
   return [];
 }
 
+export async function getUserFiles(userId: string): Promise<LinkedFile[]> {
+  if (!isSupabaseConfigured) return mockFileStore.getUserFiles(userId);
+  return [];
+}
+
 export async function reportFile(
   input: FileReportInput,
   user: ForumUser,

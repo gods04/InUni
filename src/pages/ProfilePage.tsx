@@ -3,13 +3,16 @@ import { Link } from 'react-router-dom';
 import { BanNotice } from '../components/BanNotice';
 import { EmptyState } from '../components/EmptyState';
 import { ErrorState } from '../components/ErrorState';
+import { FileList } from '../components/FileList';
 import { LoadingState } from '../components/LoadingState';
 import { LoginPrompt } from '../components/LoginPrompt';
 import { PostCard } from '../components/PostCard';
 import { UctVerifiedBadge } from '../components/UctVerifiedBadge';
 import { useAuth } from '../hooks/useAuth';
+import { createSignedDownloadUrl, getUserFiles } from '../lib/fileApi';
 import { getUserPosts } from '../lib/forumApi';
-import { isUctVerifiedEmail } from '../lib/permissions';
+import { canParticipate, isUctVerifiedEmail } from '../lib/permissions';
+import type { LinkedFile } from '../types/files';
 import type { Post } from '../types/forum';
 
 export function ProfilePage() {
@@ -17,6 +20,10 @@ export function ProfilePage() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [files, setFiles] = useState<LinkedFile[]>([]);
+  const [filesLoading, setFilesLoading] = useState(false);
+  const [filesError, setFilesError] = useState<string | null>(null);
+  const [filesStatus, setFilesStatus] = useState<string | null>(null);
 
   useEffect(() => {
     let isActive = true;
@@ -51,6 +58,63 @@ export function ProfilePage() {
       isActive = false;
     };
   }, [user]);
+
+  useEffect(() => {
+    let isActive = true;
+
+    async function loadUserFiles() {
+      if (!user) {
+        return;
+      }
+
+      setFilesLoading(true);
+      setFilesError(null);
+
+      try {
+        const nextFiles = await getUserFiles(user.id);
+        if (isActive) {
+          setFiles(nextFiles);
+        }
+      } catch (caughtError) {
+        if (isActive) {
+          setFilesError(
+            caughtError instanceof Error
+              ? caughtError.message
+              : 'Could not load your files.',
+          );
+        }
+      } finally {
+        if (isActive) {
+          setFilesLoading(false);
+        }
+      }
+    }
+
+    void loadUserFiles();
+
+    return () => {
+      isActive = false;
+    };
+  }, [user]);
+
+  async function openFile(file: LinkedFile, target: 'download' | 'preview') {
+    setFilesStatus(null);
+
+    if (!user) return;
+
+    if (!canParticipate(user.profile)) {
+      setFilesStatus('Your restricted account cannot download files.');
+      return;
+    }
+
+    const signedUrl = await createSignedDownloadUrl(file.id);
+    if (target === 'preview') {
+      window.open(signedUrl.url, '_blank', 'noopener,noreferrer');
+      return;
+    }
+
+    window.location.assign(signedUrl.url);
+  }
 
   if (!user) {
     return <LoginPrompt message="Log in to view your profile and posts." />;
@@ -92,6 +156,29 @@ export function ProfilePage() {
       {user.profile.isBanned ? (
         <BanNotice reason={user.profile.banReason} />
       ) : null}
+
+      <section className="grid gap-4">
+        <div>
+          <h2 className="section-title">My uploaded files</h2>
+          <p className="mt-1 text-sm text-slate-600">
+            Files you uploaded that still exist on InUni.
+          </p>
+        </div>
+
+        {filesStatus ? (
+          <p className="text-sm font-semibold text-slate-600">{filesStatus}</p>
+        ) : null}
+        {filesError ? <ErrorState message={filesError} /> : null}
+        {filesLoading ? <LoadingState label="Loading your files..." /> : null}
+        {!filesLoading && !filesError ? (
+          <FileList
+            emptyMessage="No uploaded files yet."
+            files={files}
+            onDownload={(file) => openFile(file, 'download')}
+            onPreview={(file) => openFile(file, 'preview')}
+          />
+        ) : null}
+      </section>
 
       <section className="grid gap-4">
         <div>
