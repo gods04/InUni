@@ -3,6 +3,7 @@ import {
   FILE_REPORT_HIDE_THRESHOLD,
   MAX_ATTACHMENTS_PER_CONTEXT,
   MAX_DAILY_UPLOAD_BYTES,
+  MAX_FILE_DESCRIPTION_LENGTH,
   MAX_FILE_SIZE_BYTES,
   classifyFileType,
   canPreviewFile,
@@ -35,6 +36,12 @@ describe('file limits', () => {
       'You have reached the 1GB daily upload limit.',
     );
   });
+
+  it('accepts exact upload limits', () => {
+    expect(validateFileSize(MAX_FILE_SIZE_BYTES)).toBeNull();
+    expect(validateAttachmentCount(MAX_ATTACHMENTS_PER_CONTEXT)).toBeNull();
+    expect(validateDailyUpload(MAX_DAILY_UPLOAD_BYTES - 1, 1)).toBeNull();
+  });
 });
 
 describe('file metadata', () => {
@@ -42,6 +49,12 @@ describe('file metadata', () => {
     expect(validateFileDescription('a'.repeat(201))).toBe(
       'File descriptions must be 200 characters or fewer.',
     );
+  });
+
+  it('accepts descriptions at the character limit', () => {
+    expect(
+      validateFileDescription('a'.repeat(MAX_FILE_DESCRIPTION_LENGTH)),
+    ).toBeNull();
   });
 
   it('classifies common file types', () => {
@@ -56,10 +69,18 @@ describe('file metadata', () => {
     expect(classifyFileType('archive.zip', 'application/zip')).toBe('archive');
   });
 
+  it('classifies archives from MIME type without an extension', () => {
+    expect(classifyFileType('upload', 'application/zip')).toBe('archive');
+  });
+
   it('previews only images and PDFs', () => {
     expect(canPreviewFile('image/png')).toBe(true);
     expect(canPreviewFile('application/pdf')).toBe(true);
     expect(canPreviewFile('application/zip')).toBe(false);
+  });
+
+  it('normalizes MIME types before checking preview support', () => {
+    expect(canPreviewFile('Application/PDF; charset=binary')).toBe(true);
   });
 });
 

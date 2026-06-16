@@ -22,11 +22,21 @@ const spreadsheetMimeTypes = new Set([
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
 ]);
 
+const archiveMimeTypes = new Set([
+  'application/zip',
+  'application/x-rar-compressed',
+  'application/x-7z-compressed',
+]);
+
 const archiveExtensions = new Set(['zip', 'rar', '7z']);
 
 function getExtension(filename: string): string {
   const parts = filename.toLowerCase().split('.');
   return parts.length > 1 ? parts.at(-1) ?? '' : '';
+}
+
+function normalizeMimeType(mimeType: string): string {
+  return mimeType.split(';')[0].trim().toLowerCase();
 }
 
 export function validateFileSize(sizeBytes: number): string | null {
@@ -57,34 +67,49 @@ export function validateFileDescription(description: string): string | null {
 }
 
 export function canPreviewFile(mimeType: string): boolean {
-  return mimeType.startsWith('image/') || mimeType === 'application/pdf';
+  const normalizedMimeType = normalizeMimeType(mimeType);
+
+  return (
+    normalizedMimeType.startsWith('image/') ||
+    normalizedMimeType === 'application/pdf'
+  );
 }
 
 export function classifyFileType(filename: string, mimeType: string): FileKind {
   const extension = getExtension(filename);
+  const normalizedMimeType = normalizeMimeType(mimeType);
 
-  if (mimeType.startsWith('image/')) return 'image';
-  if (mimeType === 'application/pdf' || extension === 'pdf') return 'pdf';
+  if (normalizedMimeType.startsWith('image/')) return 'image';
+  if (normalizedMimeType === 'application/pdf' || extension === 'pdf') {
+    return 'pdf';
+  }
   if (
-    officeDocumentMimeTypes.has(mimeType) ||
+    officeDocumentMimeTypes.has(normalizedMimeType) ||
     ['doc', 'docx'].includes(extension)
   ) {
     return 'document';
   }
   if (
-    presentationMimeTypes.has(mimeType) ||
+    presentationMimeTypes.has(normalizedMimeType) ||
     ['ppt', 'pptx'].includes(extension)
   ) {
     return 'presentation';
   }
   if (
-    spreadsheetMimeTypes.has(mimeType) ||
+    spreadsheetMimeTypes.has(normalizedMimeType) ||
     ['xls', 'xlsx'].includes(extension)
   ) {
     return 'spreadsheet';
   }
-  if (mimeType.startsWith('text/') || extension === 'txt') return 'text';
-  if (archiveExtensions.has(extension)) return 'archive';
+  if (normalizedMimeType.startsWith('text/') || extension === 'txt') {
+    return 'text';
+  }
+  if (
+    archiveMimeTypes.has(normalizedMimeType) ||
+    archiveExtensions.has(extension)
+  ) {
+    return 'archive';
+  }
   return 'other';
 }
 

@@ -55,18 +55,43 @@ export interface InUniFile {
   updatedAt: string;
 }
 
-export interface FileLink {
+interface FileLinkBase {
   id: string;
   fileId: string;
-  linkType: FileLinkType;
-  postId: string | null;
-  commentId: string | null;
-  sharedStatus: SharedFileStatus | null;
+  createdAt: string;
+}
+
+export interface PostFileLink extends FileLinkBase {
+  linkType: 'post';
+  postId: string;
+  commentId: null;
+  sharedStatus: null;
+  courseCode: null;
+  campusOrFaculty: null;
+  tags: string[];
+}
+
+export interface CommentFileLink extends FileLinkBase {
+  linkType: 'comment';
+  postId: null;
+  commentId: string;
+  sharedStatus: null;
+  courseCode: null;
+  campusOrFaculty: null;
+  tags: string[];
+}
+
+export interface SharedFileLink extends FileLinkBase {
+  linkType: 'shared_file';
+  postId: null;
+  commentId: null;
+  sharedStatus: SharedFileStatus;
   courseCode: string | null;
   campusOrFaculty: string | null;
   tags: string[];
-  createdAt: string;
 }
+
+export type FileLink = PostFileLink | CommentFileLink | SharedFileLink;
 
 export interface LinkedFile extends InUniFile {
   links: FileLink[];
