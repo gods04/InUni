@@ -78,7 +78,7 @@ export function AttachmentPicker({
           Attach files
         </label>
         <p className="mt-1 text-sm leading-6 text-slate-600">
-          Max 100MB per file, {maxFiles} files per post or comment.
+          Max 5MB per file, {maxFiles} files per post or comment.
         </p>
       </div>
 

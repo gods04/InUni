@@ -85,7 +85,7 @@ create table if not exists public.files (
   mime_type text not null,
   extension text not null,
   size_bytes bigint not null check (
-    size_bytes > 0 and size_bytes <= 104857600
+    size_bytes > 0 and size_bytes <= 5242880
   ),
   description text not null default '' check (char_length(description) <= 200),
   status public.file_status not null default 'available',
@@ -248,7 +248,7 @@ to authenticated
 with check (
   owner_id = auth.uid()
   and public.current_profile_can_participate()
-  and size_bytes <= 104857600
+  and size_bytes <= 5242880
   and public.current_profile_daily_upload_bytes() + size_bytes <= 1073741824
 );
 

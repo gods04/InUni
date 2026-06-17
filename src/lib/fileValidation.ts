@@ -1,6 +1,6 @@
 import type { FileKind } from '../types/files';
 
-export const MAX_FILE_SIZE_BYTES = 100 * 1024 * 1024;
+export const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024;
 export const MAX_ATTACHMENTS_PER_CONTEXT = 5;
 export const MAX_DAILY_UPLOAD_BYTES = 1024 * 1024 * 1024;
 export const MAX_FILE_DESCRIPTION_LENGTH = 200;
@@ -42,7 +42,7 @@ function normalizeMimeType(mimeType: string): string {
 export function validateFileSize(sizeBytes: number): string | null {
   return sizeBytes <= MAX_FILE_SIZE_BYTES
     ? null
-    : 'Files must be 100MB or smaller.';
+    : 'Files must be 5MB or smaller.';
 }
 
 export function validateAttachmentCount(count: number): string | null {

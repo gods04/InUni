@@ -16,14 +16,14 @@ import {
 
 describe('file limits', () => {
   it('uses the approved upload limits', () => {
-    expect(MAX_FILE_SIZE_BYTES).toBe(100 * 1024 * 1024);
+    expect(MAX_FILE_SIZE_BYTES).toBe(5 * 1024 * 1024);
     expect(MAX_ATTACHMENTS_PER_CONTEXT).toBe(5);
     expect(MAX_DAILY_UPLOAD_BYTES).toBe(1024 * 1024 * 1024);
   });
 
-  it('rejects files over 100MB', () => {
-    expect(validateFileSize(100 * 1024 * 1024 + 1)).toBe(
-      'Files must be 100MB or smaller.',
+  it('rejects files over 5MB', () => {
+    expect(validateFileSize(5 * 1024 * 1024 + 1)).toBe(
+      'Files must be 5MB or smaller.',
     );
   });
 

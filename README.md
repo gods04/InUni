@@ -94,7 +94,7 @@ Create the bucket in Supabase Storage:
 
 - Name: `inuni-files`
 - Public bucket: off
-- File size limit: `100MB`
+- File size limit: `5MB`
 
 Downloads and previews use short-lived signed URLs generated after login.
 Do not make the bucket public. The database schema adds Storage object
