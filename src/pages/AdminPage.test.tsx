@@ -4,8 +4,9 @@ import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
 import { AdminPage } from './AdminPage';
 
-const { deleteReportedPost, resolveReport } = vi.hoisted(() => ({
+const { deleteReportedPost, getFileReviewCount, resolveReport } = vi.hoisted(() => ({
   deleteReportedPost: vi.fn().mockResolvedValue(undefined),
+  getFileReviewCount: vi.fn().mockResolvedValue(3),
   resolveReport: vi.fn().mockResolvedValue(undefined),
 }));
 
@@ -30,6 +31,10 @@ vi.mock('../lib/adminApi', () => ({
   resolveReport,
 }));
 
+vi.mock('../lib/adminFileApi', () => ({
+  getFileReviewCount,
+}));
+
 describe('AdminPage', () => {
   it('renders the open report queue', async () => {
     render(
@@ -38,9 +43,10 @@ describe('AdminPage', () => {
       </MemoryRouter>,
     );
     expect(await screen.findByText('Reported post')).toBeInTheDocument();
-    expect(
-      screen.getByRole('link', { name: 'Review files' }),
-    ).toBeInTheDocument();
+    const reviewFilesLink = await screen.findByRole('link', {
+      name: /Review files/,
+    });
+    expect(within(reviewFilesLink).getByText('3')).toBeInTheDocument();
     expect(
       screen.getByRole('button', { name: 'Delete post' }),
     ).toBeInTheDocument();

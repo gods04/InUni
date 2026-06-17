@@ -236,6 +236,35 @@ export async function getPendingSharedFiles(): Promise<LinkedFile[]> {
   return hydrateFiles(rows, linkRows);
 }
 
+export async function getFileReviewCount(): Promise<number> {
+  if (!isSupabaseConfigured) {
+    const [pendingFiles, hiddenFiles] = await Promise.all([
+      mockFileStore.getPendingSharedFiles(),
+      mockFileStore.getHiddenFiles(),
+    ]);
+    return pendingFiles.length + hiddenFiles.length;
+  }
+
+  const client = requireSupabase();
+  const [pendingResult, hiddenResult] = await Promise.all([
+    client
+      .from('file_links')
+      .select('id', { count: 'exact', head: true })
+      .eq('link_type', 'shared_file')
+      .eq('shared_status', 'pending'),
+    client
+      .from('files')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'hidden_by_reports'),
+  ]);
+
+  if (pendingResult.error || hiddenResult.error) {
+    throw new Error('Could not load file review count.');
+  }
+
+  return (pendingResult.count ?? 0) + (hiddenResult.count ?? 0);
+}
+
 export async function getAutoHiddenFiles(): Promise<LinkedFile[]> {
   if (!isSupabaseConfigured) {
     return mockFileStore.getHiddenFiles();

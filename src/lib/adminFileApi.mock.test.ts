@@ -3,6 +3,7 @@ import {
   approveSharedFile,
   deleteHiddenFile,
   getAutoHiddenFiles,
+  getFileReviewCount,
   getPendingSharedFiles,
   rejectSharedFile,
   restoreHiddenFile,
@@ -116,5 +117,12 @@ describe('adminFileApi mock boundary', () => {
     expect((await mockFileStore.getUserFiles(uploader.id)).map((item) => item.id)).not.toContain(
       secondFile.id,
     );
+  });
+
+  it('counts pending and auto-hidden files that need review', async () => {
+    await uploadSharedFile();
+    await uploadHiddenFile();
+
+    await expect(getFileReviewCount()).resolves.toBe(2);
   });
 });

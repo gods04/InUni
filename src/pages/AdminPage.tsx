@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { EmptyState } from '../components/EmptyState';
 import { ErrorState } from '../components/ErrorState';
+import { FileReviewCountBadge } from '../components/FileReviewCountBadge';
 import { LoadingState } from '../components/LoadingState';
 import {
   deleteReportedComment,
@@ -10,6 +11,7 @@ import {
   getOpenReports,
   resolveReport,
 } from '../lib/adminApi';
+import { getFileReviewCount } from '../lib/adminFileApi';
 import type { ModerationReport } from '../lib/adminApi';
 import { formatRelativeTime } from '../lib/format';
 
@@ -17,6 +19,7 @@ export function AdminPage() {
   const [reports, setReports] = useState<ModerationReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [fileReviewCount, setFileReviewCount] = useState(0);
   const [pendingDelete, setPendingDelete] =
     useState<ModerationReport | null>(null);
   const [busy, setBusy] = useState(false);
@@ -39,6 +42,22 @@ export function AdminPage() {
       })
       .finally(() => {
         if (active) setLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+
+    void getFileReviewCount()
+      .then((count) => {
+        if (active) setFileReviewCount(count);
+      })
+      .catch(() => {
+        if (active) setFileReviewCount(0);
       });
 
     return () => {
@@ -110,8 +129,9 @@ export function AdminPage() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Link className="secondary-button" to="/admin/files">
-            Review files
+          <Link className="secondary-button gap-2" to="/admin/files">
+            <span>Review files</span>
+            <FileReviewCountBadge count={fileReviewCount} />
           </Link>
           <Link className="secondary-button" to="/admin/users">
             Manage users

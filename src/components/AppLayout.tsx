@@ -1,9 +1,12 @@
+import { useEffect, useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import { getFileReviewCount } from '../lib/adminFileApi';
+import { FileReviewCountBadge } from './FileReviewCountBadge';
 
 function navClass({ isActive }: { isActive: boolean }) {
   return [
-    'shrink-0 rounded-full px-3 py-2 text-sm font-semibold transition',
+    'inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-2 text-sm font-semibold transition',
     isActive
       ? 'bg-brand-50 text-brand-700'
       : 'text-slate-600 hover:bg-slate-100 hover:text-ink',
@@ -12,6 +15,30 @@ function navClass({ isActive }: { isActive: boolean }) {
 
 export function AppLayout() {
   const { user, isDemoMode, signOut } = useAuth();
+  const [fileReviewCount, setFileReviewCount] = useState(0);
+
+  useEffect(() => {
+    let active = true;
+
+    if (user?.profile.role !== 'admin') {
+      setFileReviewCount(0);
+      return () => {
+        active = false;
+      };
+    }
+
+    void getFileReviewCount()
+      .then((count) => {
+        if (active) setFileReviewCount(count);
+      })
+      .catch(() => {
+        if (active) setFileReviewCount(0);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [user?.profile.role]);
 
   return (
     <div className="min-h-screen">
@@ -47,7 +74,8 @@ export function AppLayout() {
               </NavLink>
               {user?.profile.role === 'admin' ? (
                 <NavLink to="/admin" className={navClass}>
-                  Admin
+                  <span>Admin</span>
+                  <FileReviewCountBadge count={fileReviewCount} />
                 </NavLink>
               ) : null}
               {user ? (
