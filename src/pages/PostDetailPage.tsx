@@ -58,7 +58,8 @@ export function PostDetailPage() {
 
       try {
         const [nextPost, nextComments] = await Promise.all([getPost(id), getComments(id)]);
-        const [nextPostFiles, nextCommentFileEntries] = nextPost
+        const shouldLoadFiles = Boolean(user);
+        const [nextPostFiles, nextCommentFileEntries] = nextPost && shouldLoadFiles
           ? await Promise.all([
               getFilesForPost(id),
               Promise.all(
@@ -92,7 +93,7 @@ export function PostDetailPage() {
     return () => {
       isActive = false;
     };
-  }, [id]);
+  }, [id, user?.id]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
