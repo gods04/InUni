@@ -85,6 +85,8 @@ support that community instead of turning the site into a crowded dashboard.
 ## Public reading and login gates
 
 - [ ] Keep posts and comments readable when the visitor is logged out.
+- [ ] Keep approved Shared Files listings readable when the visitor is logged
+      out.
 - [ ] Require login only for participation actions such as creating posts,
       commenting, uploading files, downloading files, reporting, and account
       settings.

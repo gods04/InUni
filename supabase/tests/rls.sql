@@ -13,8 +13,9 @@
 -- 4. student cannot SELECT all reports or update another profile's role/ban.
 -- 5. admin can SELECT reports, update report status, delete posts/comments,
 --    and update is_banned/ban_reason but cannot change a user's id.
--- 6. anon cannot select, insert, or report files.
--- 7. active authenticated user can insert own file metadata within 100MB
+-- 6. anon can select approved Shared Files metadata but cannot insert files,
+--    download storage objects, or report files.
+-- 7. active authenticated user can insert own file metadata within 5MB
 --    and the 1GB daily quota.
 -- 8. banned user cannot insert file metadata, download file metadata, or file reports.
 -- 9. user cannot report the same file twice.

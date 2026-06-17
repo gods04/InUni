@@ -11,7 +11,7 @@ React, Vite, TypeScript, Tailwind CSS, React Router, and Supabase.
 - Named and anonymous posts
 - Comments
 - Post and comment file attachments
-- Shared Files browsing, reporting, and admin approval
+- Public Shared Files browsing, reporting, and admin approval
 - Post and comment reporting with duplicate protection
 - A simple profile with account status, own posts, and uploaded files
 - Administrator report review, file review, content deletion, and user bans
@@ -76,9 +76,10 @@ localStorage.
    in a disposable project before production use.
 
 The schema creates `profiles`, `posts`, `comments`, `reports`, `files`,
-`file_links`, and `file_reports`. RLS lets anyone read forum content, while
-active authenticated users can participate. Banned users can still read posts
-and comments but cannot post, comment, upload, download, or report files.
+`file_links`, and `file_reports`. RLS lets anyone read forum content and
+approved Shared Files metadata, while active authenticated users can
+participate. Banned users can still read public posts, comments, and approved
+file listings but cannot post, comment, upload, download, or report files.
 
 If the project already has the older InUni schema, do not run the full schema
 again. Run
@@ -96,10 +97,10 @@ Create the bucket in Supabase Storage:
 - Public bucket: off
 - File size limit: `5MB`
 
-Downloads and previews use short-lived signed URLs generated after login.
-Do not make the bucket public. The database schema adds Storage object
-policies for uploads, signed URL creation, and moderator deletion in this
-bucket.
+Approved Shared Files metadata can be browsed while logged out. Downloads and
+previews use short-lived signed URLs generated after login. Do not make the
+bucket public. The database schema adds Storage object policies for uploads,
+signed URL creation, and moderator deletion in this bucket.
 
 The app keeps file metadata in Postgres so storage can later move to a
 self-hosted S3-compatible service or a server with ClamAV scanning.

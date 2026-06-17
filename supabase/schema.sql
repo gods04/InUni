@@ -576,6 +576,20 @@ using (
   )
 );
 
+create policy "Anyone can read approved shared file metadata"
+on public.files for select
+to anon, authenticated
+using (
+  status = 'available'
+  and exists (
+    select 1
+    from public.file_links
+    where file_links.file_id = files.id
+      and file_links.link_type = 'shared_file'
+      and file_links.shared_status = 'approved'
+  )
+);
+
 create policy "Active users can insert own files within quota"
 on public.files for insert
 to authenticated
@@ -621,6 +635,14 @@ to authenticated
 using (
   public.current_profile_can_participate()
   or public.current_profile_is_admin()
+);
+
+create policy "Anyone can read approved shared file links"
+on public.file_links for select
+to anon, authenticated
+using (
+  link_type = 'shared_file'
+  and shared_status = 'approved'
 );
 
 create policy "Active users can create file links"
@@ -743,6 +765,8 @@ grant insert, update, delete on table public.posts to authenticated;
 grant select on table public.comments to anon, authenticated;
 grant insert, update, delete on table public.comments to authenticated;
 grant select, insert, update, delete on table public.reports to authenticated;
+grant select on table public.files to anon;
+grant select on table public.file_links to anon;
 grant select, insert, update, delete on table public.files to authenticated;
 grant select, insert, update, delete on table public.file_links to authenticated;
 grant select, insert, delete on table public.file_reports to authenticated;

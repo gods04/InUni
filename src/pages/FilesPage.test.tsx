@@ -101,6 +101,32 @@ describe('FilesPage', () => {
     expect(screen.queryByText('Admin file review')).not.toBeInTheDocument();
   });
 
+  it('shows shared file metadata to logged-out visitors but gates file actions', async () => {
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <FilesPage />
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByText('guide.pdf')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Preview' }));
+    expect(
+      screen.getByText('Log in to preview or download files.'),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Download' }));
+    expect(
+      screen.getByText('Log in to preview or download files.'),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Report guide.pdf' }));
+    expect(screen.getByText('Log in to report files.')).toBeInTheDocument();
+    expect(mocks.createSignedDownloadUrl).not.toHaveBeenCalled();
+    expect(mocks.reportFile).not.toHaveBeenCalled();
+  });
+
   it('updates filters used to load shared files', async () => {
     const user = userEvent.setup();
     render(
@@ -122,6 +148,23 @@ describe('FilesPage', () => {
         }),
       ),
     );
+  });
+
+  it('uses a system-fault message when shared file listings fail to load', async () => {
+    mocks.getSharedFiles.mockRejectedValue(new Error('Could not load files.'));
+
+    render(
+      <MemoryRouter>
+        <FilesPage />
+      </MemoryRouter>,
+    );
+
+    expect(
+      await screen.findByText(
+        'File listings are temporarily unavailable. Please try again later.',
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('Could not load files.')).not.toBeInTheDocument();
   });
 
   it('submits file reports for active signed-in users', async () => {

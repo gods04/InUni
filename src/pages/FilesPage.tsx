@@ -65,12 +65,10 @@ export function FilesPage() {
       .then((nextFiles) => {
         if (active) setFiles(nextFiles);
       })
-      .catch((caughtError) => {
+      .catch(() => {
         if (active) {
           setError(
-            caughtError instanceof Error
-              ? caughtError.message
-              : 'Could not load files.',
+            'File listings are temporarily unavailable. Please try again later.',
           );
         }
       })
@@ -91,7 +89,7 @@ export function FilesPage() {
     setStatus(null);
 
     if (!user) {
-      setStatus('Log in to download files.');
+      setStatus('Log in to preview or download files.');
       return;
     }
 
@@ -243,7 +241,7 @@ export function FilesPage() {
           files={files}
           onDownload={(file) => openFile(file, 'download')}
           onPreview={(file) => openFile(file, 'preview')}
-          onReport={user && canParticipate(user.profile) ? openReport : undefined}
+          onReport={openReport}
         />
       ) : null}
 
