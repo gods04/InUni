@@ -9,6 +9,7 @@ function makeLinkedFile(overrides: Partial<LinkedFile>): LinkedFile {
     id: 'file-1',
     ownerId: 'user-1',
     ownerName: 'Student One',
+    ownerAvatarUrl: null,
     storageProvider: 'mock',
     storageBucket: 'mock-files',
     storagePath: 'user-1/file-1/notes.pdf',
@@ -73,5 +74,16 @@ describe('FileList', () => {
     await user.click(screen.getByRole('button', { name: 'Report unsafe.zip' }));
 
     expect(onReport).toHaveBeenCalledWith(file);
+  });
+
+  it('shows the uploaded file owner avatar', () => {
+    const file = makeLinkedFile({
+      ownerAvatarUrl: 'https://example.com/student-one.png',
+    });
+
+    render(<FileList files={[file]} />);
+
+    const fileRow = screen.getByLabelText('File notes.pdf');
+    expect(within(fileRow).getByLabelText('Student One avatar')).toBeInTheDocument();
   });
 });

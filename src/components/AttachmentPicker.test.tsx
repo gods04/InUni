@@ -60,6 +60,21 @@ describe('AttachmentPicker', () => {
     expect(screen.queryByText('first.pdf')).not.toBeInTheDocument();
   });
 
+  it('shows the upload size limit when a selected file is too large', async () => {
+    const user = userEvent.setup();
+    render(<AttachmentPickerHarness />);
+
+    await user.upload(
+      screen.getByLabelText('Attach files'),
+      makeFile('recording.mov', 'video/quicktime', 5 * 1024 * 1024 + 1),
+    );
+
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'This file is too large. Upload files up to 5MB each.',
+    );
+    expect(screen.queryByText('recording.mov')).not.toBeInTheDocument();
+  });
+
   it('collects Shared Files review metadata for selected files', async () => {
     const user = userEvent.setup();
     render(<AttachmentPickerHarness />);

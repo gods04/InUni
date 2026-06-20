@@ -1,8 +1,12 @@
 interface FileReviewCountBadgeProps {
   count: number;
+  label?: string;
 }
 
-export function FileReviewCountBadge({ count }: FileReviewCountBadgeProps) {
+export function FileReviewCountBadge({
+  count,
+  label = 'files need review',
+}: FileReviewCountBadgeProps) {
   if (count <= 0) return null;
 
   return (
@@ -13,7 +17,9 @@ export function FileReviewCountBadge({ count }: FileReviewCountBadgeProps) {
       >
         {count}
       </span>
-      <span className="sr-only">{count} files need review</span>
+      <span className="sr-only">
+        {count} {label}
+      </span>
     </>
   );
 }

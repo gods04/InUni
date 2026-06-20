@@ -10,10 +10,15 @@ const supabaseMocks = vi.hoisted(() => ({
   getSession: vi.fn(),
   onAuthStateChange: vi.fn(),
   resetPasswordForEmail: vi.fn(),
+  rpc: vi.fn(),
   signInWithPassword: vi.fn(),
   signOut: vi.fn(),
   signUp: vi.fn(),
   single: vi.fn(),
+  storageFrom: vi.fn(),
+  storageGetPublicUrl: vi.fn(),
+  storageRemove: vi.fn(),
+  storageUpload: vi.fn(),
   unsubscribe: vi.fn(),
   updateUser: vi.fn(),
 }));
@@ -29,6 +34,10 @@ vi.mock('../lib/supabase', () => ({
       signOut: supabaseMocks.signOut,
       signUp: supabaseMocks.signUp,
       updateUser: supabaseMocks.updateUser,
+    },
+    rpc: (...args: unknown[]) => supabaseMocks.rpc(...args),
+    storage: {
+      from: (...args: unknown[]) => supabaseMocks.storageFrom(...args),
     },
     from: vi.fn(() => ({
       select: vi.fn(() => ({
@@ -55,6 +64,7 @@ const profileRow = {
   role: 'student',
   is_banned: false,
   ban_reason: null,
+  avatar_path: null,
   created_at: '2026-06-15T00:00:00.000Z',
 };
 
@@ -74,15 +84,23 @@ function SupabaseAuthHarness() {
     hasAuthSession,
     hasPasswordRecoverySession,
     requestPasswordReset,
+    removeProfilePhoto,
     signOut,
+    updateDisplayName,
     updatePassword,
+    uploadProfilePhoto,
   } = useAuth();
   const [resetResult, setResetResult] = useState('{}');
+  const [profileResult, setProfileResult] = useState('{}');
   const [updateResult, setUpdateResult] = useState('{}');
 
   return (
     <>
       <p>{user?.id ?? 'no user'}</p>
+      <p>{user?.profile.displayName ?? 'no display name'}</p>
+      <output aria-label="avatar url">
+        {user?.profile.avatarUrl ?? 'no avatar'}
+      </output>
       <p>{hasAuthSession ? 'session' : 'no session'}</p>
       <p>
         {hasPasswordRecoverySession
@@ -111,6 +129,40 @@ function SupabaseAuthHarness() {
         Update password
       </button>
       <output aria-label="password update result">{updateResult}</output>
+      <button
+        onClick={() => {
+          void updateDisplayName('New Supabase Name').then((result) => {
+            setProfileResult(JSON.stringify(result));
+          });
+        }}
+        type="button"
+      >
+        Update display name
+      </button>
+      <button
+        onClick={() => {
+          const file = new File(['avatar'], 'avatar.png', {
+            type: 'image/png',
+          });
+          void uploadProfilePhoto(file).then((result) => {
+            setProfileResult(JSON.stringify(result));
+          });
+        }}
+        type="button"
+      >
+        Upload profile photo
+      </button>
+      <button
+        onClick={() => {
+          void removeProfilePhoto().then((result) => {
+            setProfileResult(JSON.stringify(result));
+          });
+        }}
+        type="button"
+      >
+        Remove profile photo
+      </button>
+      <output aria-label="profile result">{profileResult}</output>
       <button onClick={() => void signOut()} type="button">
         Sign out
       </button>
@@ -137,6 +189,11 @@ describe('configured Supabase authentication', () => {
     vi.clearAllMocks();
     window.sessionStorage.clear();
     supabaseMocks.authCallback = undefined;
+    supabaseMocks.rpc.mockReset();
+    supabaseMocks.storageFrom.mockReset();
+    supabaseMocks.storageGetPublicUrl.mockReset();
+    supabaseMocks.storageRemove.mockReset();
+    supabaseMocks.storageUpload.mockReset();
     supabaseMocks.getSession.mockResolvedValue({
       data: { session: null },
     });
@@ -156,6 +213,17 @@ describe('configured Supabase authentication', () => {
     });
     supabaseMocks.resetPasswordForEmail.mockResolvedValue({ error: null });
     supabaseMocks.updateUser.mockResolvedValue({ error: null });
+    supabaseMocks.rpc.mockResolvedValue({ data: profileRow, error: null });
+    supabaseMocks.storageGetPublicUrl.mockReturnValue({
+      data: { publicUrl: 'https://cdn.example.com/avatar.png' },
+    });
+    supabaseMocks.storageUpload.mockResolvedValue({ error: null });
+    supabaseMocks.storageRemove.mockResolvedValue({ error: null });
+    supabaseMocks.storageFrom.mockReturnValue({
+      getPublicUrl: supabaseMocks.storageGetPublicUrl,
+      remove: supabaseMocks.storageRemove,
+      upload: supabaseMocks.storageUpload,
+    });
   });
 
   it('requests a password reset with the reset page redirect and neutral success', async () => {
@@ -336,5 +404,103 @@ describe('configured Supabase authentication', () => {
 
     expect(screen.getByText('no user')).toBeInTheDocument();
     expect(screen.getByText('no session')).toBeInTheDocument();
+  });
+
+  it('updates the display name through the profile RPC', async () => {
+    supabaseMocks.getSession.mockResolvedValue({
+      data: { session: { user: supabaseUser } },
+    });
+    supabaseMocks.rpc.mockResolvedValue({
+      data: {
+        ...profileRow,
+        display_name: 'New Supabase Name',
+      },
+      error: null,
+    });
+    const user = userEvent.setup();
+    renderAuthProvider();
+
+    expect(await screen.findByText('Student')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Update display name' }));
+
+    expect(supabaseMocks.rpc).toHaveBeenCalledWith('update_own_display_name', {
+      new_display_name: 'New Supabase Name',
+    });
+    expect(await screen.findByText('New Supabase Name')).toBeInTheDocument();
+    expect(
+      screen.getByRole('status', { name: 'profile result' }),
+    ).toHaveTextContent('{}');
+  });
+
+  it('uploads a profile photo and stores the returned avatar path', async () => {
+    supabaseMocks.getSession.mockResolvedValue({
+      data: { session: { user: supabaseUser } },
+    });
+    supabaseMocks.rpc.mockResolvedValue({
+      data: {
+        ...profileRow,
+        avatar_path: 'student-1/avatar.png',
+      },
+      error: null,
+    });
+    const user = userEvent.setup();
+    renderAuthProvider();
+
+    expect(await screen.findByText('Student')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Upload profile photo' }));
+
+    expect(supabaseMocks.storageFrom).toHaveBeenCalledWith('inuni-avatars');
+    expect(supabaseMocks.storageUpload).toHaveBeenCalledWith(
+      expect.stringMatching(/^student-1\/.+\.png$/),
+      expect.any(File),
+      {
+        contentType: 'image/png',
+        upsert: false,
+      },
+    );
+    expect(supabaseMocks.rpc).toHaveBeenCalledWith('update_own_avatar', {
+      new_avatar_path: expect.stringMatching(/^student-1\/.+\.png$/),
+    });
+    expect(
+      await screen.findByRole('status', { name: 'avatar url' }),
+    ).toHaveTextContent('https://cdn.example.com/avatar.png');
+  });
+
+  it('removes the previous profile photo after clearing the avatar path', async () => {
+    supabaseMocks.getSession.mockResolvedValue({
+      data: {
+        session: {
+          user: supabaseUser,
+        },
+      },
+    });
+    supabaseMocks.single.mockResolvedValue({
+      data: {
+        ...profileRow,
+        avatar_path: 'student-1/old-avatar.png',
+      },
+      error: null,
+    });
+    supabaseMocks.rpc.mockResolvedValue({
+      data: profileRow,
+      error: null,
+    });
+    const user = userEvent.setup();
+    renderAuthProvider();
+
+    expect(
+      await screen.findByRole('status', { name: 'avatar url' }),
+    ).toHaveTextContent('https://cdn.example.com/avatar.png');
+    await user.click(screen.getByRole('button', { name: 'Remove profile photo' }));
+
+    expect(supabaseMocks.rpc).toHaveBeenCalledWith('update_own_avatar', {
+      new_avatar_path: null,
+    });
+    expect(supabaseMocks.storageRemove).toHaveBeenCalledWith([
+      'student-1/old-avatar.png',
+    ]);
+    expect(
+      await screen.findByRole('status', { name: 'avatar url' }),
+    ).toHaveTextContent('no avatar');
   });
 });

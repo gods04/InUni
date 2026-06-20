@@ -19,6 +19,8 @@ export interface Profile {
   id: string;
   username: string;
   displayName: string;
+  avatarPath?: string | null;
+  avatarUrl?: string | null;
   role: UserRole;
   isBanned: boolean;
   banReason: string | null;
@@ -39,6 +41,7 @@ export interface Post {
   category: Category;
   authorId: string;
   authorName: string;
+  authorAvatarUrl?: string | null;
   authorIsUctVerified: boolean;
   isAnonymous: boolean;
   createdAt: string;
@@ -51,6 +54,7 @@ export interface ForumComment {
   postId: string;
   authorId: string;
   authorName: string;
+  authorAvatarUrl?: string | null;
   authorIsUctVerified: boolean;
   content: string;
   createdAt: string;

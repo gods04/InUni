@@ -34,6 +34,9 @@ describe('AdminRoute', () => {
       signUp: vi.fn(),
       requestPasswordReset: vi.fn(),
       updatePassword: vi.fn(),
+      updateDisplayName: vi.fn(),
+      uploadProfilePhoto: vi.fn(),
+      removeProfilePhoto: vi.fn(),
       signOut: vi.fn(),
     });
 

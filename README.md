@@ -6,6 +6,7 @@ React, Vite, TypeScript, Tailwind CSS, React Router, and Supabase.
 ## MVP features
 
 - Email registration, login, password recovery, logout, and session restoration
+- Editable profile display names and profile photos
 - UCT Verified status for confirmed `@uct.ac.za` and `@myuct.ac.za` accounts
 - Six forum categories
 - Named and anonymous posts
@@ -13,7 +14,8 @@ React, Vite, TypeScript, Tailwind CSS, React Router, and Supabase.
 - Post and comment file attachments
 - Public Shared Files browsing, reporting, and admin approval
 - Post and comment reporting with duplicate protection
-- A simple profile with account status, own posts, and uploaded files
+- A simple profile with account status, own posts, uploaded files, and profile
+  identity controls
 - Administrator report review, file review, content deletion, and user bans
 - Supabase Row Level Security for public reading and protected participation
 - Browser-based demo mode when Supabase is not configured
@@ -45,6 +47,7 @@ Copy `.env.example` to `.env` and add:
 ```bash
 VITE_SUPABASE_URL=your-supabase-project-url
 VITE_SUPABASE_ANON_KEY=your-supabase-public-anon-key
+VITE_INUNI_DEMO_MODE=false
 ```
 
 Only use the Supabase public anon key in the frontend. Never add the
@@ -52,9 +55,9 @@ service-role key to this repository, Vite variables, or hosting settings.
 
 ## Demo mode
 
-Leave both environment variables blank to use local demo data. Posts,
-comments, files, reports, and moderation state are stored in browser
-localStorage.
+Leave both Supabase environment variables blank, or start Vite with
+`VITE_INUNI_DEMO_MODE=true`, to use local demo data. Posts, comments, files,
+reports, and moderation state are stored in browser localStorage.
 
 - Any email and password can be used for a demo student account.
 - Use `admin@inuni.local` to open the demo administrator pages.
@@ -65,7 +68,7 @@ localStorage.
 1. Create a free Supabase project.
 2. Open its SQL Editor.
 3. Run [`supabase/schema.sql`](supabase/schema.sql).
-4. Create the private file bucket described in File storage setup.
+4. Create the storage buckets described in File storage setup.
 5. Add the project URL and public anon key to `.env`.
 6. In Authentication > URL Configuration, add the local and production
    redirect URLs listed below.
@@ -76,10 +79,11 @@ localStorage.
    in a disposable project before production use.
 
 The schema creates `profiles`, `posts`, `comments`, `reports`, `files`,
-`file_links`, and `file_reports`. RLS lets anyone read forum content and
-approved Shared Files metadata, while active authenticated users can
-participate. Banned users can still read public posts, comments, and approved
-file listings but cannot post, comment, upload, download, or report files.
+`file_links`, and `file_reports`. RLS lets anyone read forum content, public
+profile names/photos, and approved Shared Files metadata, while active
+authenticated users can participate. Banned users can still read public posts,
+comments, and approved file listings but cannot edit profile details, post,
+comment, upload, download, or report files.
 
 If the project already has the older InUni schema, do not run the full schema
 again. Run
@@ -89,7 +93,8 @@ instead.
 ## File storage setup
 
 The first files phase uses a private Supabase Storage bucket named
-`inuni-files`.
+`inuni-files`. Profile photos use a public Supabase Storage bucket named
+`inuni-avatars` so avatars can render beside public posts and comments.
 
 Create the bucket in Supabase Storage:
 
@@ -97,13 +102,22 @@ Create the bucket in Supabase Storage:
 - Public bucket: off
 - File size limit: `5MB`
 
+Create the profile photo bucket in Supabase Storage:
+
+- Name: `inuni-avatars`
+- Public bucket: on
+- File size limit: `2MB`
+- Allowed MIME types: `image/jpeg`, `image/png`, `image/webp`
+
 Approved Shared Files metadata can be browsed while logged out. Downloads and
 previews use short-lived signed URLs generated after login. Do not make the
 bucket public. The database schema adds Storage object policies for uploads,
 signed URL creation, and moderator deletion in this bucket.
 
 The app keeps file metadata in Postgres so storage can later move to a
-self-hosted S3-compatible service or a server with ClamAV scanning.
+self-hosted S3-compatible service or a server with ClamAV scanning. Profile
+records store only the avatar object path; the frontend resolves it to the
+public bucket URL.
 
 ### Auth redirect URLs
 
@@ -144,7 +158,8 @@ Never put an admin role in signup metadata.
 - `/login` registration and login
 - `/reset-password` password reset link landing page
 - `/profile` current user profile
-- `/admin` open report queue
+- `/admin` admin dashboard overview
+- `/admin/reports` moderation report review queue
 - `/admin/files` file review queue
 - `/admin/users` user search and bans
 

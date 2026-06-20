@@ -12,6 +12,7 @@ import type {
 import type { ForumUser } from '../types/forum';
 import {
   classifyFileType,
+  getUploadErrorMessage,
   validateAttachmentCount,
   validateFileDescription,
   validateFileSize,
@@ -72,6 +73,12 @@ interface PublicProfileRow {
   id: string;
   username: string | null;
   display_name: string | null;
+  avatar_path: string | null;
+}
+
+interface OwnerProfile {
+  name: string;
+  avatarUrl: string | null;
 }
 
 const fileSelect =
@@ -100,6 +107,17 @@ function getExtension(filename: string): string {
 
 function getOwnerName(user: ForumUser): string {
   return user.profile.displayName || user.profile.username || user.email;
+}
+
+function getOwnerAvatarUrl(user: ForumUser): string | null {
+  return user.profile.avatarUrl ?? null;
+}
+
+function getAvatarUrl(path: string | null | undefined): string | null {
+  if (!path) return null;
+  if (path.startsWith('data:') || path.startsWith('http')) return path;
+  const client = requireSupabase();
+  return client.storage.from('inuni-avatars').getPublicUrl(path).data.publicUrl;
 }
 
 function normalizeFilePart(value: string): string {
@@ -190,11 +208,13 @@ function mapFileRow(
   row: FileRow,
   links: FileLink[],
   ownerName = 'Student',
+  ownerAvatarUrl: string | null = null,
 ): LinkedFile {
   return {
     id: row.id,
     ownerId: row.owner_id,
     ownerName,
+    ownerAvatarUrl,
     storageProvider: row.storage_provider,
     storageBucket: row.storage_bucket,
     storagePath: row.storage_path,
@@ -259,14 +279,16 @@ function createSharedLinkRow(
   };
 }
 
-async function getOwnerNames(ownerIds: string[]): Promise<Map<string, string>> {
+async function getOwnerProfiles(
+  ownerIds: string[],
+): Promise<Map<string, OwnerProfile>> {
   const client = requireSupabase();
   const uniqueOwnerIds = Array.from(new Set(ownerIds.filter(Boolean)));
   if (uniqueOwnerIds.length === 0) return new Map();
 
   const { data, error } = await client
     .from('public_profiles')
-    .select('id, username, display_name')
+    .select('id, username, display_name, avatar_path')
     .in('id', uniqueOwnerIds);
 
   if (error) throw new Error('Could not load files.');
@@ -274,7 +296,10 @@ async function getOwnerNames(ownerIds: string[]): Promise<Map<string, string>> {
   return new Map(
     ((data ?? []) as PublicProfileRow[]).map((profile) => [
       profile.id,
-      profile.display_name || profile.username || 'Student',
+      {
+        name: profile.display_name || profile.username || 'Student',
+        avatarUrl: getAvatarUrl(profile.avatar_path),
+      },
     ]),
   );
 }
@@ -312,14 +337,15 @@ async function hydrateFiles(
   rows: FileRow[],
   linkRows: FileLinkRow[],
 ): Promise<LinkedFile[]> {
-  const ownerNames = await getOwnerNames(rows.map((row) => row.owner_id));
+  const ownerProfiles = await getOwnerProfiles(rows.map((row) => row.owner_id));
   const links = linkRows.map(mapFileLinkRow);
 
   return rows.map((row) =>
     mapFileRow(
       row,
       links.filter((link) => link.fileId === row.id),
-      ownerNames.get(row.owner_id),
+      ownerProfiles.get(row.owner_id)?.name,
+      ownerProfiles.get(row.owner_id)?.avatarUrl,
     ),
   );
 }
@@ -427,9 +453,9 @@ export async function uploadLinkedFiles(
 
     try {
       await supabaseStorageProvider.uploadFile(draft.file, storagePath);
-    } catch {
+    } catch (uploadError) {
       await client.from('files').delete().eq('id', fileId);
-      throw new Error('Could not upload file.');
+      throw new Error(getUploadErrorMessage(uploadError));
     }
 
     const { data: availableFile, error: updateError } = await client
@@ -462,6 +488,7 @@ export async function uploadLinkedFiles(
         availableFile as FileRow,
         ((insertedLinks ?? []) as FileLinkRow[]).map(mapFileLinkRow),
         getOwnerName(user),
+        getOwnerAvatarUrl(user),
       ),
     );
   }

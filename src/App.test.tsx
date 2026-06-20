@@ -20,6 +20,18 @@ vi.mock('./hooks/useAuth', () => ({
   AuthProvider: ({ children }: { children: ReactNode }) => children,
 }));
 
+vi.mock('./pages/HomePage', () => ({
+  HomePage: () => <h1>Forum route</h1>,
+}));
+
+vi.mock('./pages/ResetPasswordPage', () => ({
+  ResetPasswordPage: () => <h1>Reset link expired</h1>,
+}));
+
+vi.mock('./pages/ToolsPage', () => ({
+  ToolsPage: () => <h1>Student tools</h1>,
+}));
+
 describe('MVP navigation', () => {
   it('shows approved public destinations for a signed-out visitor', async () => {
     render(
@@ -31,9 +43,21 @@ describe('MVP navigation', () => {
       await screen.findByRole('link', { name: 'Forum' }),
     ).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Files' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Tools' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Login' })).toBeInTheDocument();
-    expect(screen.queryByText('Tools')).not.toBeInTheDocument();
     expect(screen.queryByText('Shared Files')).not.toBeInTheDocument();
+  });
+
+  it('renders the compact tools hub as a public route', async () => {
+    render(
+      <MemoryRouter initialEntries={['/tools']}>
+        <App />
+      </MemoryRouter>,
+    );
+
+    expect(
+      await screen.findByRole('heading', { name: 'Student tools' }),
+    ).toBeInTheDocument();
   });
 
   it('renders the public password reset route', async () => {

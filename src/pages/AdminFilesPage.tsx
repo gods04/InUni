@@ -3,6 +3,9 @@ import { ConfirmDialog } from '../components/ConfirmDialog';
 import { EmptyState } from '../components/EmptyState';
 import { ErrorState } from '../components/ErrorState';
 import { LoadingState } from '../components/LoadingState';
+import { UserAvatar } from '../components/UserAvatar';
+import { createSignedDownloadUrl } from '../lib/fileApi';
+import { canPreviewFile, classifyFileType } from '../lib/fileValidation';
 import {
   approveSharedFile,
   deleteHiddenFile,
@@ -12,8 +15,54 @@ import {
   restoreHiddenFile,
 } from '../lib/adminFileApi';
 import type { LinkedFile } from '../types/files';
+import type { SharedFileLink } from '../types/files';
 
 type Tab = 'pending' | 'hidden';
+
+function getSharedFileLink(file: LinkedFile): SharedFileLink | undefined {
+  return file.links.find(
+    (link): link is SharedFileLink => link.linkType === 'shared_file',
+  );
+}
+
+function formatReportCount(count: number): string {
+  return `${count} ${count === 1 ? 'report' : 'reports'}`;
+}
+
+function formatFileType(file: LinkedFile): string {
+  const extension = file.extension.trim();
+  if (extension) return extension.toUpperCase();
+
+  const kind = classifyFileType(file.displayFilename, file.mimeType);
+  return kind === 'pdf' ? 'PDF' : kind.replace('_', ' ');
+}
+
+function getReviewReason(file: LinkedFile, tab: Tab): string {
+  if (tab === 'hidden') {
+    return `Auto-hidden after ${formatReportCount(file.reportCount)}`;
+  }
+
+  return 'Pending Shared Files approval';
+}
+
+function ReviewDetail({
+  label,
+  value,
+}: {
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="min-w-0">
+      <dt className="text-[0.68rem] font-bold uppercase tracking-wide text-slate-400">
+        {label}
+      </dt>
+      <dd className="mt-0.5 truncate text-xs font-semibold text-slate-700">
+        {value}
+      </dd>
+    </div>
+  );
+}
 
 export function AdminFilesPage() {
   const [tab, setTab] = useState<Tab>('pending');
@@ -86,6 +135,26 @@ export function AdminFilesPage() {
         caughtError instanceof Error
           ? caughtError.message
           : 'Could not restore this file.',
+      );
+    }
+  }
+
+  async function openReviewFile(file: LinkedFile, target: 'preview' | 'download') {
+    setError(null);
+
+    try {
+      const signedUrl = await createSignedDownloadUrl(file.id);
+      if (target === 'preview') {
+        window.open(signedUrl.url, '_blank', 'noopener,noreferrer');
+        return;
+      }
+
+      window.location.assign(signedUrl.url);
+    } catch (caughtError) {
+      setError(
+        caughtError instanceof Error
+          ? caughtError.message
+          : 'Could not create a file link.',
       );
     }
   }
@@ -171,62 +240,111 @@ export function AdminFilesPage() {
 
       {!loading && !error && visibleFiles.length > 0 ? (
         <div className="panel overflow-hidden">
-          {visibleFiles.map((file) => (
-            <article
-              className="grid gap-3 border-t border-slate-100 p-4 first:border-t-0 sm:grid-cols-[1fr_auto] sm:items-center"
-              key={file.id}
-            >
-              <div>
-                <h2 className="break-words text-base font-bold text-ink">
-                  {file.displayFilename}
-                </h2>
-                <p className="mt-1 text-sm leading-6 text-slate-600">
-                  {file.description || 'No description.'}
-                </p>
-                <p className="mt-1 text-xs font-semibold text-slate-500">
-                  Uploaded by {file.ownerName} · scan{' '}
-                  {file.scanStatus.replace('_', ' ')} · {file.reportCount} reports
-                </p>
-              </div>
-              <div className="flex flex-wrap gap-2 sm:justify-end">
-                {tab === 'pending' ? (
-                  <>
+          {visibleFiles.map((file) => {
+            const sharedLink = getSharedFileLink(file);
+
+            return (
+              <article
+                className="grid gap-3 border-t border-slate-100 p-4 first:border-t-0 sm:grid-cols-[1fr_auto] sm:items-start"
+                key={file.id}
+              >
+                <div className="min-w-0">
+                  <h2 className="break-words text-base font-bold text-ink">
+                    {file.displayFilename}
+                  </h2>
+                  <p className="mt-1 text-sm leading-6 text-slate-600">
+                    {file.description || 'No description.'}
+                  </p>
+                  <div className="mt-2 flex items-center gap-2 text-xs font-semibold text-slate-500">
+                    <UserAvatar
+                      name={file.ownerName}
+                      size="sm"
+                      src={file.ownerAvatarUrl}
+                    />
+                    <p>
+                      Uploaded by {file.ownerName} · scan{' '}
+                      {file.scanStatus.replace('_', ' ')}
+                    </p>
+                  </div>
+                  <dl className="mt-3 grid gap-x-5 gap-y-2 sm:grid-cols-2 lg:grid-cols-6">
+                    <ReviewDetail label="Uploader" value={file.ownerName} />
+                    <ReviewDetail
+                      label="Course"
+                      value={sharedLink?.courseCode ?? 'No course'}
+                    />
+                    <ReviewDetail
+                      label="Faculty"
+                      value={sharedLink?.campusOrFaculty ?? 'No faculty'}
+                    />
+                    <ReviewDetail label="File type" value={formatFileType(file)} />
+                    <ReviewDetail
+                      label="Reports"
+                      value={formatReportCount(file.reportCount)}
+                    />
+                    <ReviewDetail
+                      label="Review reason"
+                      value={getReviewReason(file, tab)}
+                    />
+                  </dl>
+                </div>
+                <div className="flex flex-wrap gap-2 sm:justify-end">
+                  {canPreviewFile(file.mimeType) ? (
                     <button
-                      className="primary-button"
-                      onClick={() => void approve(file)}
-                      type="button"
-                    >
-                      Approve
-                    </button>
-                    <button
-                      className="danger-button"
-                      onClick={() => setConfirming({ file, action: 'reject' })}
-                      type="button"
-                    >
-                      Reject
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <button
+                      aria-label={`Preview ${file.displayFilename}`}
                       className="secondary-button"
-                      onClick={() => void restore(file)}
+                      onClick={() => void openReviewFile(file, 'preview')}
                       type="button"
                     >
-                      Restore
+                      Preview
                     </button>
-                    <button
-                      className="danger-button"
-                      onClick={() => setConfirming({ file, action: 'delete' })}
-                      type="button"
-                    >
-                      Delete
-                    </button>
-                  </>
-                )}
-              </div>
-            </article>
-          ))}
+                  ) : null}
+                  <button
+                    aria-label={`Download ${file.displayFilename}`}
+                    className="secondary-button"
+                    onClick={() => void openReviewFile(file, 'download')}
+                    type="button"
+                  >
+                    Download
+                  </button>
+                  {tab === 'pending' ? (
+                    <>
+                      <button
+                        className="primary-button"
+                        onClick={() => void approve(file)}
+                        type="button"
+                      >
+                        Approve
+                      </button>
+                      <button
+                        className="danger-button"
+                        onClick={() => setConfirming({ file, action: 'reject' })}
+                        type="button"
+                      >
+                        Reject
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        className="secondary-button"
+                        onClick={() => void restore(file)}
+                        type="button"
+                      >
+                        Restore
+                      </button>
+                      <button
+                        className="danger-button"
+                        onClick={() => setConfirming({ file, action: 'delete' })}
+                        type="button"
+                      >
+                        Delete
+                      </button>
+                    </>
+                  )}
+                </div>
+              </article>
+            );
+          })}
         </div>
       ) : null}
 

@@ -3,6 +3,7 @@ import type { FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ErrorState } from '../components/ErrorState';
 import { LoadingState } from '../components/LoadingState';
+import { PasswordField } from '../components/PasswordField';
 import { useAuth } from '../hooks/useAuth';
 
 export function ResetPasswordPage() {
@@ -92,27 +93,19 @@ export function ResetPasswordPage() {
       </div>
 
       <form className="panel grid gap-4 p-5 sm:p-6" onSubmit={handleSubmit}>
-        <label className="grid gap-2">
-          <span className="field-label">New password</span>
-          <input
-            className="field-input"
-            type="password"
-            autoComplete="new-password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-          />
-        </label>
+        <PasswordField
+          autoComplete="new-password"
+          label="New password"
+          onChange={setPassword}
+          value={password}
+        />
 
-        <label className="grid gap-2">
-          <span className="field-label">Confirm password</span>
-          <input
-            className="field-input"
-            type="password"
-            autoComplete="new-password"
-            value={confirmation}
-            onChange={(event) => setConfirmation(event.target.value)}
-          />
-        </label>
+        <PasswordField
+          autoComplete="new-password"
+          label="Confirm password"
+          onChange={setConfirmation}
+          value={confirmation}
+        />
 
         {error ? <ErrorState message={error} /> : null}
 

@@ -12,6 +12,7 @@ import {
   validateDailyUpload,
   validateFileDescription,
   validateFileSize,
+  getUploadErrorMessage,
 } from './fileValidation';
 
 describe('file limits', () => {
@@ -23,7 +24,7 @@ describe('file limits', () => {
 
   it('rejects files over 5MB', () => {
     expect(validateFileSize(5 * 1024 * 1024 + 1)).toBe(
-      'Files must be 5MB or smaller.',
+      'This file is too large. Upload files up to 5MB each.',
     );
   });
 
@@ -41,6 +42,40 @@ describe('file limits', () => {
     expect(validateFileSize(MAX_FILE_SIZE_BYTES)).toBeNull();
     expect(validateAttachmentCount(MAX_ATTACHMENTS_PER_CONTEXT)).toBeNull();
     expect(validateDailyUpload(MAX_DAILY_UPLOAD_BYTES - 1, 1)).toBeNull();
+  });
+});
+
+describe('upload error copy', () => {
+  it('maps backend size failures to the upload size limit', () => {
+    expect(getUploadErrorMessage(new Error('Payload too large'))).toBe(
+      'This file is too large. Upload files up to 5MB each.',
+    );
+  });
+
+  it('explains backend file type blocks without raw provider details', () => {
+    expect(
+      getUploadErrorMessage(
+        new Error('mime type application/x-msdownload is not supported'),
+      ),
+    ).toBe(
+      'This file type cannot be uploaded yet. Try PDF, images, Office documents, spreadsheets, presentations, text files, or ZIP archives.',
+    );
+  });
+
+  it('explains security blocks without leaking scanner details', () => {
+    expect(
+      getUploadErrorMessage(
+        new Error('blocked by security policy: malware signature match'),
+      ),
+    ).toBe(
+      'This upload was blocked because it may be unsafe. Try another file or ask an admin if this looks wrong.',
+    );
+  });
+
+  it('falls back to a short retry message for unknown upload failures', () => {
+    expect(getUploadErrorMessage(new Error('storage bucket unavailable'))).toBe(
+      'Could not upload this file. Please try again.',
+    );
   });
 });
 

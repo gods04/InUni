@@ -1,42 +1,87 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ConfirmDialog } from '../components/ConfirmDialog';
-import { EmptyState } from '../components/EmptyState';
 import { ErrorState } from '../components/ErrorState';
 import { FileReviewCountBadge } from '../components/FileReviewCountBadge';
 import { LoadingState } from '../components/LoadingState';
 import {
-  deleteReportedComment,
-  deleteReportedPost,
-  getOpenReports,
-  resolveReport,
-} from '../lib/adminApi';
-import { getFileReviewCount } from '../lib/adminFileApi';
-import type { ModerationReport } from '../lib/adminApi';
-import { formatRelativeTime } from '../lib/format';
+  getAdminDashboardMetrics,
+  type AdminDashboardActivityItem,
+  type AdminDashboardMetrics,
+} from '../lib/adminDashboardApi';
+
+interface MetricCardProps {
+  detail: string;
+  label: string;
+  value: number;
+}
+
+function MetricCard({ detail, label, value }: MetricCardProps) {
+  return (
+    <article className="panel p-4">
+      <p className="text-sm font-semibold text-slate-500">{label}</p>
+      <p className="mt-3 text-3xl font-semibold tracking-normal text-ink">
+        {value.toLocaleString()}
+      </p>
+      <p className="mt-2 text-xs font-medium text-slate-500">{detail}</p>
+    </article>
+  );
+}
+
+function formatActivityTime(createdAt: string): string {
+  return new Intl.DateTimeFormat(undefined, {
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    month: 'short',
+  }).format(new Date(createdAt));
+}
+
+function ActivityRow({ item }: { item: AdminDashboardActivityItem }) {
+  return (
+    <li>
+      <Link
+        className="grid gap-2 border-t border-line py-3 first:border-t-0 sm:grid-cols-[auto_1fr_auto] sm:items-center"
+        to={item.href}
+      >
+        <span className="w-fit rounded-full bg-brand-50 px-2.5 py-1 text-xs font-bold text-brand-700">
+          {item.kind}
+        </span>
+        <span className="min-w-0">
+          <span className="block truncate text-sm font-bold text-ink">
+            {item.title}
+          </span>
+          <span className="mt-0.5 block text-sm text-slate-600">
+            {item.detail}
+          </span>
+        </span>
+        <span className="text-xs font-semibold text-slate-500">
+          {formatActivityTime(item.createdAt)}
+        </span>
+      </Link>
+    </li>
+  );
+}
 
 export function AdminPage() {
-  const [reports, setReports] = useState<ModerationReport[]>([]);
+  const [metrics, setMetrics] = useState<AdminDashboardMetrics | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [fileReviewCount, setFileReviewCount] = useState(0);
-  const [pendingDelete, setPendingDelete] =
-    useState<ModerationReport | null>(null);
-  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     let active = true;
 
-    void getOpenReports()
-      .then((nextReports) => {
-        if (active) setReports(nextReports);
+    void getAdminDashboardMetrics()
+      .then((nextMetrics) => {
+        if (active) {
+          setMetrics(nextMetrics);
+        }
       })
       .catch((caughtError) => {
         if (active) {
           setError(
             caughtError instanceof Error
               ? caughtError.message
-              : 'Could not load reports.',
+              : 'Could not load the admin dashboard.',
           );
         }
       })
@@ -49,73 +94,6 @@ export function AdminPage() {
     };
   }, []);
 
-  useEffect(() => {
-    let active = true;
-
-    void getFileReviewCount()
-      .then((count) => {
-        if (active) setFileReviewCount(count);
-      })
-      .catch(() => {
-        if (active) setFileReviewCount(0);
-      });
-
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  async function dismissReport(report: ModerationReport) {
-    setError(null);
-    try {
-      await resolveReport(
-        report.id,
-        'dismissed',
-        'Dismissed by a moderator.',
-      );
-      setReports((current) =>
-        current.filter((item) => item.id !== report.id),
-      );
-    } catch (caughtError) {
-      setError(
-        caughtError instanceof Error
-          ? caughtError.message
-          : 'Could not dismiss report.',
-      );
-    }
-  }
-
-  async function confirmDelete() {
-    if (!pendingDelete) return;
-    setBusy(true);
-    setError(null);
-
-    try {
-      await resolveReport(
-        pendingDelete.id,
-        'resolved',
-        'Reported content deleted by a moderator.',
-      );
-      if (pendingDelete.target.type === 'post') {
-        await deleteReportedPost(pendingDelete.target.postId);
-      } else {
-        await deleteReportedComment(pendingDelete.target.commentId);
-      }
-      setReports((current) =>
-        current.filter((item) => item.id !== pendingDelete.id),
-      );
-      setPendingDelete(null);
-    } catch (caughtError) {
-      setError(
-        caughtError instanceof Error
-          ? caughtError.message
-          : 'Could not delete reported content.',
-      );
-    } finally {
-      setBusy(false);
-    }
-  }
-
   return (
     <div className="grid gap-5">
       <section className="panel flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
@@ -123,15 +101,22 @@ export function AdminPage() {
           <p className="text-sm font-semibold text-brand-700">
             Administrator
           </p>
-          <h1 className="section-title">Moderation</h1>
+          <h1 className="section-title">Admin dashboard</h1>
           <p className="mt-1 text-sm text-slate-600">
-            {reports.length} open {reports.length === 1 ? 'report' : 'reports'}
+            Monitor traffic, community activity, and moderation health.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <Link className="secondary-button gap-2" to="/admin/reports">
+            <span>View reports</span>
+            <FileReviewCountBadge
+              count={metrics?.openReports ?? 0}
+              label="reports need review"
+            />
+          </Link>
           <Link className="secondary-button gap-2" to="/admin/files">
-            <span>Review files</span>
-            <FileReviewCountBadge count={fileReviewCount} />
+            <span>View files</span>
+            <FileReviewCountBadge count={metrics?.filesNeedReview ?? 0} />
           </Link>
           <Link className="secondary-button" to="/admin/users">
             Manage users
@@ -140,76 +125,84 @@ export function AdminPage() {
       </section>
 
       {error ? <ErrorState message={error} /> : null}
-      {loading ? <LoadingState label="Loading reports..." /> : null}
+      {loading ? <LoadingState label="Loading admin dashboard..." /> : null}
 
-      {!loading && !error && reports.length === 0 ? (
-        <EmptyState
-          message="There are no open reports to review."
-          title="Moderation queue is clear"
-        />
-      ) : null}
+      {metrics ? (
+        <>
+          <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <MetricCard
+              detail={metrics.trafficSourceLabel}
+              label="Visitors today"
+              value={metrics.visitorsToday}
+            />
+            <MetricCard
+              detail="App page loads and route changes"
+              label="Page views today"
+              value={metrics.pageViewsToday}
+            />
+            <MetricCard
+              detail={`${metrics.newUsersToday.toLocaleString()} new today`}
+              label="Total users"
+              value={metrics.totalUsers}
+            />
+            <MetricCard
+              detail={`${metrics.totalPosts.toLocaleString()} total posts`}
+              label="Posts today"
+              value={metrics.postsToday}
+            />
+          </section>
 
-      {!loading && reports.length > 0 ? (
-        <div className="grid gap-4">
-          {reports.map((report) => (
-            <article className="panel p-5" key={report.id}>
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="badge bg-red-50 text-red-700">
-                  {report.target.type === 'post' ? 'Post' : 'Comment'}
-                </span>
-                <span className="text-xs font-semibold text-slate-500">
-                  {formatRelativeTime(report.createdAt)}
-                </span>
+          <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <MetricCard
+              detail={`${metrics.totalComments.toLocaleString()} total comments`}
+              label="Comments today"
+              value={metrics.commentsToday}
+            />
+            <MetricCard
+              detail="Posts and comments awaiting review"
+              label="Open reports"
+              value={metrics.openReports}
+            />
+            <MetricCard
+              detail={`${metrics.totalFiles.toLocaleString()} uploaded files`}
+              label="Files needing review"
+              value={metrics.filesNeedReview}
+            />
+            <MetricCard
+              detail="All uploaded file records"
+              label="Total files"
+              value={metrics.totalFiles}
+            />
+          </section>
+
+          <section className="panel p-5 sm:p-6">
+            <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p className="text-sm font-semibold text-brand-700">
+                  Monitoring
+                </p>
+                <h2 className="text-xl font-bold text-ink">Recent activity</h2>
               </div>
-              <h2 className="mt-3 text-lg font-semibold text-ink">
-                {report.contentTitle}
-              </h2>
-              <p className="mt-2 text-sm leading-6 text-slate-600">
-                {report.contentPreview}
+              <p className="text-sm text-slate-600">
+                Latest posts, reports, files, comments, and signups.
               </p>
-              <div className="mt-4 rounded-xl border border-red-100 bg-red-50 p-4">
-                <p className="text-xs font-bold uppercase text-red-700">
-                  Report reason
-                </p>
-                <p className="mt-1 text-sm leading-6 text-red-900">
-                  {report.reason}
-                </p>
-              </div>
-              <div className="mt-5 flex flex-wrap justify-end gap-2">
-                <button
-                  className="secondary-button"
-                  onClick={() => void dismissReport(report)}
-                  type="button"
-                >
-                  Dismiss report
-                </button>
-                <button
-                  className="danger-button"
-                  onClick={() => setPendingDelete(report)}
-                  type="button"
-                >
-                  Delete {report.target.type}
-                </button>
-              </div>
-            </article>
-          ))}
-        </div>
-      ) : null}
+            </div>
 
-      <ConfirmDialog
-        busy={busy}
-        confirmLabel={
-          pendingDelete?.target.type === 'comment'
-            ? 'Delete comment'
-            : 'Delete post'
-        }
-        destructive
-        message="This permanently removes the reported content. This action cannot be undone."
-        onCancel={() => setPendingDelete(null)}
-        onConfirm={confirmDelete}
-        open={Boolean(pendingDelete)}
-        title={`Delete reported ${pendingDelete?.target.type ?? 'content'}?`}
-      />
+            {metrics.recentActivity.length > 0 ? (
+              <ul className="mt-4">
+                {metrics.recentActivity.map((item) => (
+                  <ActivityRow item={item} key={item.id} />
+                ))}
+              </ul>
+            ) : (
+              <p className="mt-4 text-sm text-slate-600">
+                No recent activity yet.
+              </p>
+            )}
+          </section>
+
+        </>
+      ) : null}
     </div>
   );
 }

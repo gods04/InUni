@@ -8,6 +8,7 @@ import type {
   NewCommentInput,
   NewPostInput,
   Post,
+  Profile,
   Report,
   ReportTarget,
 } from '../types/forum';
@@ -15,6 +16,7 @@ import type {
 const postsKey = 'inuni.posts';
 const commentsKey = 'inuni.comments';
 const reportsKey = 'inuni.reports';
+const profilesKey = 'inuni.profiles';
 
 function createId(prefix: string): string {
   if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
@@ -50,15 +52,34 @@ function writeList<T>(key: string, value: T[]): void {
 function getPostsFromStore(): Post[] {
   const posts = readList<Post>(postsKey, mockPosts);
   const comments = readList<ForumComment>(commentsKey, mockComments);
+  const profiles = readList<Profile>(profilesKey, []);
 
   return posts.map((post) => ({
     ...post,
+    authorName: post.isAnonymous
+      ? 'Anonymous'
+      : profiles.find((profile) => profile.id === post.authorId)?.displayName ??
+        post.authorName,
+    authorAvatarUrl: post.isAnonymous
+      ? null
+      : profiles.find((profile) => profile.id === post.authorId)?.avatarUrl ??
+        post.authorAvatarUrl ??
+        null,
     commentCount: comments.filter((comment) => comment.postId === post.id).length,
   }));
 }
 
 function getCommentsFromStore(): ForumComment[] {
-  return readList<ForumComment>(commentsKey, mockComments);
+  const profiles = readList<Profile>(profilesKey, []);
+
+  return readList<ForumComment>(commentsKey, mockComments).map((comment) => {
+    const profile = profiles.find((item) => item.id === comment.authorId);
+    return {
+      ...comment,
+      authorName: profile?.displayName ?? comment.authorName,
+      authorAvatarUrl: profile?.avatarUrl ?? comment.authorAvatarUrl ?? null,
+    };
+  });
 }
 
 export const mockForumStore = {
@@ -93,6 +114,7 @@ export const mockForumStore = {
       authorName: input.isAnonymous
         ? 'Anonymous'
         : user.profile.displayName || getDisplayName(user.email),
+      authorAvatarUrl: input.isAnonymous ? null : user.profile.avatarUrl ?? null,
       authorIsUctVerified: isUctVerifiedEmail(
         user.email,
         user.emailConfirmed,
@@ -113,6 +135,7 @@ export const mockForumStore = {
       postId: input.postId,
       authorId: user.id,
       authorName: user.profile.displayName || getDisplayName(user.email),
+      authorAvatarUrl: user.profile.avatarUrl ?? null,
       authorIsUctVerified: isUctVerifiedEmail(
         user.email,
         user.emailConfirmed,

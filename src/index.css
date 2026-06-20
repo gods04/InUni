@@ -3,6 +3,36 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    color-scheme: light;
+    --color-ink: 29 31 35;
+    --color-canvas: 245 246 248;
+    --color-line: 229 232 236;
+    --color-panel: 255 255 255;
+    --color-brand-50: 238 243 248;
+    --color-brand-100: 225 233 242;
+    --color-brand-600: 95 127 163;
+    --color-brand-700: 77 107 141;
+    --shadow-soft: 29 31 35;
+    --shadow-soft-alpha: 0.07;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      color-scheme: dark;
+      --color-ink: 231 238 247;
+      --color-canvas: 13 17 23;
+      --color-line: 51 61 76;
+      --color-panel: 20 26 34;
+      --color-brand-50: 32 44 58;
+      --color-brand-100: 55 72 93;
+      --color-brand-600: 143 170 201;
+      --color-brand-700: 174 198 225;
+      --shadow-soft: 0 0 0;
+      --shadow-soft-alpha: 0.28;
+    }
+  }
+
   * {
     box-sizing: border-box;
   }
@@ -29,7 +59,7 @@
   }
 
   .panel {
-    @apply rounded-lg border border-line bg-white shadow-soft;
+    @apply rounded-lg border border-line bg-panel shadow-soft;
   }
 
   .field-label {
@@ -37,7 +67,7 @@
   }
 
   .field-input {
-    @apply w-full rounded-lg border border-line bg-white px-3.5 py-2.5 text-sm text-ink outline-none transition placeholder:text-slate-400 focus:border-brand-600 focus:ring-4 focus:ring-brand-100;
+    @apply w-full rounded-lg border border-line bg-panel px-3.5 py-2.5 text-sm text-ink outline-none transition placeholder:text-slate-400 focus:border-brand-600 focus:ring-4 focus:ring-brand-100;
   }
 
   .primary-button {
@@ -45,14 +75,127 @@
   }
 
   .secondary-button {
-    @apply inline-flex min-h-10 items-center justify-center rounded-full border border-line bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-brand-100 hover:bg-brand-50 hover:text-ink focus:outline-none focus:ring-4 focus:ring-brand-100 disabled:cursor-not-allowed disabled:opacity-60;
+    @apply inline-flex min-h-10 items-center justify-center rounded-full border border-line bg-panel px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-brand-100 hover:bg-brand-50 hover:text-ink focus:outline-none focus:ring-4 focus:ring-brand-100 disabled:cursor-not-allowed disabled:opacity-60;
   }
 
   .danger-button {
-    @apply inline-flex min-h-9 items-center justify-center rounded-full border border-red-200 bg-white px-3.5 py-2 text-sm font-semibold text-red-700 transition hover:bg-red-50 focus:outline-none focus:ring-4 focus:ring-red-100 disabled:cursor-not-allowed disabled:opacity-60;
+    @apply inline-flex min-h-9 items-center justify-center rounded-full border border-red-200 bg-panel px-3.5 py-2 text-sm font-semibold text-red-700 transition hover:bg-red-50 focus:outline-none focus:ring-4 focus:ring-red-100 disabled:cursor-not-allowed disabled:opacity-60;
   }
 
   .badge {
     @apply inline-flex w-fit items-center rounded-full px-2.5 py-1 text-xs font-semibold;
+  }
+}
+
+@layer utilities {
+  @media (prefers-color-scheme: dark) {
+    .bg-white {
+      background-color: rgb(var(--color-panel) / 1);
+    }
+
+    .bg-white\/90 {
+      background-color: rgb(var(--color-panel) / 0.9);
+    }
+
+    .primary-button {
+      background-color: rgb(77 107 141 / 1);
+      color: rgb(255 255 255 / 1);
+    }
+
+    .primary-button:hover {
+      background-color: rgb(95 127 163 / 1);
+    }
+
+    .primary-button:disabled {
+      background-color: rgb(71 85 105 / 1);
+      color: rgb(203 213 225 / 1);
+    }
+
+    .bg-slate-50 {
+      background-color: rgb(24 31 40 / 1);
+    }
+
+    .bg-slate-100 {
+      background-color: rgb(31 39 50 / 1);
+    }
+
+    .bg-slate-300 {
+      background-color: rgb(71 85 105 / 1);
+    }
+
+    .text-slate-800,
+    .text-slate-700 {
+      color: rgb(222 230 240 / 1);
+    }
+
+    .text-slate-600 {
+      color: rgb(190 202 217 / 1);
+    }
+
+    .text-slate-500,
+    .text-slate-400 {
+      color: rgb(148 163 184 / 1);
+    }
+
+    .placeholder\:text-slate-400::placeholder {
+      color: rgb(148 163 184 / 1);
+    }
+
+    .border-slate-100,
+    .border-slate-200 {
+      border-color: rgb(var(--color-line) / 1);
+    }
+
+    .hover\:bg-slate-100:hover {
+      background-color: rgb(31 39 50 / 1);
+    }
+
+    .bg-emerald-50 {
+      background-color: rgb(6 78 59 / 0.32);
+    }
+
+    .text-emerald-800 {
+      color: rgb(167 243 208 / 1);
+    }
+
+    .bg-indigo-50 {
+      background-color: rgb(49 46 129 / 0.35);
+    }
+
+    .text-indigo-700 {
+      color: rgb(199 210 254 / 1);
+    }
+
+    .bg-amber-50 {
+      background-color: rgb(120 53 15 / 0.34);
+    }
+
+    .text-amber-800 {
+      color: rgb(253 230 138 / 1);
+    }
+
+    .bg-rose-50 {
+      background-color: rgb(136 19 55 / 0.32);
+    }
+
+    .text-rose-700 {
+      color: rgb(253 164 175 / 1);
+    }
+
+    .bg-red-50 {
+      background-color: rgb(127 29 29 / 0.3);
+    }
+
+    .border-red-200 {
+      border-color: rgb(153 27 27 / 0.65);
+    }
+
+    .text-red-700 {
+      color: rgb(252 165 165 / 1);
+    }
+
+    .focus\:ring-red-100:focus {
+      --tw-ring-color: rgb(127 29 29 / 0.38);
+    }
   }
 }

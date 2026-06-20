@@ -10,6 +10,11 @@ import type { ReactNode } from 'react';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 import { getAuthRedirectUrl } from '../lib/authRedirect';
 import { getDisplayName } from '../lib/format';
+import {
+  readFileAsDataUrl,
+  validateDisplayName,
+  validateProfilePhoto,
+} from '../lib/profileIdentity';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
 import type { ForumUser, Profile, UserRole } from '../types/forum';
 
@@ -28,6 +33,9 @@ export interface AuthContextValue {
   signUp: (email: string, password: string) => Promise<AuthResult>;
   requestPasswordReset: (email: string) => Promise<AuthResult>;
   updatePassword: (password: string) => Promise<AuthResult>;
+  updateDisplayName: (displayName: string) => Promise<AuthResult>;
+  uploadProfilePhoto: (file: File) => Promise<AuthResult>;
+  removeProfilePhoto: () => Promise<AuthResult>;
   signOut: () => Promise<void>;
 }
 
@@ -35,6 +43,7 @@ interface ProfileRow {
   id: string;
   username: string;
   display_name: string;
+  avatar_path: string | null;
   role: UserRole;
   is_banned: boolean;
   ban_reason: string | null;
@@ -43,9 +52,11 @@ interface ProfileRow {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 const demoUserKey = 'inuni.demoUser';
+const demoProfilesKey = 'inuni.profiles';
 const passwordRecoverySessionKey = 'inuni.passwordRecoverySession';
 const passwordRecoveryConfigurationMessage =
   'Password recovery requires Supabase configuration.';
+const profilePhotoBucket = 'inuni-avatars';
 
 function readPasswordRecoverySessionUserId(): string | null {
   if (typeof window === 'undefined') {
@@ -68,11 +79,22 @@ function writePasswordRecoverySession(userId: string | null): void {
   window.sessionStorage.removeItem(passwordRecoverySessionKey);
 }
 
+function getProfilePhotoUrl(path: string | null | undefined): string | null {
+  if (!path) return null;
+  if (path.startsWith('data:') || path.startsWith('http')) return path;
+  if (!isSupabaseConfigured || !supabase) return null;
+
+  return supabase.storage.from(profilePhotoBucket).getPublicUrl(path).data
+    .publicUrl;
+}
+
 function mapProfile(row: ProfileRow): Profile {
   return {
     id: row.id,
     username: row.username,
     displayName: row.display_name,
+    avatarPath: row.avatar_path ?? null,
+    avatarUrl: getProfilePhotoUrl(row.avatar_path),
     role: row.role,
     isBanned: row.is_banned,
     banReason: row.ban_reason,
@@ -88,7 +110,7 @@ async function loadSupabaseUser(user: SupabaseUser): Promise<ForumUser> {
   const { data, error } = await supabase
     .from('profiles')
     .select(
-      'id, username, display_name, role, is_banned, ban_reason, created_at',
+      'id, username, display_name, avatar_path, role, is_banned, ban_reason, created_at',
     )
     .eq('id', user.id)
     .single();
@@ -112,7 +134,7 @@ function createDemoUser(email: string): ForumUser {
   let storedProfile: Profile | undefined;
 
   if (typeof window !== 'undefined') {
-    const rawProfiles = window.localStorage.getItem('inuni.profiles');
+    const rawProfiles = window.localStorage.getItem(demoProfilesKey);
     if (rawProfiles) {
       try {
         storedProfile = (JSON.parse(rawProfiles) as Profile[]).find(
@@ -132,6 +154,8 @@ function createDemoUser(email: string): ForumUser {
       id,
       username: displayName.toLowerCase().replace(/\s+/g, '_'),
       displayName,
+      avatarPath: null,
+      avatarUrl: null,
       role: normalizedEmail === 'admin@inuni.local' ? 'admin' : 'student',
       isBanned: false,
       banReason: null,
@@ -173,6 +197,43 @@ function writeDemoUser(user: ForumUser | null): void {
   }
 
   window.localStorage.setItem(demoUserKey, JSON.stringify(user));
+}
+
+function writeDemoProfile(profile: Profile): void {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  const rawProfiles = window.localStorage.getItem(demoProfilesKey);
+  let profiles: Profile[] = [];
+
+  if (rawProfiles) {
+    try {
+      profiles = JSON.parse(rawProfiles) as Profile[];
+    } catch {
+      profiles = [];
+    }
+  }
+
+  const nextProfiles = [
+    profile,
+    ...profiles.filter((item) => item.id !== profile.id),
+  ];
+  window.localStorage.setItem(demoProfilesKey, JSON.stringify(nextProfiles));
+}
+
+function getProfilePhotoExtension(file: File): string {
+  if (file.type === 'image/jpeg') return 'jpg';
+  if (file.type === 'image/webp') return 'webp';
+  return 'png';
+}
+
+function createProfilePhotoPath(userId: string, file: File): string {
+  const randomId =
+    typeof crypto !== 'undefined' && 'randomUUID' in crypto
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  return `${userId}/${randomId}.${getProfilePhotoExtension(file)}`;
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -405,6 +466,135 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         writePasswordRecoverySession(null);
         setHasPasswordRecoverySession(false);
+        return {};
+      },
+      async updateDisplayName(displayName: string) {
+        const validationError = validateDisplayName(displayName);
+        if (validationError) return { error: validationError };
+        if (!user) return { error: 'Log in to edit your profile.' };
+        if (user.profile.isBanned) {
+          return { error: 'Restricted accounts cannot edit profile details.' };
+        }
+
+        const trimmedDisplayName = displayName.trim();
+
+        if (!isSupabaseConfigured || !supabase) {
+          const nextProfile = {
+            ...user.profile,
+            displayName: trimmedDisplayName,
+          };
+          const nextUser = { ...user, profile: nextProfile };
+          setUser(nextUser);
+          writeDemoUser(nextUser);
+          writeDemoProfile(nextProfile);
+          return {};
+        }
+
+        const { data, error } = await supabase.rpc(
+          'update_own_display_name',
+          {
+            new_display_name: trimmedDisplayName,
+          },
+        );
+
+        if (error) return { error: error.message };
+
+        const nextUser = {
+          ...user,
+          profile: mapProfile(data as ProfileRow),
+        };
+        setUser(nextUser);
+        return {};
+      },
+      async uploadProfilePhoto(file: File) {
+        const validationError = validateProfilePhoto(file);
+        if (validationError) return { error: validationError };
+        if (!user) return { error: 'Log in to edit your profile.' };
+        if (user.profile.isBanned) {
+          return { error: 'Restricted accounts cannot edit profile details.' };
+        }
+
+        if (!isSupabaseConfigured || !supabase) {
+          const avatarUrl = await readFileAsDataUrl(file);
+          const nextProfile = {
+            ...user.profile,
+            avatarPath: null,
+            avatarUrl,
+          };
+          const nextUser = { ...user, profile: nextProfile };
+          setUser(nextUser);
+          writeDemoUser(nextUser);
+          writeDemoProfile(nextProfile);
+          return {};
+        }
+
+        const nextPath = createProfilePhotoPath(user.id, file);
+        const oldPath = user.profile.avatarPath ?? null;
+        const storage = supabase.storage.from(profilePhotoBucket);
+        const { error: uploadError } = await storage.upload(nextPath, file, {
+          contentType: file.type,
+          upsert: false,
+        });
+
+        if (uploadError) {
+          return { error: `Could not upload profile photo: ${uploadError.message}` };
+        }
+
+        const { data, error } = await supabase.rpc('update_own_avatar', {
+          new_avatar_path: nextPath,
+        });
+
+        if (error) {
+          await storage.remove([nextPath]);
+          return { error: error.message };
+        }
+
+        if (oldPath) {
+          await storage.remove([oldPath]);
+        }
+
+        const nextUser = {
+          ...user,
+          profile: mapProfile(data as ProfileRow),
+        };
+        setUser(nextUser);
+        return {};
+      },
+      async removeProfilePhoto() {
+        if (!user) return { error: 'Log in to edit your profile.' };
+        if (user.profile.isBanned) {
+          return { error: 'Restricted accounts cannot edit profile details.' };
+        }
+
+        if (!isSupabaseConfigured || !supabase) {
+          const nextProfile = {
+            ...user.profile,
+            avatarPath: null,
+            avatarUrl: null,
+          };
+          const nextUser = { ...user, profile: nextProfile };
+          setUser(nextUser);
+          writeDemoUser(nextUser);
+          writeDemoProfile(nextProfile);
+          return {};
+        }
+
+        const oldPath = user.profile.avatarPath ?? null;
+        const { data, error } = await supabase.rpc('update_own_avatar', {
+          new_avatar_path: null,
+        });
+
+        if (error) return { error: error.message };
+
+        if (oldPath) {
+          await supabase.storage.from(profilePhotoBucket).remove([oldPath]);
+        }
+
+        const nextUser = {
+          ...user,
+          profile: mapProfile(data as ProfileRow),
+        };
+        setUser(nextUser);
         return {};
       },
       async signOut() {

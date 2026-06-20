@@ -4,6 +4,7 @@ import type { LinkedFile } from '../types/files';
 import type { ForumComment, ReportTarget } from '../types/forum';
 import { FileList } from './FileList';
 import { UctVerifiedBadge } from './UctVerifiedBadge';
+import { UserAvatar } from './UserAvatar';
 
 interface CommentListProps {
   comments: ForumComment[];
@@ -31,11 +32,22 @@ export function CommentList({
       {comments.map((comment) => (
         <article className="rounded-lg border border-line bg-white p-4 shadow-sm" key={comment.id}>
           <div className="flex items-start justify-between gap-3">
-            <div className="flex flex-wrap items-center gap-2 text-sm">
-              <span className="font-bold text-slate-900">{comment.authorName}</span>
-              {comment.authorIsUctVerified ? <UctVerifiedBadge /> : null}
-              <span className="text-slate-400">·</span>
-              <span className="text-slate-500">{formatRelativeTime(comment.createdAt)}</span>
+            <div className="flex min-w-0 items-center gap-3">
+              <UserAvatar
+                name={comment.authorName}
+                size="sm"
+                src={comment.authorAvatarUrl}
+              />
+              <div className="flex flex-wrap items-center gap-2 text-sm">
+                <span className="font-bold text-slate-900">
+                  {comment.authorName}
+                </span>
+                {comment.authorIsUctVerified ? <UctVerifiedBadge /> : null}
+                <span className="text-slate-400">·</span>
+                <span className="text-slate-500">
+                  {formatRelativeTime(comment.createdAt)}
+                </span>
+              </div>
             </div>
             {onReport ? (
               <button

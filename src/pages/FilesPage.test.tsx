@@ -135,7 +135,11 @@ describe('FilesPage', () => {
       </MemoryRouter>,
     );
 
-    await user.type(screen.getByLabelText('Search shared files'), 'guide');
+    const searchInput = screen.getByRole('searchbox', {
+      name: 'Search shared files',
+    });
+
+    await user.type(searchInput, 'guide');
     await user.type(screen.getByLabelText('Course code'), 'CSC1010H');
     await user.selectOptions(screen.getByLabelText('File type'), 'pdf');
 

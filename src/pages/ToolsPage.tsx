@@ -1,0 +1,133 @@
+import type { LucideIcon } from 'lucide-react';
+import {
+  ArrowRight,
+  BookOpen,
+  FileText,
+  Files,
+  MapPinned,
+  MessageSquarePlus,
+  Utensils,
+} from 'lucide-react';
+import { Link } from 'react-router-dom';
+
+interface ActiveTool {
+  detail: string;
+  icon: LucideIcon;
+  title: string;
+  to: string;
+}
+
+interface PlannedTool {
+  icon: LucideIcon;
+  title: string;
+}
+
+const activeTools: ActiveTool[] = [
+  {
+    detail: 'Questions, answers, updates, and study help.',
+    icon: BookOpen,
+    title: 'Forum',
+    to: '/',
+  },
+  {
+    detail: 'Approved notes, templates, and class resources.',
+    icon: Files,
+    title: 'Shared files',
+    to: '/files',
+  },
+  {
+    detail: 'Ask a question or share something useful.',
+    icon: MessageSquarePlus,
+    title: 'Create post',
+    to: '/create',
+  },
+];
+
+const plannedTools: PlannedTool[] = [
+  { icon: MapPinned, title: 'Classroom finder' },
+  { icon: FileText, title: 'Document tools' },
+  { icon: Utensils, title: 'Food tools' },
+];
+
+export function ToolsPage() {
+  return (
+    <div className="grid gap-5">
+      <section className="border-b border-line pb-6">
+        <p className="text-sm font-semibold text-brand-700">UCT utilities</p>
+        <h1 className="section-title">Student tools</h1>
+        <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-600">
+          Quick study and campus actions without crowding the forum.
+        </p>
+      </section>
+
+      <section aria-labelledby="available-tools-heading" className="grid gap-3">
+        <div>
+          <h2 className="text-base font-semibold text-ink" id="available-tools-heading">
+            Available now
+          </h2>
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-3">
+          {activeTools.map((tool) => {
+            const Icon = tool.icon;
+
+            return (
+              <Link
+                aria-label={tool.title}
+                className="panel group grid min-h-36 gap-4 p-4 transition hover:border-brand-100 hover:bg-brand-50 focus:outline-none focus:ring-4 focus:ring-brand-100"
+                key={tool.title}
+                to={tool.to}
+              >
+                <span className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-brand-50 text-brand-700 transition group-hover:bg-white">
+                  <Icon aria-hidden="true" size={20} strokeWidth={2.25} />
+                </span>
+                <span className="grid gap-1">
+                  <span className="text-lg font-semibold text-ink">
+                    {tool.title}
+                  </span>
+                  <span className="text-sm leading-6 text-slate-600">
+                    {tool.detail}
+                  </span>
+                </span>
+                <span className="mt-auto inline-flex items-center gap-1 text-sm font-semibold text-brand-700">
+                  Open
+                  <ArrowRight aria-hidden="true" size={16} strokeWidth={2.25} />
+                </span>
+              </Link>
+            );
+          })}
+        </div>
+      </section>
+
+      <section aria-labelledby="planned-tools-heading" className="grid gap-3">
+        <div>
+          <h2 className="text-base font-semibold text-ink" id="planned-tools-heading">
+            Planned next
+          </h2>
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-3">
+          {plannedTools.map((tool) => {
+            const Icon = tool.icon;
+
+            return (
+              <article className="panel grid min-h-28 gap-3 p-4" key={tool.title}>
+                <div className="flex items-start justify-between gap-3">
+                  <span className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-slate-100 text-slate-600">
+                    <Icon aria-hidden="true" size={20} strokeWidth={2.25} />
+                  </span>
+                  <span className="rounded-full border border-line px-2.5 py-1 text-xs font-semibold text-slate-600">
+                    Planned
+                  </span>
+                </div>
+                <h3 className="text-base font-semibold text-ink">
+                  {tool.title}
+                </h3>
+              </article>
+            );
+          })}
+        </div>
+      </section>
+    </div>
+  );
+}

@@ -14,6 +14,7 @@ const post = {
   category: 'Study' as const,
   authorId: 'user-1',
   authorName: 'Amahle',
+  authorAvatarUrl: 'https://example.com/avatar.png',
   authorIsUctVerified: true,
   isAnonymous: false,
   createdAt: new Date().toISOString(),
@@ -30,6 +31,16 @@ describe('PostCard', () => {
     expect(screen.getByText('UCT Verified')).toBeInTheDocument();
   });
 
+  it('shows a named author avatar', () => {
+    render(
+      <MemoryRouter>
+        <PostCard post={post} />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByLabelText('Amahle avatar')).toBeInTheDocument();
+  });
+
   it('does not expose verification on an anonymous post', () => {
     render(
       <MemoryRouter>
@@ -39,5 +50,6 @@ describe('PostCard', () => {
       </MemoryRouter>,
     );
     expect(screen.queryByText('UCT Verified')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Amahle avatar')).not.toBeInTheDocument();
   });
 });

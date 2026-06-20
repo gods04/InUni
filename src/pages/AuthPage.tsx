@@ -2,9 +2,54 @@ import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { ErrorState } from '../components/ErrorState';
+import { PasswordField } from '../components/PasswordField';
 import { useAuth } from '../hooks/useAuth';
 
 type AuthMode = 'login' | 'signup' | 'recovery';
+
+function isValidEmail(email: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+function getAuthErrorMessage(error: string, mode: AuthMode): string {
+  const normalizedError = error.toLowerCase();
+
+  if (normalizedError.includes('invalid login credentials')) {
+    return 'Email or password is incorrect. Check both and try again.';
+  }
+
+  if (normalizedError.includes('email not confirmed')) {
+    return 'Please confirm your email before logging in.';
+  }
+
+  if (
+    normalizedError.includes('invalid email') ||
+    normalizedError.includes('valid email') ||
+    normalizedError.includes('email address')
+  ) {
+    return 'Enter a valid email address.';
+  }
+
+  if (
+    mode === 'signup' &&
+    normalizedError.includes('password') &&
+    (normalizedError.includes('6') ||
+      normalizedError.includes('weak') ||
+      normalizedError.includes('short'))
+  ) {
+    return 'Password must be at least 6 characters.';
+  }
+
+  if (
+    normalizedError.includes('supabase is not configured') ||
+    (normalizedError.includes('provider') &&
+      normalizedError.includes('not configured'))
+  ) {
+    return 'Authentication is not fully configured yet. Please contact the site administrator.';
+  }
+
+  return error;
+}
 
 export function AuthPage() {
   const navigate = useNavigate();
@@ -30,14 +75,25 @@ export function AuthPage() {
     event.preventDefault();
     setError(null);
     setMessage(null);
+    const trimmedEmail = email.trim();
 
-    if (mode === 'recovery' && !email.trim()) {
+    if (mode === 'recovery' && !trimmedEmail) {
       setError('Email is required.');
       return;
     }
 
-    if (mode !== 'recovery' && (!email.trim() || !password.trim())) {
+    if (mode !== 'recovery' && (!trimmedEmail || !password.trim())) {
       setError('Email and password are required.');
+      return;
+    }
+
+    if (trimmedEmail && !isValidEmail(trimmedEmail)) {
+      setError('Enter a valid email address.');
+      return;
+    }
+
+    if (mode === 'signup' && password.length < 6) {
+      setError('Password must be at least 6 characters.');
       return;
     }
 
@@ -46,13 +102,13 @@ export function AuthPage() {
     try {
       const result =
         mode === 'recovery'
-          ? await requestPasswordReset(email.trim())
+          ? await requestPasswordReset(trimmedEmail)
           : mode === 'login'
-            ? await signIn(email.trim(), password)
-            : await signUp(email.trim(), password);
+            ? await signIn(trimmedEmail, password)
+            : await signUp(trimmedEmail, password);
 
       if (result.error) {
-        setError(result.error);
+        setError(getAuthErrorMessage(result.error, mode));
         return;
       }
 
@@ -95,7 +151,11 @@ export function AuthPage() {
         </p>
       </div>
 
-      <form className="panel grid gap-4 p-5 sm:p-6" onSubmit={handleSubmit}>
+      <form
+        className="panel grid gap-4 p-5 sm:p-6"
+        noValidate
+        onSubmit={handleSubmit}
+      >
         <label className="grid gap-2">
           <span className="field-label">Email</span>
           <input
@@ -109,19 +169,13 @@ export function AuthPage() {
         </label>
 
         {mode !== 'recovery' ? (
-          <label className="grid gap-2">
-            <span className="field-label">Password</span>
-            <input
-              className="field-input"
-              type="password"
-              autoComplete={
-                mode === 'login' ? 'current-password' : 'new-password'
-              }
-              placeholder="At least 6 characters"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-            />
-          </label>
+          <PasswordField
+            autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+            label="Password"
+            onChange={setPassword}
+            placeholder="At least 6 characters"
+            value={password}
+          />
         ) : null}
 
         {mode === 'login' ? (

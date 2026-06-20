@@ -1,6 +1,7 @@
 import { canPreviewFile, classifyFileType } from '../lib/fileValidation';
 import { createSignedDownloadUrl } from '../lib/fileApi';
 import type { LinkedFile } from '../types/files';
+import { UserAvatar } from './UserAvatar';
 
 interface FileListProps {
   files: LinkedFile[];
@@ -83,9 +84,16 @@ export function FileList({
                   {file.description}
                 </p>
               ) : null}
-              <p className="mt-1 text-xs font-semibold text-slate-500">
-                Uploaded by {file.ownerName} · scan {file.scanStatus.replace('_', ' ')}
-              </p>
+              <div className="mt-2 flex items-center gap-2 text-xs font-semibold text-slate-500">
+                <UserAvatar
+                  name={file.ownerName}
+                  size="sm"
+                  src={file.ownerAvatarUrl}
+                />
+                <p>
+                  Uploaded by {file.ownerName} · scan {file.scanStatus.replace('_', ' ')}
+                </p>
+              </div>
             </div>
 
             <div className="flex flex-wrap gap-2 sm:justify-end">

@@ -164,4 +164,26 @@ describe('mockFileStore', () => {
 
     expect(files.map((file) => file.displayFilename)).toEqual(['mine.pdf']);
   });
+
+  it('keeps profile avatar URLs on uploaded files', async () => {
+    const avatarUser = createDemoUserForFiles('avatar@uct.ac.za');
+    avatarUser.profile.avatarUrl = 'data:image/png;base64,avatar';
+
+    const [file] = await mockFileStore.uploadLinkedFiles({
+      context: { type: 'post', postId: 'post-1' },
+      drafts: [
+        {
+          file: makeFile('avatar-notes.pdf', 'application/pdf'),
+          description: '',
+          submitToSharedFiles: true,
+          courseCode: '',
+          campusOrFaculty: '',
+          tags: '',
+        },
+      ],
+      user: avatarUser,
+    });
+
+    expect(file.ownerAvatarUrl).toBe('data:image/png;base64,avatar');
+  });
 });

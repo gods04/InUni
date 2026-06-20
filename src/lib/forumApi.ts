@@ -14,6 +14,7 @@ interface ProfileRow {
   id: string;
   username: string | null;
   display_name: string | null;
+  avatar_path: string | null;
   is_uct_verified: boolean;
 }
 
@@ -51,6 +52,13 @@ function getAuthorName(row: PostRow, profile?: ProfileRow): string {
   return profile?.display_name || profile?.username || 'Student';
 }
 
+function getAvatarUrl(path: string | null | undefined): string | null {
+  if (!path) return null;
+  if (path.startsWith('data:') || path.startsWith('http')) return path;
+  const client = requireSupabase();
+  return client.storage.from('inuni-avatars').getPublicUrl(path).data.publicUrl;
+}
+
 async function getProfilesMap(userIds: string[]): Promise<Map<string, ProfileRow>> {
   const client = requireSupabase();
   const uniqueIds = Array.from(new Set(userIds.filter(Boolean)));
@@ -61,7 +69,7 @@ async function getProfilesMap(userIds: string[]): Promise<Map<string, ProfileRow
 
   const { data, error } = await client
     .from('public_profiles')
-    .select('id, username, display_name, is_uct_verified')
+    .select('id, username, display_name, avatar_path, is_uct_verified')
     .in('id', uniqueIds);
 
   if (error) {
@@ -100,6 +108,7 @@ function mapPost(row: PostRow, profile: ProfileRow | undefined, commentCount: nu
     category: row.category,
     authorId: row.author_id,
     authorName: getAuthorName(row, profile),
+    authorAvatarUrl: row.is_anonymous ? null : getAvatarUrl(profile?.avatar_path),
     authorIsUctVerified: profile?.is_uct_verified ?? false,
     isAnonymous: row.is_anonymous,
     createdAt: row.created_at,
@@ -113,6 +122,7 @@ function mapComment(row: CommentRow, profile: ProfileRow | undefined): ForumComm
     postId: row.post_id,
     authorId: row.author_id,
     authorName: profile?.display_name || profile?.username || 'Student',
+    authorAvatarUrl: getAvatarUrl(profile?.avatar_path),
     authorIsUctVerified: profile?.is_uct_verified ?? false,
     content: row.content,
     createdAt: row.created_at,

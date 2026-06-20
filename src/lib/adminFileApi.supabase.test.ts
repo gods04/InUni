@@ -11,12 +11,19 @@ import {
 const mocks = vi.hoisted(() => ({
   deleteFile: vi.fn(),
   from: vi.fn(),
+  getPublicUrl: vi.fn((path: string) => ({
+    data: { publicUrl: `https://cdn.inuni.test/${path}` },
+  })),
+  storageFrom: vi.fn(),
 }));
 
 vi.mock('./supabase', () => ({
   isSupabaseConfigured: true,
   supabase: {
     from: (...args: unknown[]) => mocks.from(...args),
+    storage: {
+      from: (...args: unknown[]) => mocks.storageFrom(...args),
+    },
   },
 }));
 
@@ -118,13 +125,19 @@ const profileRow = {
   id: 'owner-1',
   username: 'student',
   display_name: 'Student One',
+  avatar_path: 'owner-1/avatar.png',
 };
 
 describe('adminFileApi Supabase boundary', () => {
   beforeEach(() => {
     mocks.deleteFile.mockReset();
     mocks.from.mockReset();
+    mocks.getPublicUrl.mockClear();
+    mocks.storageFrom.mockReset();
     mocks.deleteFile.mockResolvedValue(undefined);
+    mocks.storageFrom.mockReturnValue({
+      getPublicUrl: mocks.getPublicUrl,
+    });
   });
 
   it('loads pending Shared Files submissions from Supabase', async () => {
@@ -138,6 +151,7 @@ describe('adminFileApi Supabase boundary', () => {
     expect(files).toHaveLength(1);
     expect(files[0]).toMatchObject({
       displayFilename: 'guide.pdf',
+      ownerAvatarUrl: 'https://cdn.inuni.test/owner-1/avatar.png',
       ownerName: 'Student One',
     });
     expect(files[0].links[0]).toMatchObject({

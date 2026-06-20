@@ -111,6 +111,10 @@ function getOwnerName(user: ForumUser): string {
   return user.profile.displayName || getDisplayName(user.email);
 }
 
+function getOwnerAvatarUrl(user: ForumUser): string | null {
+  return user.profile.avatarUrl ?? null;
+}
+
 function getFiles(): InUniFile[] {
   return readList<InUniFile>(filesKey);
 }
@@ -352,6 +356,7 @@ export const mockFileStore = {
         id: fileId,
         ownerId: user.id,
         ownerName: getOwnerName(user),
+        ownerAvatarUrl: getOwnerAvatarUrl(user),
         storageProvider: 'mock',
         storageBucket: mockStorageBucket,
         storagePath,

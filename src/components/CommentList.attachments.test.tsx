@@ -10,6 +10,7 @@ const comment: ForumComment = {
   postId: 'post-1',
   authorId: 'user-1',
   authorName: 'Student One',
+  authorAvatarUrl: 'https://example.com/student-one.png',
   authorIsUctVerified: true,
   content: 'Helpful comment.',
   createdAt: '2026-06-16T10:00:00.000Z',
@@ -49,5 +50,15 @@ describe('CommentList attachments', () => {
     );
 
     expect(screen.getByText('comment-notes.pdf')).toBeInTheDocument();
+  });
+
+  it('shows the comment author avatar', () => {
+    render(
+      <MemoryRouter>
+        <CommentList comments={[comment]} />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByLabelText('Student One avatar')).toBeInTheDocument();
   });
 });

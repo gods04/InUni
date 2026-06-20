@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { AuthProvider, useAuth } from './useAuth';
@@ -76,6 +76,66 @@ function PasswordRecoveryHarness() {
   );
 }
 
+function ProfileIdentityHarness() {
+  const {
+    user,
+    signIn,
+    updateDisplayName,
+    uploadProfilePhoto,
+    removeProfilePhoto,
+  } = useAuth();
+  const [result, setResult] = useState('');
+
+  return (
+    <>
+      <p>{user?.profile.displayName ?? 'no display name'}</p>
+      <output aria-label="avatar url">
+        {user?.profile.avatarUrl ?? 'no avatar'}
+      </output>
+      <output aria-label="profile result">{result}</output>
+      <button
+        onClick={() => void signIn('student@demo.local', 'password123')}
+        type="button"
+      >
+        Sign in for profile
+      </button>
+      <button
+        onClick={() => {
+          void updateDisplayName(' New Demo Name ').then((nextResult) => {
+            setResult(JSON.stringify(nextResult));
+          });
+        }}
+        type="button"
+      >
+        Update display name
+      </button>
+      <button
+        onClick={() => {
+          const file = new File(['avatar'], 'avatar.png', {
+            type: 'image/png',
+          });
+          void uploadProfilePhoto(file).then((nextResult) => {
+            setResult(JSON.stringify(nextResult));
+          });
+        }}
+        type="button"
+      >
+        Upload avatar
+      </button>
+      <button
+        onClick={() => {
+          void removeProfilePhoto().then((nextResult) => {
+            setResult(JSON.stringify(nextResult));
+          });
+        }}
+        type="button"
+      >
+        Remove avatar
+      </button>
+    </>
+  );
+}
+
 describe('demo authentication', () => {
   beforeEach(() => {
     window.localStorage.clear();
@@ -134,5 +194,50 @@ describe('demo authentication', () => {
     expect(
       screen.getByRole('status', { name: 'password update error' }),
     ).toBeEmptyDOMElement();
+  });
+
+  it('updates and persists the demo profile display name', async () => {
+    const user = userEvent.setup();
+    render(
+      <AuthProvider>
+        <ProfileIdentityHarness />
+      </AuthProvider>,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Sign in for profile' }));
+    await user.click(screen.getByRole('button', { name: 'Update display name' }));
+
+    expect(await screen.findByText('New Demo Name')).toBeInTheDocument();
+    expect(
+      screen.getByRole('status', { name: 'profile result' }),
+    ).toHaveTextContent('{}');
+    expect(
+      JSON.parse(window.localStorage.getItem('inuni.demoUser') ?? '{}').profile
+        .displayName,
+    ).toBe('New Demo Name');
+  });
+
+  it('stores and removes a demo profile photo', async () => {
+    const user = userEvent.setup();
+    render(
+      <AuthProvider>
+        <ProfileIdentityHarness />
+      </AuthProvider>,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Sign in for profile' }));
+    await user.click(screen.getByRole('button', { name: 'Upload avatar' }));
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole('status', { name: 'avatar url' }),
+      ).toHaveTextContent(/^data:image\/png;base64,/);
+    });
+
+    await user.click(screen.getByRole('button', { name: 'Remove avatar' }));
+
+    expect(
+      await screen.findByRole('status', { name: 'avatar url' }),
+    ).toHaveTextContent('no avatar');
   });
 });

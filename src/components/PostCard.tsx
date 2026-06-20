@@ -7,6 +7,7 @@ import { canParticipate } from '../lib/permissions';
 import type { Category, Post, ReportTarget } from '../types/forum';
 import { ReportDialog } from './ReportDialog';
 import { UctVerifiedBadge } from './UctVerifiedBadge';
+import { UserAvatar } from './UserAvatar';
 
 const categoryStyles: Record<Category, string> = {
   Study: 'bg-emerald-50 text-emerald-800',
@@ -56,8 +57,18 @@ export function PostCard({ post }: { post: Post }) {
 
         <div className="flex flex-col gap-3 border-t border-slate-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-wrap items-center gap-2 text-sm text-slate-500">
+            {!post.isAnonymous ? (
+              <UserAvatar
+                name={post.authorName}
+                size="sm"
+                src={post.authorAvatarUrl}
+              />
+            ) : null}
             <span>
-              By <span className="font-bold text-slate-700">{post.authorName}</span>
+              By{' '}
+              <span className="font-bold text-slate-700">
+                {post.authorName}
+              </span>
             </span>
             {!post.isAnonymous && post.authorIsUctVerified ? (
               <UctVerifiedBadge />

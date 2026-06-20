@@ -24,6 +24,8 @@
 -- 12. normal users cannot update shared_status.
 -- 13. active users can upload to their own storage prefix, while signed URL
 --     access remains tied to available file metadata.
+-- 14. active users can update their own display name/avatar path, while banned
+--     users cannot edit profile identity.
 
 select
   'profiles' as table_name,
@@ -68,7 +70,20 @@ select
   to_regprocedure('public.set_user_ban(uuid,boolean,text)') is not null
     as has_ban_rpc,
   to_regprocedure('public.update_own_profile(text,text)') is not null
-    as has_profile_rpc;
+    as has_profile_rpc,
+  to_regprocedure('public.update_own_display_name(text)') is not null
+    as has_display_name_rpc,
+  to_regprocedure('public.update_own_avatar(text)') is not null
+    as has_avatar_rpc;
+
+select
+  id,
+  public,
+  file_size_limit,
+  allowed_mime_types
+from storage.buckets
+where id in ('inuni-files', 'inuni-avatars')
+order by id;
 
 select
   public.is_uct_email('student@uct.ac.za', now()) as accepts_uct,

@@ -44,6 +44,92 @@ describe('AuthPage', () => {
     expect(signIn).toHaveBeenCalledWith('student@uct.ac.za', 'password123');
   });
 
+  it('shows a clearer login error for wrong credentials', async () => {
+    signIn.mockResolvedValueOnce({ error: 'Invalid login credentials' });
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <AuthPage />
+      </MemoryRouter>,
+    );
+
+    await user.type(screen.getByLabelText('Email'), 'student@uct.ac.za');
+    await user.type(screen.getByLabelText('Password'), 'wrong-password');
+    await user.click(screen.getByRole('button', { name: 'Log in' }));
+
+    expect(
+      await screen.findByText(
+        'Email or password is incorrect. Check both and try again.',
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('shows a clearer login error when the email is not confirmed', async () => {
+    signIn.mockResolvedValueOnce({ error: 'Email not confirmed' });
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <AuthPage />
+      </MemoryRouter>,
+    );
+
+    await user.type(screen.getByLabelText('Email'), 'student@uct.ac.za');
+    await user.type(screen.getByLabelText('Password'), 'password123');
+    await user.click(screen.getByRole('button', { name: 'Log in' }));
+
+    expect(
+      await screen.findByText(
+        'Please confirm your email before logging in.',
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('shows a clear email format error before submitting login', async () => {
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <AuthPage />
+      </MemoryRouter>,
+    );
+
+    await user.type(screen.getByLabelText('Email'), 'not-an-email');
+    await user.type(screen.getByLabelText('Password'), 'password123');
+    await user.click(screen.getByRole('button', { name: 'Log in' }));
+
+    expect(
+      screen.getByText('Enter a valid email address.'),
+    ).toBeInTheDocument();
+    expect(signIn).not.toHaveBeenCalled();
+  });
+
+  it('shows and hides the login password without changing submission', async () => {
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <AuthPage />
+      </MemoryRouter>,
+    );
+    const passwordInput = screen.getByLabelText('Password');
+
+    expect(passwordInput).toHaveAttribute('type', 'password');
+
+    await user.type(screen.getByLabelText('Email'), 'student@uct.ac.za');
+    await user.type(passwordInput, 'password123');
+    await user.click(
+      screen.getByRole('button', { name: 'Show password' }),
+    );
+
+    expect(passwordInput).toHaveAttribute('type', 'text');
+
+    await user.click(
+      screen.getByRole('button', { name: 'Hide password' }),
+    );
+    await user.click(screen.getByRole('button', { name: 'Log in' }));
+
+    expect(passwordInput).toHaveAttribute('type', 'password');
+    expect(signIn).toHaveBeenCalledWith('student@uct.ac.za', 'password123');
+  });
+
   it('switches to signup and submits registration', async () => {
     const user = userEvent.setup();
     render(
@@ -60,6 +146,50 @@ describe('AuthPage', () => {
     await user.click(screen.getByRole('button', { name: 'Create account' }));
 
     expect(signUp).toHaveBeenCalledWith('new@uct.ac.za', 'password123');
+  });
+
+  it('requires a longer password before submitting signup', async () => {
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <AuthPage />
+      </MemoryRouter>,
+    );
+
+    await user.click(
+      screen.getByRole('button', { name: 'Need an account? Sign up' }),
+    );
+    await user.type(screen.getByLabelText('Email'), 'new@uct.ac.za');
+    await user.type(screen.getByLabelText('Password'), 'short');
+    await user.click(screen.getByRole('button', { name: 'Create account' }));
+
+    expect(
+      screen.getByText('Password must be at least 6 characters.'),
+    ).toBeInTheDocument();
+    expect(signUp).not.toHaveBeenCalled();
+  });
+
+  it('shows a clearer signup error when authentication is not configured', async () => {
+    signUp.mockResolvedValueOnce({ error: 'Supabase is not configured.' });
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <AuthPage />
+      </MemoryRouter>,
+    );
+
+    await user.click(
+      screen.getByRole('button', { name: 'Need an account? Sign up' }),
+    );
+    await user.type(screen.getByLabelText('Email'), 'new@uct.ac.za');
+    await user.type(screen.getByLabelText('Password'), 'password123');
+    await user.click(screen.getByRole('button', { name: 'Create account' }));
+
+    expect(
+      await screen.findByText(
+        'Authentication is not fully configured yet. Please contact the site administrator.',
+      ),
+    ).toBeInTheDocument();
   });
 
   it('switches to recovery mode and requests a reset link', async () => {

@@ -14,6 +14,11 @@ const AdminFilesPage = lazy(() =>
     default: module.AdminFilesPage,
   })),
 );
+const AdminReportsPage = lazy(() =>
+  import('./pages/AdminReportsPage').then((module) => ({
+    default: module.AdminReportsPage,
+  })),
+);
 const AdminUsersPage = lazy(() =>
   import('./pages/AdminUsersPage').then((module) => ({
     default: module.AdminUsersPage,
@@ -47,6 +52,9 @@ const ResetPasswordPage = lazy(() =>
   import('./pages/ResetPasswordPage').then((module) => ({
     default: module.ResetPasswordPage,
   })),
+);
+const ToolsPage = lazy(() =>
+  import('./pages/ToolsPage').then((module) => ({ default: module.ToolsPage })),
 );
 
 function PageSuspense({ children }: { children: ReactNode }) {
@@ -96,6 +104,14 @@ export default function App() {
           }
         />
         <Route
+          path="/tools"
+          element={
+            <PageSuspense>
+              <ToolsPage />
+            </PageSuspense>
+          }
+        />
+        <Route
           path="/login"
           element={
             <PageSuspense>
@@ -127,6 +143,16 @@ export default function App() {
             <AdminRoute>
               <PageSuspense>
                 <AdminPage />
+              </PageSuspense>
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/admin/reports"
+          element={
+            <AdminRoute>
+              <PageSuspense>
+                <AdminReportsPage />
               </PageSuspense>
             </AdminRoute>
           }

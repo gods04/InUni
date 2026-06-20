@@ -92,6 +92,41 @@ describe('ResetPasswordPage', () => {
     expect(updatePassword).not.toHaveBeenCalled();
   });
 
+  it('shows and hides new and confirmation passwords independently', async () => {
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <ResetPasswordPage />
+      </MemoryRouter>,
+    );
+    const newPasswordInput = screen.getByLabelText('New password');
+    const confirmPasswordInput = screen.getByLabelText('Confirm password');
+
+    expect(newPasswordInput).toHaveAttribute('type', 'password');
+    expect(confirmPasswordInput).toHaveAttribute('type', 'password');
+
+    await user.click(
+      screen.getByRole('button', { name: 'Show new password' }),
+    );
+
+    expect(newPasswordInput).toHaveAttribute('type', 'text');
+    expect(confirmPasswordInput).toHaveAttribute('type', 'password');
+
+    await user.click(
+      screen.getByRole('button', { name: 'Show confirm password' }),
+    );
+
+    expect(newPasswordInput).toHaveAttribute('type', 'text');
+    expect(confirmPasswordInput).toHaveAttribute('type', 'text');
+
+    await user.click(
+      screen.getByRole('button', { name: 'Hide new password' }),
+    );
+
+    expect(newPasswordInput).toHaveAttribute('type', 'password');
+    expect(confirmPasswordInput).toHaveAttribute('type', 'text');
+  });
+
   it('updates the password, signs out, and returns to login', async () => {
     const user = userEvent.setup();
     render(

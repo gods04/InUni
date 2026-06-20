@@ -148,6 +148,7 @@ export function FilesPage() {
             className="field-input"
             onChange={(event) => updateFilters({ query: event.target.value })}
             placeholder="File name, course code, tag, or description"
+            type="search"
             value={filters.query}
           />
         </label>

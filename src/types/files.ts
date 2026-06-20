@@ -38,6 +38,7 @@ export interface InUniFile {
   id: string;
   ownerId: string;
   ownerName: string;
+  ownerAvatarUrl?: string | null;
   storageProvider: 'supabase' | 'mock';
   storageBucket: string;
   storagePath: string;

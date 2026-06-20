@@ -10,9 +10,21 @@ import type { Category, CategoryFilter, Post } from '../types/forum';
 
 export function HomePage() {
   const [category, setCategory] = useState<CategoryFilter>('All');
+  const [searchQuery, setSearchQuery] = useState('');
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const normalizedSearchQuery = searchQuery.trim().toLowerCase();
+  const visiblePosts = normalizedSearchQuery
+    ? posts.filter((post) =>
+        [
+          post.title,
+          post.content,
+          post.category,
+          post.authorName,
+        ].some((value) => value.toLowerCase().includes(normalizedSearchQuery)),
+      )
+    : posts;
 
   useEffect(() => {
     let isActive = true;
@@ -69,32 +81,51 @@ export function HomePage() {
 
       <section className="space-y-4">
         <div className="grid gap-4">
-          <div>
-            <h2 className="section-title">Latest conversations</h2>
-            <p className="mt-1 text-sm text-slate-600">
-              Browse the newest posts from the UCT community.
-            </p>
+          <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(16rem,22rem)] sm:items-end">
+            <div>
+              <h2 className="section-title">Latest conversations</h2>
+              <p className="mt-1 text-sm text-slate-600">
+                Browse the newest posts from the UCT community.
+              </p>
+            </div>
+            <label className="grid gap-2">
+              <span className="field-label">Search posts</span>
+              <input
+                aria-label="Search posts"
+                className="field-input"
+                onChange={(event) => setSearchQuery(event.target.value)}
+                placeholder="Title, topic, category, or author"
+                type="search"
+                value={searchQuery}
+              />
+            </label>
           </div>
           <CategoryTabs value={category} onChange={setCategory} />
         </div>
 
         {error ? <ErrorState message={error} /> : null}
         {loading ? <LoadingState label="Loading posts..." /> : null}
-        {!loading && !error && posts.length === 0 ? (
+        {!loading && !error && visiblePosts.length === 0 ? (
           <EmptyState
-            title="No posts here yet"
-            message="Start the first conversation in this category."
+            title={normalizedSearchQuery ? 'No posts found' : 'No posts here yet'}
+            message={
+              normalizedSearchQuery
+                ? 'Try another search or category.'
+                : 'Start the first conversation in this category.'
+            }
             action={
-              <Link className="primary-button" to="/create">
-                Create post
-              </Link>
+              normalizedSearchQuery ? undefined : (
+                <Link className="primary-button" to="/create">
+                  Create post
+                </Link>
+              )
             }
           />
         ) : null}
 
-        {!loading && !error && posts.length > 0 ? (
+        {!loading && !error && visiblePosts.length > 0 ? (
           <div className="grid gap-4">
-            {posts.map((post) => (
+            {visiblePosts.map((post) => (
               <PostCard key={post.id} post={post} />
             ))}
           </div>
