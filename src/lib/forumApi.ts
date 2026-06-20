@@ -1,5 +1,6 @@
 import { mockForumStore } from './mockStore';
 import { isSupabaseConfigured, supabase } from './supabase';
+import { isMissingAvatarPathError } from './supabaseCompat';
 import type {
   Category,
   ForumComment,
@@ -36,6 +37,11 @@ interface CommentRow {
   created_at: string;
 }
 
+const publicProfileSelectWithAvatar =
+  'id, username, display_name, avatar_path, is_uct_verified';
+const publicProfileSelectWithoutAvatar =
+  'id, username, display_name, is_uct_verified';
+
 function requireSupabase() {
   if (!supabase) {
     throw new Error('Supabase is not configured.');
@@ -69,11 +75,34 @@ async function getProfilesMap(userIds: string[]): Promise<Map<string, ProfileRow
 
   const { data, error } = await client
     .from('public_profiles')
-    .select('id, username, display_name, avatar_path, is_uct_verified')
+    .select(publicProfileSelectWithAvatar)
     .in('id', uniqueIds);
 
   if (error) {
-    throw new Error(error.message);
+    if (!isMissingAvatarPathError(error)) {
+      throw new Error(error.message);
+    }
+
+    const fallback = await client
+      .from('public_profiles')
+      .select(publicProfileSelectWithoutAvatar)
+      .in('id', uniqueIds);
+
+    if (fallback.error) {
+      throw new Error(fallback.error.message);
+    }
+
+    return new Map(
+      ((fallback.data ?? []) as Omit<ProfileRow, 'avatar_path'>[]).map(
+        (profile) => [
+          profile.id,
+          {
+            ...profile,
+            avatar_path: null,
+          },
+        ],
+      ),
+    );
   }
 
   return new Map((data ?? []).map((profile) => [profile.id, profile as ProfileRow]));

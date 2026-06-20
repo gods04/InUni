@@ -16,6 +16,7 @@ import {
   validateProfilePhoto,
 } from '../lib/profileIdentity';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
+import { isMissingAvatarPathError } from '../lib/supabaseCompat';
 import type { ForumUser, Profile, UserRole } from '../types/forum';
 
 interface AuthResult {
@@ -57,6 +58,10 @@ const passwordRecoverySessionKey = 'inuni.passwordRecoverySession';
 const passwordRecoveryConfigurationMessage =
   'Password recovery requires Supabase configuration.';
 const profilePhotoBucket = 'inuni-avatars';
+const profileSelectWithAvatar =
+  'id, username, display_name, avatar_path, role, is_banned, ban_reason, created_at';
+const profileSelectWithoutAvatar =
+  'id, username, display_name, role, is_banned, ban_reason, created_at';
 
 function readPasswordRecoverySessionUserId(): string | null {
   if (typeof window === 'undefined') {
@@ -102,28 +107,53 @@ function mapProfile(row: ProfileRow): Profile {
   };
 }
 
-async function loadSupabaseUser(user: SupabaseUser): Promise<ForumUser> {
+async function loadProfileRow(userId: string): Promise<ProfileRow> {
   if (!supabase) {
     throw new Error('Supabase is not configured.');
   }
 
   const { data, error } = await supabase
     .from('profiles')
-    .select(
-      'id, username, display_name, avatar_path, role, is_banned, ban_reason, created_at',
-    )
-    .eq('id', user.id)
+    .select(profileSelectWithAvatar)
+    .eq('id', userId)
     .single();
 
-  if (error) {
+  if (!error) {
+    return data as ProfileRow;
+  }
+
+  if (!isMissingAvatarPathError(error)) {
     throw new Error(`Could not load your profile: ${error.message}`);
   }
+
+  const fallback = await supabase
+    .from('profiles')
+    .select(profileSelectWithoutAvatar)
+    .eq('id', userId)
+    .single();
+
+  if (fallback.error) {
+    throw new Error(`Could not load your profile: ${fallback.error.message}`);
+  }
+
+  return {
+    ...(fallback.data as Omit<ProfileRow, 'avatar_path'>),
+    avatar_path: null,
+  };
+}
+
+async function loadSupabaseUser(user: SupabaseUser): Promise<ForumUser> {
+  if (!supabase) {
+    throw new Error('Supabase is not configured.');
+  }
+
+  const profile = await loadProfileRow(user.id);
 
   return {
     id: user.id,
     email: user.email ?? 'student@inuni.local',
     emailConfirmed: Boolean(user.email_confirmed_at),
-    profile: mapProfile(data as ProfileRow),
+    profile: mapProfile(profile),
   };
 }
 

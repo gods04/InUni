@@ -162,6 +162,42 @@ describe('adminFileApi Supabase boundary', () => {
     expect(fileQuery.in).toHaveBeenCalledWith('id', ['file-1']);
   });
 
+  it('loads pending files when public profiles do not expose avatar paths yet', async () => {
+    const linkQuery = createQuery({ data: [sharedLinkRow], error: null });
+    const fileQuery = createQuery({ data: [fileRow], error: null });
+    const profileQuery = createQuery({
+      data: null,
+      error: { message: 'column public_profiles.avatar_path does not exist' },
+    });
+    const fallbackProfileQuery = createQuery({
+      data: [
+        {
+          id: 'owner-1',
+          username: 'student',
+          display_name: 'Student One',
+        },
+      ],
+      error: null,
+    });
+    queueQueries(linkQuery, fileQuery, profileQuery, fallbackProfileQuery);
+
+    const files = await getPendingSharedFiles();
+
+    expect(files).toHaveLength(1);
+    expect(files[0]).toMatchObject({
+      displayFilename: 'guide.pdf',
+      ownerAvatarUrl: null,
+      ownerName: 'Student One',
+    });
+    expect(profileQuery.select).toHaveBeenCalledWith(
+      'id, username, display_name, avatar_path',
+    );
+    expect(fallbackProfileQuery.select).toHaveBeenCalledWith(
+      'id, username, display_name',
+    );
+    expect(mocks.storageFrom).not.toHaveBeenCalled();
+  });
+
   it('loads auto-hidden files with their links', async () => {
     const fileQuery = createQuery({ data: [hiddenFileRow], error: null });
     const linkQuery = createQuery({

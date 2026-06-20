@@ -6,6 +6,7 @@ import type {
 } from '../types/files';
 import { mockFileStore } from './mockFileStore';
 import { isSupabaseConfigured, supabase } from './supabase';
+import { isMissingAvatarPathError } from './supabaseCompat';
 import { supabaseStorageProvider } from './supabaseStorageProvider';
 
 interface FileRow {
@@ -58,6 +59,8 @@ const fileSelect =
 
 const fileLinkSelect =
   'id, file_id, link_type, post_id, comment_id, shared_status, course_code, campus_or_faculty, tags, created_at';
+const ownerProfileSelectWithAvatar = 'id, username, display_name, avatar_path';
+const ownerProfileSelectWithoutAvatar = 'id, username, display_name';
 
 function requireSupabase() {
   if (!supabase) throw new Error('Supabase is not configured.');
@@ -155,13 +158,34 @@ async function getOwnerProfiles(
 
   const { data, error } = await client
     .from('public_profiles')
-    .select('id, username, display_name, avatar_path')
+    .select(ownerProfileSelectWithAvatar)
     .in('id', uniqueOwnerIds);
 
-  if (error) throw new Error('Could not load file queues.');
+  let profiles = (data ?? []) as PublicProfileRow[];
+
+  if (error) {
+    if (!isMissingAvatarPathError(error)) {
+      throw new Error('Could not load file queues.');
+    }
+
+    const fallback = await client
+      .from('public_profiles')
+      .select(ownerProfileSelectWithoutAvatar)
+      .in('id', uniqueOwnerIds);
+
+    if (fallback.error) throw new Error('Could not load file queues.');
+
+    profiles = ((fallback.data ?? []) as Omit<
+      PublicProfileRow,
+      'avatar_path'
+    >[]).map((profile) => ({
+      ...profile,
+      avatar_path: null,
+    }));
+  }
 
   return new Map(
-    ((data ?? []) as PublicProfileRow[]).map((profile) => [
+    profiles.map((profile) => [
       profile.id,
       {
         name: profile.display_name || profile.username || 'Student',

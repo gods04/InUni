@@ -11,6 +11,7 @@ const supabaseMocks = vi.hoisted(() => ({
   onAuthStateChange: vi.fn(),
   resetPasswordForEmail: vi.fn(),
   rpc: vi.fn(),
+  select: vi.fn(),
   signInWithPassword: vi.fn(),
   signOut: vi.fn(),
   signUp: vi.fn(),
@@ -40,13 +41,15 @@ vi.mock('../lib/supabase', () => ({
       from: (...args: unknown[]) => supabaseMocks.storageFrom(...args),
     },
     from: vi.fn(() => ({
-      select: vi.fn(() => ({
-        eq: vi.fn(() => ({
-          single: supabaseMocks.single,
-        })),
-      })),
+      select: (...args: unknown[]) => supabaseMocks.select(...args),
     })),
   },
+}));
+
+supabaseMocks.select.mockImplementation(() => ({
+  eq: vi.fn(() => ({
+    single: supabaseMocks.single,
+  })),
 }));
 
 import { AuthProvider, useAuth } from './useAuth';
@@ -404,6 +407,42 @@ describe('configured Supabase authentication', () => {
 
     expect(screen.getByText('no user')).toBeInTheDocument();
     expect(screen.getByText('no session')).toBeInTheDocument();
+  });
+
+  it('loads a signed-in user when the production profile schema has no avatar path yet', async () => {
+    supabaseMocks.getSession.mockResolvedValue({
+      data: { session: { user: supabaseUser } },
+    });
+    supabaseMocks.single
+      .mockResolvedValueOnce({
+        data: null,
+        error: { message: 'column profiles.avatar_path does not exist' },
+      })
+      .mockResolvedValueOnce({
+        data: {
+          id: profileRow.id,
+          username: profileRow.username,
+          display_name: profileRow.display_name,
+          role: profileRow.role,
+          is_banned: profileRow.is_banned,
+          ban_reason: profileRow.ban_reason,
+          created_at: profileRow.created_at,
+        },
+        error: null,
+      });
+
+    renderAuthProvider();
+
+    expect(await screen.findByText('student-1')).toBeInTheDocument();
+    expect(screen.getByRole('status', { name: 'avatar url' })).toHaveTextContent(
+      'no avatar',
+    );
+    expect(supabaseMocks.select).toHaveBeenCalledWith(
+      'id, username, display_name, avatar_path, role, is_banned, ban_reason, created_at',
+    );
+    expect(supabaseMocks.select).toHaveBeenCalledWith(
+      'id, username, display_name, role, is_banned, ban_reason, created_at',
+    );
   });
 
   it('updates the display name through the profile RPC', async () => {
