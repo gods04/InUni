@@ -129,7 +129,7 @@ export function AdminPage() {
 
       {metrics ? (
         <>
-          <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
             <MetricCard
               detail={metrics.trafficSourceLabel}
               label="Visitors today"
@@ -152,7 +152,7 @@ export function AdminPage() {
             />
           </section>
 
-          <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
             <MetricCard
               detail={`${metrics.totalComments.toLocaleString()} total comments`}
               label="Comments today"

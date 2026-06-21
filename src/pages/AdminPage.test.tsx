@@ -149,4 +149,24 @@ describe('AdminPage', () => {
       screen.queryByRole('button', { name: 'Delete post' }),
     ).not.toBeInTheDocument();
   });
+
+  it('keeps dashboard metric cards compact on mobile widths', async () => {
+    render(
+      <MemoryRouter>
+        <AdminPage />
+      </MemoryRouter>,
+    );
+
+    const firstMetricsGrid = (
+      await screen.findByText('Visitors today')
+    ).closest('section');
+    const secondMetricsGrid = screen
+      .getByText('Comments today')
+      .closest('section');
+
+    expect(firstMetricsGrid).toHaveClass('grid-cols-2');
+    expect(firstMetricsGrid).toHaveClass('lg:grid-cols-4');
+    expect(secondMetricsGrid).toHaveClass('grid-cols-2');
+    expect(secondMetricsGrid).toHaveClass('lg:grid-cols-4');
+  });
 });
