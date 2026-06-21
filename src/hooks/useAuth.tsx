@@ -16,7 +16,10 @@ import {
   validateProfilePhoto,
 } from '../lib/profileIdentity';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
-import { isMissingAvatarPathError } from '../lib/supabaseCompat';
+import {
+  isMissingAvatarPathError,
+  isMissingRpcFunctionError,
+} from '../lib/supabaseCompat';
 import type { ForumUser, Profile, UserRole } from '../types/forum';
 
 interface AuthResult {
@@ -44,7 +47,7 @@ interface ProfileRow {
   id: string;
   username: string;
   display_name: string;
-  avatar_path: string | null;
+  avatar_path?: string | null;
   role: UserRole;
   is_banned: boolean;
   ban_reason: string | null;
@@ -527,11 +530,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           },
         );
 
-        if (error) return { error: error.message };
+        let nextProfileRow = data as ProfileRow | null;
+
+        if (error) {
+          if (!isMissingRpcFunctionError(error, 'update_own_display_name')) {
+            return { error: error.message };
+          }
+
+          const legacyResult = await supabase.rpc('update_own_profile', {
+            new_username: user.profile.username,
+            new_display_name: trimmedDisplayName,
+          });
+
+          if (legacyResult.error) {
+            return { error: legacyResult.error.message };
+          }
+
+          nextProfileRow = legacyResult.data as ProfileRow;
+        }
 
         const nextUser = {
           ...user,
-          profile: mapProfile(data as ProfileRow),
+          profile: mapProfile(nextProfileRow as ProfileRow),
         };
         setUser(nextUser);
         return {};

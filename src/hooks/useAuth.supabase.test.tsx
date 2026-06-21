@@ -471,6 +471,48 @@ describe('configured Supabase authentication', () => {
     ).toHaveTextContent('{}');
   });
 
+  it('updates the display name through the legacy profile RPC when the display-name RPC is missing', async () => {
+    supabaseMocks.getSession.mockResolvedValue({
+      data: { session: { user: supabaseUser } },
+    });
+    supabaseMocks.rpc
+      .mockResolvedValueOnce({
+        data: null,
+        error: {
+          message:
+            'Could not find the function public.update_own_display_name(new_display_name) in the schema cache',
+        },
+      })
+      .mockResolvedValueOnce({
+        data: {
+          ...profileRow,
+          display_name: 'New Supabase Name',
+        },
+        error: null,
+      });
+    const user = userEvent.setup();
+    renderAuthProvider();
+
+    expect(await screen.findByText('Student')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Update display name' }));
+
+    expect(supabaseMocks.rpc).toHaveBeenNthCalledWith(
+      1,
+      'update_own_display_name',
+      {
+        new_display_name: 'New Supabase Name',
+      },
+    );
+    expect(supabaseMocks.rpc).toHaveBeenNthCalledWith(2, 'update_own_profile', {
+      new_username: 'student',
+      new_display_name: 'New Supabase Name',
+    });
+    expect(await screen.findByText('New Supabase Name')).toBeInTheDocument();
+    expect(
+      screen.getByRole('status', { name: 'profile result' }),
+    ).toHaveTextContent('{}');
+  });
+
   it('uploads a profile photo and stores the returned avatar path', async () => {
     supabaseMocks.getSession.mockResolvedValue({
       data: { session: { user: supabaseUser } },

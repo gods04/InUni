@@ -10,3 +10,22 @@ export function isMissingAvatarPathError(error: unknown): boolean {
     (message.includes('does not exist') || candidate?.code === '42703')
   );
 }
+
+export function isMissingRpcFunctionError(
+  error: unknown,
+  functionName: string,
+): boolean {
+  const candidate = error as { code?: string; message?: string } | null;
+  const message =
+    typeof candidate?.message === 'string'
+      ? candidate.message.toLowerCase()
+      : String(error ?? '').toLowerCase();
+  const normalizedFunctionName = functionName.toLowerCase();
+
+  return (
+    message.includes(normalizedFunctionName) &&
+    (message.includes('could not find') ||
+      message.includes('schema cache') ||
+      candidate?.code === 'PGRST202')
+  );
+}
