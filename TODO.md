@@ -84,7 +84,7 @@ support that community instead of turning the site into a crowded dashboard.
       search, more content will feel like clutter.
 - [x] The app needs a clearer "student utility" structure before adding more
       tools. A tools hub is safer than adding many separate pages to the nav.
-- [ ] Empty states should stay useful but compact. Large empty panels make the
+- [x] Empty states should stay useful but compact. Large empty panels make the
       app feel bigger than the content inside it.
 - [ ] Mobile density needs special care because this product will often be used
       while walking, in class, or quickly between lectures.
@@ -141,7 +141,7 @@ support that community instead of turning the site into a crowded dashboard.
 - [x] Group classroom finder, document tools, food tools, and future utilities
       under Tools instead of adding them all to the main nav.
 - [ ] Add search as a first-class action, but keep it visually lightweight.
-- [ ] Add route-level empty states that are shorter and more action-oriented.
+- [x] Add route-level empty states that are shorter and more action-oriented.
 - [ ] Review mobile navigation before adding any new top-level page.
 
 ## Public reading and login gates
