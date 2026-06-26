@@ -4,19 +4,23 @@ import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthPage } from './AuthPage';
 
-const { requestPasswordReset, signIn, signUp } = vi.hoisted(() => ({
-  requestPasswordReset: vi.fn().mockResolvedValue({
-    message:
-      'If an account exists for that email, a password reset link has been sent.',
+const { requestPasswordReset, signIn, signInWithGoogle, signUp } = vi.hoisted(
+  () => ({
+    requestPasswordReset: vi.fn().mockResolvedValue({
+      message:
+        'If an account exists for that email, a password reset link has been sent.',
+    }),
+    signIn: vi.fn().mockResolvedValue({}),
+    signInWithGoogle: vi.fn().mockResolvedValue({}),
+    signUp: vi.fn().mockResolvedValue({}),
   }),
-  signIn: vi.fn().mockResolvedValue({}),
-  signUp: vi.fn().mockResolvedValue({}),
-}));
+);
 
 vi.mock('../hooks/useAuth', () => ({
   useAuth: () => ({
     requestPasswordReset,
     signIn,
+    signInWithGoogle,
     signUp,
     isDemoMode: true,
   }),
@@ -26,6 +30,7 @@ describe('AuthPage', () => {
   beforeEach(() => {
     requestPasswordReset.mockClear();
     signIn.mockClear();
+    signInWithGoogle.mockClear();
     signUp.mockClear();
   });
 
@@ -128,6 +133,44 @@ describe('AuthPage', () => {
 
     expect(passwordInput).toHaveAttribute('type', 'password');
     expect(signIn).toHaveBeenCalledWith('student@uct.ac.za', 'password123');
+  });
+
+  it('starts Google login from the login form without requiring email or password', async () => {
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <AuthPage />
+      </MemoryRouter>,
+    );
+
+    await user.click(
+      screen.getByRole('button', { name: 'Continue with Google' }),
+    );
+
+    expect(signInWithGoogle).toHaveBeenCalledOnce();
+    expect(signIn).not.toHaveBeenCalled();
+  });
+
+  it('shows a clear message when Google login is not configured yet', async () => {
+    signInWithGoogle.mockResolvedValueOnce({
+      error: 'Google login requires Supabase Google OAuth configuration.',
+    });
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <AuthPage />
+      </MemoryRouter>,
+    );
+
+    await user.click(
+      screen.getByRole('button', { name: 'Continue with Google' }),
+    );
+
+    expect(
+      await screen.findByText(
+        'Google login requires Supabase Google OAuth configuration.',
+      ),
+    ).toBeInTheDocument();
   });
 
   it('switches to signup and submits registration', async () => {

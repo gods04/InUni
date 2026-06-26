@@ -42,6 +42,29 @@ describe('mockFileStore', () => {
     ]);
   });
 
+  it('rejects unsupported upload types before storing metadata', async () => {
+    await expect(
+      mockFileStore.uploadLinkedFiles({
+        context: { type: 'post', postId: 'post-1' },
+        drafts: [
+          {
+            file: makeFile('installer.exe', 'application/x-msdownload'),
+            description: '',
+            submitToSharedFiles: false,
+            courseCode: '',
+            campusOrFaculty: '',
+            tags: '',
+          },
+        ],
+        user: student,
+      }),
+    ).rejects.toThrow(
+      'This file type cannot be uploaded yet. Try PDF, images, Office documents, spreadsheets, presentations, text files, or ZIP archives.',
+    );
+
+    await expect(mockFileStore.getFilesForPost('post-1')).resolves.toEqual([]);
+  });
+
   it('keeps shared files pending until approved', async () => {
     const [file] = await mockFileStore.uploadLinkedFiles({
       context: { type: 'post', postId: 'post-1' },
@@ -128,6 +151,63 @@ describe('mockFileStore', () => {
         user: reporterA,
       }),
     ).rejects.toThrow('You have already reported this file.');
+  });
+
+  it('requires an active user before creating mock signed download URLs', async () => {
+    const [file] = await mockFileStore.uploadLinkedFiles({
+      context: { type: 'post', postId: 'post-1' },
+      drafts: [
+        {
+          file: makeFile('notes.pdf', 'application/pdf'),
+          description: '',
+          submitToSharedFiles: false,
+          courseCode: '',
+          campusOrFaculty: '',
+          tags: '',
+        },
+      ],
+      user: student,
+    });
+
+    await expect(
+      mockFileStore.createSignedDownloadUrl(file.id, null),
+    ).rejects.toThrow(
+      'Log in to download files.',
+    );
+  });
+
+  it('blocks restricted users before creating mock signed download URLs', async () => {
+    const [file] = await mockFileStore.uploadLinkedFiles({
+      context: { type: 'post', postId: 'post-1' },
+      drafts: [
+        {
+          file: makeFile('notes.pdf', 'application/pdf'),
+          description: '',
+          submitToSharedFiles: false,
+          courseCode: '',
+          campusOrFaculty: '',
+          tags: '',
+        },
+      ],
+      user: student,
+    });
+    const restrictedUser = {
+      ...student,
+      profile: {
+        ...student.profile,
+        isBanned: true,
+        banReason: 'Repeated unsafe uploads',
+      },
+    };
+
+    await expect(
+      mockFileStore.createSignedDownloadUrl(file.id, restrictedUser),
+    ).rejects.toThrow(
+      'Your restricted account cannot download files.',
+    );
+
+    const [storedFile] = await getUserFiles(student.id);
+    expect(storedFile.downloadCount).toBe(0);
   });
 
   it('returns files uploaded by one owner', async () => {

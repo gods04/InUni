@@ -76,6 +76,27 @@ function PasswordRecoveryHarness() {
   );
 }
 
+function SocialAuthHarness() {
+  const { signInWithGoogle } = useAuth();
+  const [result, setResult] = useState('');
+
+  return (
+    <>
+      <button
+        onClick={() => {
+          void signInWithGoogle().then((nextResult) => {
+            setResult(JSON.stringify(nextResult));
+          });
+        }}
+        type="button"
+      >
+        Continue with Google
+      </button>
+      <output aria-label="google result">{result}</output>
+    </>
+  );
+}
+
 function ProfileIdentityHarness() {
   const {
     user,
@@ -149,6 +170,7 @@ describe('demo authentication', () => {
       role: 'student',
       isBanned: true,
       banReason: 'Repeated harassment',
+      isUctVerified: false,
       createdAt: '2026-06-14T00:00:00.000Z',
     };
     window.localStorage.setItem('inuni.profiles', JSON.stringify([profile]));
@@ -194,6 +216,25 @@ describe('demo authentication', () => {
     expect(
       screen.getByRole('status', { name: 'password update error' }),
     ).toBeEmptyDOMElement();
+  });
+
+  it('reports that Google login requires Supabase OAuth configuration', async () => {
+    const user = userEvent.setup();
+    render(
+      <AuthProvider>
+        <SocialAuthHarness />
+      </AuthProvider>,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Continue with Google' }));
+
+    expect(
+      await screen.findByRole('status', { name: 'google result' }),
+    ).toHaveTextContent(
+      JSON.stringify({
+        error: 'Google login requires Supabase Google OAuth configuration.',
+      }),
+    );
   });
 
   it('updates and persists the demo profile display name', async () => {

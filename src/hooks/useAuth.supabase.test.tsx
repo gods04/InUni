@@ -12,6 +12,7 @@ const supabaseMocks = vi.hoisted(() => ({
   resetPasswordForEmail: vi.fn(),
   rpc: vi.fn(),
   select: vi.fn(),
+  signInWithOAuth: vi.fn(),
   signInWithPassword: vi.fn(),
   signOut: vi.fn(),
   signUp: vi.fn(),
@@ -31,6 +32,7 @@ vi.mock('../lib/supabase', () => ({
       getSession: supabaseMocks.getSession,
       onAuthStateChange: supabaseMocks.onAuthStateChange,
       resetPasswordForEmail: supabaseMocks.resetPasswordForEmail,
+      signInWithOAuth: supabaseMocks.signInWithOAuth,
       signInWithPassword: supabaseMocks.signInWithPassword,
       signOut: supabaseMocks.signOut,
       signUp: supabaseMocks.signUp,
@@ -67,6 +69,7 @@ const profileRow = {
   role: 'student',
   is_banned: false,
   ban_reason: null,
+  is_uct_verified: true,
   avatar_path: null,
   created_at: '2026-06-15T00:00:00.000Z',
 };
@@ -88,6 +91,7 @@ function SupabaseAuthHarness() {
     hasPasswordRecoverySession,
     requestPasswordReset,
     removeProfilePhoto,
+    signInWithGoogle,
     signOut,
     updateDisplayName,
     updatePassword,
@@ -95,6 +99,7 @@ function SupabaseAuthHarness() {
   } = useAuth();
   const [resetResult, setResetResult] = useState('{}');
   const [profileResult, setProfileResult] = useState('{}');
+  const [googleResult, setGoogleResult] = useState('{}');
   const [updateResult, setUpdateResult] = useState('{}');
 
   return (
@@ -103,6 +108,9 @@ function SupabaseAuthHarness() {
       <p>{user?.profile.displayName ?? 'no display name'}</p>
       <output aria-label="avatar url">
         {user?.profile.avatarUrl ?? 'no avatar'}
+      </output>
+      <output aria-label="uct verification">
+        {user?.profile.isUctVerified ? 'uct verified' : 'not uct verified'}
       </output>
       <p>{hasAuthSession ? 'session' : 'no session'}</p>
       <p>
@@ -121,6 +129,17 @@ function SupabaseAuthHarness() {
         Request password reset
       </button>
       <output aria-label="password reset result">{resetResult}</output>
+      <button
+        onClick={() => {
+          void signInWithGoogle().then((result) => {
+            setGoogleResult(JSON.stringify(result));
+          });
+        }}
+        type="button"
+      >
+        Continue with Google
+      </button>
+      <output aria-label="google result">{googleResult}</output>
       <button
         onClick={() => {
           void updatePassword('new-password123').then((result) => {
@@ -215,6 +234,10 @@ describe('configured Supabase authentication', () => {
       error: null,
     });
     supabaseMocks.resetPasswordForEmail.mockResolvedValue({ error: null });
+    supabaseMocks.signInWithOAuth.mockResolvedValue({
+      data: { url: 'https://accounts.google.com/o/oauth2/v2/auth' },
+      error: null,
+    });
     supabaseMocks.updateUser.mockResolvedValue({ error: null });
     supabaseMocks.rpc.mockResolvedValue({ data: profileRow, error: null });
     supabaseMocks.storageGetPublicUrl.mockReturnValue({
@@ -267,6 +290,38 @@ describe('configured Supabase authentication', () => {
     expect(
       screen.getByRole('status', { name: 'password reset result' }),
     ).toHaveTextContent(JSON.stringify({ error: 'Reset unavailable' }));
+  });
+
+  it('starts Google OAuth with the profile redirect', async () => {
+    const user = userEvent.setup();
+    renderAuthProvider();
+
+    await user.click(screen.getByRole('button', { name: 'Continue with Google' }));
+
+    expect(supabaseMocks.signInWithOAuth).toHaveBeenCalledWith({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/profile`,
+      },
+    });
+    expect(
+      screen.getByRole('status', { name: 'google result' }),
+    ).toHaveTextContent('{}');
+  });
+
+  it('returns the Google OAuth provider error', async () => {
+    supabaseMocks.signInWithOAuth.mockResolvedValue({
+      data: { url: null },
+      error: { message: 'Provider is not configured' },
+    });
+    const user = userEvent.setup();
+    renderAuthProvider();
+
+    await user.click(screen.getByRole('button', { name: 'Continue with Google' }));
+
+    expect(
+      screen.getByRole('status', { name: 'google result' }),
+    ).toHaveTextContent(JSON.stringify({ error: 'Provider is not configured' }));
   });
 
   it('updates the password and clears recovery readiness after success', async () => {
@@ -426,6 +481,7 @@ describe('configured Supabase authentication', () => {
           role: profileRow.role,
           is_banned: profileRow.is_banned,
           ban_reason: profileRow.ban_reason,
+          is_uct_verified: profileRow.is_uct_verified,
           created_at: profileRow.created_at,
         },
         error: null,
@@ -438,10 +494,32 @@ describe('configured Supabase authentication', () => {
       'no avatar',
     );
     expect(supabaseMocks.select).toHaveBeenCalledWith(
-      'id, username, display_name, avatar_path, role, is_banned, ban_reason, created_at',
+      'id, username, display_name, avatar_path, role, is_banned, ban_reason, is_uct_verified, created_at',
     );
     expect(supabaseMocks.select).toHaveBeenCalledWith(
-      'id, username, display_name, role, is_banned, ban_reason, created_at',
+      'id, username, display_name, role, is_banned, ban_reason, is_uct_verified, created_at',
+    );
+  });
+
+  it('loads the stored UCT verification state with the profile', async () => {
+    supabaseMocks.getSession.mockResolvedValue({
+      data: { session: { user: supabaseUser } },
+    });
+    supabaseMocks.single.mockResolvedValue({
+      data: {
+        ...profileRow,
+        is_uct_verified: true,
+      },
+      error: null,
+    });
+
+    renderAuthProvider();
+
+    expect(
+      await screen.findByRole('status', { name: 'uct verification' }),
+    ).toHaveTextContent('uct verified');
+    expect(supabaseMocks.select).toHaveBeenCalledWith(
+      'id, username, display_name, avatar_path, role, is_banned, ban_reason, is_uct_verified, created_at',
     );
   });
 

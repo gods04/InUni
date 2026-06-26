@@ -3,6 +3,7 @@ import type { FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AttachmentPicker } from '../components/AttachmentPicker';
 import { BanNotice } from '../components/BanNotice';
+import { BrandLogo } from '../components/BrandLogo';
 import { ErrorState } from '../components/ErrorState';
 import { LoginPrompt } from '../components/LoginPrompt';
 import { useAuth } from '../hooks/useAuth';
@@ -75,7 +76,11 @@ export function CreatePostPage() {
   return (
     <div className="mx-auto grid w-full max-w-3xl gap-5">
       <div className="panel flex items-center gap-4 p-5">
-        <img src="/brand/inuni-logo-mark-dark.png" alt="" className="h-14 w-14 object-contain" />
+        <BrandLogo
+          aria-hidden="true"
+          className="h-14 w-14 shrink-0 rounded-lg object-contain"
+          variant="mark"
+        />
         <div>
         <h1 className="section-title">Create post</h1>
         <p className="mt-1 text-sm text-slate-600">Share something useful, ask a question, or post anonymously.</p>

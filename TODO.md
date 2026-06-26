@@ -104,14 +104,14 @@ support that community instead of turning the site into a crowded dashboard.
 
 ## Login and account experience
 
-- [ ] Add a Google login option on the login page.
+- [x] Add a Google login option on the login page.
 - [ ] Configure Supabase Google OAuth provider and production/local redirect
       URLs before enabling Google login live.
 - [x] Add show/hide password controls on login, registration, and password
       reset forms.
 - [x] Improve login and signup error messages so users know whether the issue
       is email confirmation, wrong password, invalid email, or provider setup.
-- [ ] Keep UCT verification rules clear when using Google login, especially for
+- [x] Keep UCT verification rules clear when using Google login, especially for
       `@uct.ac.za` and `@myuct.ac.za` accounts.
 
 ## Profile and identity
@@ -146,17 +146,17 @@ support that community instead of turning the site into a crowded dashboard.
 
 ## Public reading and login gates
 
-- [ ] Keep posts and comments readable when the visitor is logged out.
-- [ ] Keep approved Shared Files listings readable when the visitor is logged
+- [x] Keep posts and comments readable when the visitor is logged out.
+- [x] Keep approved Shared Files listings readable when the visitor is logged
       out.
-- [ ] Require login only for participation actions such as creating posts,
+- [x] Require login only for participation actions such as creating posts,
       commenting, uploading files, downloading files, reporting, and account
       settings.
-- [ ] If a logged-out visitor opens a post with attachments, never block the
+- [x] If a logged-out visitor opens a post with attachments, never block the
       post or comments because file metadata or downloads require login.
-- [ ] Use compact login prompts beside gated actions instead of replacing the
+- [x] Use compact login prompts beside gated actions instead of replacing the
       whole public page.
-- [ ] Add regression tests whenever a public route gains a new login-gated
+- [x] Add regression tests whenever a public route gains a new login-gated
       subfeature.
 
 ## Mobile experience
@@ -239,7 +239,7 @@ support that community instead of turning the site into a crowded dashboard.
 
 ## Safety and security reminders
 
-- [ ] Add stricter file type allowlists.
+- [x] Add stricter file type allowlists.
 - [ ] Add stronger download permission checks when moving file access behind a
       backend.
 - [ ] Add ClamAV self-hosted file scanning before allowing larger file uploads.

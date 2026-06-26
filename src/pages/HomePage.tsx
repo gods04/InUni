@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { BrandLogo } from '../components/BrandLogo';
 import { CategoryTabs } from '../components/CategoryTabs';
 import { EmptyState } from '../components/EmptyState';
 import { ErrorState } from '../components/ErrorState';
@@ -60,10 +61,10 @@ export function HomePage() {
     <div className="grid gap-7">
       <section className="flex flex-col gap-5 border-b border-line pb-7 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-4">
-          <img
-            src="/brand/inuni-logo-mark-dark.png"
-            alt=""
-            className="h-14 w-14 shrink-0 object-contain"
+          <BrandLogo
+            aria-hidden="true"
+            className="h-14 w-14 shrink-0 rounded-lg object-contain"
+            variant="mark"
           />
           <div>
             <h1 className="text-2xl font-semibold text-ink">

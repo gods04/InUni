@@ -16,8 +16,10 @@ import {
   validateAttachmentCount,
   validateFileDescription,
   validateFileSize,
+  validateUploadFileType,
 } from './fileValidation';
 import { mockFileStore } from './mockFileStore';
+import { canParticipate } from './permissions';
 import { isSupabaseConfigured, supabase } from './supabase';
 import { isMissingAvatarPathError } from './supabaseCompat';
 import { supabaseStorageProvider } from './supabaseStorageProvider';
@@ -157,8 +159,23 @@ function validateDrafts(drafts: FileUploadDraft[]) {
     const sizeError = validateFileSize(draft.file.size);
     if (sizeError) throw new Error(sizeError);
 
+    const typeError = validateUploadFileType(draft.file.name, draft.file.type);
+    if (typeError) throw new Error(typeError);
+
     const descriptionError = validateFileDescription(draft.description);
     if (descriptionError) throw new Error(descriptionError);
+  }
+}
+
+function assertCanCreateSignedDownloadUrl(
+  user: ForumUser | null | undefined,
+): asserts user is ForumUser {
+  if (!user) {
+    throw new Error('Log in to download files.');
+  }
+
+  if (!canParticipate(user.profile)) {
+    throw new Error('Your restricted account cannot download files.');
   }
 }
 
@@ -615,9 +632,12 @@ export async function reportFile(
 
 export async function createSignedDownloadUrl(
   fileId: string,
+  user: ForumUser | null | undefined,
 ): Promise<SignedFileUrl> {
+  assertCanCreateSignedDownloadUrl(user);
+
   if (!isSupabaseConfigured) {
-    return mockFileStore.createSignedDownloadUrl(fileId);
+    return mockFileStore.createSignedDownloadUrl(fileId, user);
   }
 
   const client = requireSupabase();

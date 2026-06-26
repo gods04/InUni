@@ -101,6 +101,28 @@ describe('FilesPage', () => {
     expect(screen.queryByText('Admin file review')).not.toBeInTheDocument();
   });
 
+  it('lays out sort controls in a mobile-friendly grid', async () => {
+    render(
+      <MemoryRouter>
+        <FilesPage />
+      </MemoryRouter>,
+    );
+
+    await screen.findByText('guide.pdf');
+
+    const sortControls = screen.getByLabelText('Sort shared files');
+    expect(sortControls).toHaveClass('grid', 'grid-cols-2', 'min-w-0');
+    expect(sortControls).toHaveClass('sm:flex');
+    expect(screen.getByRole('button', { name: 'Newest' })).toHaveClass(
+      'w-full',
+      'sm:w-auto',
+    );
+    expect(screen.getByRole('button', { name: 'Name' })).toHaveClass(
+      'w-full',
+      'sm:w-auto',
+    );
+  });
+
   it('shows shared file metadata to logged-out visitors but gates file actions', async () => {
     const user = userEvent.setup();
     render(
@@ -115,14 +137,26 @@ describe('FilesPage', () => {
     expect(
       screen.getByText('Log in to preview or download files.'),
     ).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Log in' })).toHaveAttribute(
+      'href',
+      '/login',
+    );
 
     await user.click(screen.getByRole('button', { name: 'Download' }));
     expect(
       screen.getByText('Log in to preview or download files.'),
     ).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Log in' })).toHaveAttribute(
+      'href',
+      '/login',
+    );
 
     await user.click(screen.getByRole('button', { name: 'Report guide.pdf' }));
     expect(screen.getByText('Log in to report files.')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Log in' })).toHaveAttribute(
+      'href',
+      '/login',
+    );
     expect(mocks.createSignedDownloadUrl).not.toHaveBeenCalled();
     expect(mocks.reportFile).not.toHaveBeenCalled();
   });
@@ -208,5 +242,45 @@ describe('FilesPage', () => {
       },
       expect.objectContaining({ id: 'user-2' }),
     );
+  });
+
+  it('passes the current user when opening shared files for signed-in users', async () => {
+    const user = userEvent.setup();
+    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
+    const currentUser = {
+      id: 'user-2',
+      email: 'student@uct.ac.za',
+      emailConfirmed: true,
+      profile: {
+        id: 'user-2',
+        username: 'student',
+        displayName: 'Student Two',
+        role: 'student' as const,
+        isBanned: false,
+        banReason: null,
+        createdAt: '2026-06-16T00:00:00.000Z',
+      },
+    };
+    mocks.authUser = currentUser;
+
+    render(
+      <MemoryRouter>
+        <FilesPage />
+      </MemoryRouter>,
+    );
+
+    await user.click(await screen.findByRole('button', { name: 'Preview' }));
+
+    expect(mocks.createSignedDownloadUrl).toHaveBeenCalledWith(
+      'file-1',
+      currentUser,
+    );
+    expect(openSpy).toHaveBeenCalledWith(
+      'mock://download/file-1',
+      '_blank',
+      'noopener,noreferrer',
+    );
+
+    openSpy.mockRestore();
   });
 });

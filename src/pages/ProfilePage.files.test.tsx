@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { LinkedFile } from '../types/files';
@@ -86,5 +87,30 @@ describe('ProfilePage uploaded files', () => {
     expect(await screen.findByText('My uploaded files')).toBeInTheDocument();
     expect(await screen.findByText('my-notes.pdf')).toBeInTheDocument();
     expect(mocks.getUserFiles).toHaveBeenCalledWith('user-1');
+  });
+
+  it('passes the current user when opening uploaded files', async () => {
+    const user = userEvent.setup();
+    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
+
+    render(
+      <MemoryRouter>
+        <ProfilePage />
+      </MemoryRouter>,
+    );
+
+    await user.click(await screen.findByRole('button', { name: 'Preview' }));
+
+    expect(mocks.createSignedDownloadUrl).toHaveBeenCalledWith(
+      'file-1',
+      testUser,
+    );
+    expect(openSpy).toHaveBeenCalledWith(
+      'mock://download/file-1',
+      '_blank',
+      'noopener,noreferrer',
+    );
+
+    openSpy.mockRestore();
   });
 });

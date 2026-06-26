@@ -13,6 +13,7 @@ vi.mock('./hooks/useAuth', () => ({
     hasPasswordRecoverySession: false,
     requestPasswordReset: vi.fn(),
     signIn: vi.fn(),
+    signInWithGoogle: vi.fn(),
     signUp: vi.fn(),
     updatePassword: vi.fn(),
     signOut: vi.fn(),
@@ -22,6 +23,14 @@ vi.mock('./hooks/useAuth', () => ({
 
 vi.mock('./pages/HomePage', () => ({
   HomePage: () => <h1>Forum route</h1>,
+}));
+
+vi.mock('./pages/FilesPage', () => ({
+  FilesPage: () => <h1>Files route</h1>,
+}));
+
+vi.mock('./pages/PostDetailPage', () => ({
+  PostDetailPage: () => <h1>Post detail route</h1>,
 }));
 
 vi.mock('./pages/ResetPasswordPage', () => ({
@@ -57,6 +66,30 @@ describe('MVP navigation', () => {
 
     expect(
       await screen.findByRole('heading', { name: 'Student tools' }),
+    ).toBeInTheDocument();
+  });
+
+  it('renders shared files as a public route', async () => {
+    render(
+      <MemoryRouter initialEntries={['/files']}>
+        <App />
+      </MemoryRouter>,
+    );
+
+    expect(
+      await screen.findByRole('heading', { name: 'Files route' }),
+    ).toBeInTheDocument();
+  });
+
+  it('renders post details as a public route', async () => {
+    render(
+      <MemoryRouter initialEntries={['/post/post-1']}>
+        <App />
+      </MemoryRouter>,
+    );
+
+    expect(
+      await screen.findByRole('heading', { name: 'Post detail route' }),
     ).toBeInTheDocument();
   });
 

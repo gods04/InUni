@@ -12,6 +12,7 @@ import {
   validateDailyUpload,
   validateFileDescription,
   validateFileSize,
+  validateUploadFileType,
   getUploadErrorMessage,
 } from './fileValidation';
 
@@ -42,6 +43,30 @@ describe('file limits', () => {
     expect(validateFileSize(MAX_FILE_SIZE_BYTES)).toBeNull();
     expect(validateAttachmentCount(MAX_ATTACHMENTS_PER_CONTEXT)).toBeNull();
     expect(validateDailyUpload(MAX_DAILY_UPLOAD_BYTES - 1, 1)).toBeNull();
+  });
+
+  it('accepts only the supported student resource file types', () => {
+    expect(validateUploadFileType('notes.pdf', 'application/pdf')).toBeNull();
+    expect(validateUploadFileType('diagram.png', 'image/png')).toBeNull();
+    expect(validateUploadFileType('essay.docx', '')).toBeNull();
+    expect(validateUploadFileType('slides.pptx', '')).toBeNull();
+    expect(validateUploadFileType('marks.xlsx', '')).toBeNull();
+    expect(validateUploadFileType('README.md', 'text/markdown')).toBeNull();
+    expect(validateUploadFileType('data.csv', 'text/csv')).toBeNull();
+    expect(validateUploadFileType('resources.zip', 'application/zip')).toBeNull();
+
+    expect(validateUploadFileType('app.exe', 'application/x-msdownload')).toBe(
+      'This file type cannot be uploaded yet. Try PDF, images, Office documents, spreadsheets, presentations, text files, or ZIP archives.',
+    );
+    expect(validateUploadFileType('script.js', 'text/javascript')).toBe(
+      'This file type cannot be uploaded yet. Try PDF, images, Office documents, spreadsheets, presentations, text files, or ZIP archives.',
+    );
+    expect(validateUploadFileType('vector.svg', 'image/svg+xml')).toBe(
+      'This file type cannot be uploaded yet. Try PDF, images, Office documents, spreadsheets, presentations, text files, or ZIP archives.',
+    );
+    expect(validateUploadFileType('bundle.rar', 'application/x-rar-compressed')).toBe(
+      'This file type cannot be uploaded yet. Try PDF, images, Office documents, spreadsheets, presentations, text files, or ZIP archives.',
+    );
   });
 });
 

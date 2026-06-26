@@ -13,6 +13,7 @@ const student: Profile = {
   role: 'student',
   isBanned: false,
   banReason: null,
+  isUctVerified: true,
   createdAt: '2026-06-14T00:00:00.000Z',
 };
 

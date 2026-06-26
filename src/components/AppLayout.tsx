@@ -3,6 +3,7 @@ import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { getFileReviewCount } from '../lib/adminFileApi';
 import { recordPageView } from '../lib/localAnalytics';
+import { BrandLogo } from './BrandLogo';
 import { FileReviewCountBadge } from './FileReviewCountBadge';
 
 function navClass({ isActive }: { isActive: boolean }) {
@@ -118,10 +119,10 @@ export function AppLayout() {
               to="/"
             >
               <span className="flex h-10 w-[124px] items-center overflow-hidden">
-                <img
+                <BrandLogo
                   alt="InUni"
                   className="h-10 w-auto object-contain"
-                  src="/brand/inuni-logo-horizontal-dark.png"
+                  variant="horizontal"
                 />
               </span>
             </NavLink>

@@ -33,6 +33,7 @@ interface ProfileRow {
   role: UserRole;
   is_banned: boolean;
   ban_reason: string | null;
+  is_uct_verified: boolean;
   created_at: string;
 }
 
@@ -49,6 +50,7 @@ function mapProfile(row: ProfileRow): Profile {
     role: row.role,
     isBanned: row.is_banned,
     banReason: row.ban_reason,
+    isUctVerified: row.is_uct_verified,
     createdAt: row.created_at,
   };
 }
@@ -181,7 +183,7 @@ export async function searchUsers(query: string): Promise<Profile[]> {
   let request = client
     .from('profiles')
     .select(
-      'id, username, display_name, role, is_banned, ban_reason, created_at',
+      'id, username, display_name, role, is_banned, ban_reason, is_uct_verified, created_at',
     )
     .order('display_name')
     .limit(20);

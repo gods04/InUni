@@ -76,6 +76,15 @@ describe('FileList', () => {
     expect(onReport).toHaveBeenCalledWith(file);
   });
 
+  it('does not render preview or download actions without provided callbacks', () => {
+    const file = makeLinkedFile({ id: 'file-readonly' });
+
+    render(<FileList files={[file]} />);
+
+    expect(screen.queryByRole('button', { name: 'Preview' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Download' })).not.toBeInTheDocument();
+  });
+
   it('shows the uploaded file owner avatar', () => {
     const file = makeLinkedFile({
       ownerAvatarUrl: 'https://example.com/student-one.png',

@@ -12,6 +12,7 @@ import { ReportDialog } from '../components/ReportDialog';
 import { UctVerifiedBadge } from '../components/UctVerifiedBadge';
 import { useAuth } from '../hooks/useAuth';
 import {
+  createSignedDownloadUrl,
   getFilesForComment,
   getFilesForPost,
   uploadLinkedFiles,
@@ -41,6 +42,7 @@ export function PostDetailPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [commentError, setCommentError] = useState<string | null>(null);
+  const [fileStatus, setFileStatus] = useState<string | null>(null);
   const [reportTarget, setReportTarget] = useState<ReportTarget | null>(null);
   const [reportStatus, setReportStatus] = useState<string | null>(null);
 
@@ -154,6 +156,36 @@ export function PostDetailPage() {
     setReportTarget(target);
   }
 
+  async function openFile(file: LinkedFile, target: 'download' | 'preview') {
+    setFileStatus(null);
+
+    if (!user) {
+      setFileStatus('Log in to preview or download files.');
+      return;
+    }
+
+    if (!canParticipate(user.profile)) {
+      setFileStatus('Your restricted account cannot download files.');
+      return;
+    }
+
+    try {
+      const signedUrl = await createSignedDownloadUrl(file.id, user);
+      if (target === 'preview') {
+        window.open(signedUrl.url, '_blank', 'noopener,noreferrer');
+        return;
+      }
+
+      window.location.assign(signedUrl.url);
+    } catch (caughtError) {
+      setFileStatus(
+        caughtError instanceof Error
+          ? caughtError.message
+          : 'Could not create download link.',
+      );
+    }
+  }
+
   async function submitReport(target: ReportTarget, reason: string) {
     if (!user) return;
     await createReport(target, reason, user);
@@ -213,7 +245,12 @@ export function PostDetailPage() {
           <div className="mt-6">
             <h2 className="text-base font-semibold text-ink">Attachments</h2>
             <div className="mt-3">
-              <FileList files={postFiles} variant="embedded" />
+              <FileList
+                files={postFiles}
+                onDownload={(file) => openFile(file, 'download')}
+                onPreview={(file) => openFile(file, 'preview')}
+                variant="embedded"
+              />
             </div>
           </div>
         ) : null}
@@ -244,6 +281,10 @@ export function PostDetailPage() {
         </div>
       </article>
 
+      {fileStatus ? (
+        <p className="text-sm font-semibold text-slate-600">{fileStatus}</p>
+      ) : null}
+
       <section className="grid gap-4">
         <div>
           <h2 className="text-2xl font-semibold tracking-normal text-ink">Comments</h2>
@@ -253,6 +294,8 @@ export function PostDetailPage() {
         <CommentList
           comments={comments}
           filesByCommentId={commentFiles}
+          onFileDownload={(file) => openFile(file, 'download')}
+          onFilePreview={(file) => openFile(file, 'preview')}
           onReport={user ? openReport : undefined}
           reportDisabled={Boolean(user && !canParticipate(user.profile))}
         />
@@ -287,9 +330,15 @@ export function PostDetailPage() {
                 ? `Posting as ${user.profile.displayName}`
                 : 'Only logged-in users can comment.'}
             </p>
-            <button className="primary-button" type="submit" disabled={!user || submitting}>
-              {submitting ? 'Posting...' : 'Post comment'}
-            </button>
+            {user ? (
+              <button className="primary-button" type="submit" disabled={submitting}>
+                {submitting ? 'Posting...' : 'Post comment'}
+              </button>
+            ) : (
+              <Link className="primary-button" to="/login">
+                Log in to comment
+              </Link>
+            )}
           </div>
         </form>
         )}

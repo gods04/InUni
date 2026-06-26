@@ -26,6 +26,7 @@ const testUser = {
     role: 'student',
     isBanned: false,
     banReason: null,
+    isUctVerified: true,
     createdAt: '2026-06-16T00:00:00.000Z',
   },
 };
@@ -52,6 +53,9 @@ vi.mock('../lib/forumApi', () => ({
 
 describe('ProfilePage identity editing', () => {
   beforeEach(() => {
+    testUser.email = 'student@uct.ac.za';
+    testUser.emailConfirmed = true;
+    testUser.profile.isUctVerified = true;
     mocks.createSignedDownloadUrl.mockReset();
     mocks.getUserFiles.mockReset();
     mocks.getUserPosts.mockReset();
@@ -82,12 +86,30 @@ describe('ProfilePage identity editing', () => {
     );
 
     const displayName = screen.getByLabelText('Display name');
+    expect(displayName).toHaveClass('field-input');
+    expect(displayName).not.toHaveClass('input-field');
+
     await user.clear(displayName);
     await user.type(displayName, 'New Student');
     await user.click(screen.getByRole('button', { name: 'Save profile' }));
 
     expect(mocks.updateDisplayName).toHaveBeenCalledWith('New Student');
     expect(await screen.findByText('Profile updated.')).toBeInTheDocument();
+  });
+
+  it('uses the profile UCT verification state for the account badge', async () => {
+    testUser.email = 'student@gmail.com';
+    testUser.emailConfirmed = true;
+    testUser.profile.isUctVerified = true;
+
+    render(
+      <MemoryRouter>
+        <ProfilePage />
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByText('UCT Verified')).toBeInTheDocument();
+    expect(screen.queryByText('Email not UCT verified')).not.toBeInTheDocument();
   });
 
   it('uploads and removes a profile photo', async () => {

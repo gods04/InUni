@@ -8,6 +8,7 @@ import { PostDetailPage } from './PostDetailPage';
 const mocks = vi.hoisted(() => ({
   createComment: vi.fn(),
   createReport: vi.fn(),
+  createSignedDownloadUrl: vi.fn(),
   getComments: vi.fn(),
   getFilesForComment: vi.fn(),
   getFilesForPost: vi.fn(),
@@ -93,6 +94,8 @@ vi.mock('../lib/forumApi', () => ({
 }));
 
 vi.mock('../lib/fileApi', () => ({
+  createSignedDownloadUrl: (...args: unknown[]) =>
+    mocks.createSignedDownloadUrl(...args),
   getFilesForComment: (...args: unknown[]) => mocks.getFilesForComment(...args),
   getFilesForPost: (...args: unknown[]) => mocks.getFilesForPost(...args),
   uploadLinkedFiles: (...args: unknown[]) => mocks.uploadLinkedFiles(...args),
@@ -121,6 +124,10 @@ describe('PostDetailPage attachments', () => {
       content: 'Useful reply with attachment',
     });
     mocks.createReport.mockResolvedValue(undefined);
+    mocks.createSignedDownloadUrl.mockResolvedValue({
+      url: 'mock://download/post-file',
+      expiresAt: '2026-06-16T10:05:00.000Z',
+    });
     mocks.uploadLinkedFiles.mockResolvedValue([]);
   });
 
@@ -133,6 +140,32 @@ describe('PostDetailPage attachments', () => {
 
     expect(await screen.findByText('syllabus.pdf')).toBeInTheDocument();
     expect(await screen.findByText('comment-notes.pdf')).toBeInTheDocument();
+  });
+
+  it('passes the current user when opening post attachments', async () => {
+    const user = userEvent.setup();
+    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
+
+    render(
+      <MemoryRouter>
+        <PostDetailPage />
+      </MemoryRouter>,
+    );
+
+    await screen.findByText('syllabus.pdf');
+    await user.click(screen.getAllByRole('button', { name: 'Preview' })[0]);
+
+    expect(mocks.createSignedDownloadUrl).toHaveBeenCalledWith(
+      'post-file',
+      testUser,
+    );
+    expect(openSpy).toHaveBeenCalledWith(
+      'mock://download/post-file',
+      '_blank',
+      'noopener,noreferrer',
+    );
+
+    openSpy.mockRestore();
   });
 
   it('uploads selected files after creating a comment', async () => {

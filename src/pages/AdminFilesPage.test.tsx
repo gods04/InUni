@@ -15,6 +15,21 @@ const mocks = vi.hoisted(() => ({
   restoreHiddenFile: vi.fn(),
 }));
 
+const adminUser = vi.hoisted(() => ({
+  id: 'admin-1',
+  email: 'admin@inuni.local',
+  emailConfirmed: true,
+  profile: {
+    id: 'admin-1',
+    username: 'admin',
+    displayName: 'Admin',
+    role: 'admin',
+    isBanned: false,
+    banReason: null,
+    createdAt: '2026-06-16T00:00:00.000Z',
+  },
+}));
+
 function makeLinkedFile(overrides: Partial<LinkedFile>): LinkedFile {
   return {
     id: 'file-1',
@@ -67,6 +82,10 @@ vi.mock('../lib/adminFileApi', () => ({
 vi.mock('../lib/fileApi', () => ({
   createSignedDownloadUrl: (...args: unknown[]) =>
     mocks.createSignedDownloadUrl(...args),
+}));
+
+vi.mock('../hooks/useAuth', () => ({
+  useAuth: () => ({ user: adminUser }),
 }));
 
 describe('AdminFilesPage', () => {
@@ -130,7 +149,10 @@ describe('AdminFilesPage', () => {
 
     await user.click(await screen.findByRole('button', { name: 'Preview guide.pdf' }));
 
-    expect(mocks.createSignedDownloadUrl).toHaveBeenCalledWith('pending-file');
+    expect(mocks.createSignedDownloadUrl).toHaveBeenCalledWith(
+      'pending-file',
+      adminUser,
+    );
     expect(window.open).toHaveBeenCalledWith(
       'mock://download/file-1',
       '_blank',

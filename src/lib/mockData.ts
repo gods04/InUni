@@ -10,6 +10,7 @@ export const mockProfiles: Profile[] = [
     role: 'admin',
     isBanned: false,
     banReason: null,
+    isUctVerified: false,
     createdAt: new Date(now - 1000 * 60 * 60 * 24 * 90).toISOString(),
   },
   {
@@ -19,6 +20,7 @@ export const mockProfiles: Profile[] = [
     role: 'student',
     isBanned: false,
     banReason: null,
+    isUctVerified: true,
     createdAt: new Date(now - 1000 * 60 * 60 * 24 * 30).toISOString(),
   },
   {
@@ -28,6 +30,7 @@ export const mockProfiles: Profile[] = [
     role: 'student',
     isBanned: false,
     banReason: null,
+    isUctVerified: true,
     createdAt: new Date(now - 1000 * 60 * 60 * 24 * 20).toISOString(),
   },
   {
@@ -37,6 +40,7 @@ export const mockProfiles: Profile[] = [
     role: 'student',
     isBanned: false,
     banReason: null,
+    isUctVerified: false,
     createdAt: new Date(now - 1000 * 60 * 60 * 24 * 10).toISOString(),
   },
 ];

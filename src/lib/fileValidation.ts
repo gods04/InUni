@@ -9,6 +9,8 @@ export const SIGNED_FILE_URL_TTL_SECONDS = 5 * 60;
 export const MAX_FILE_SIZE_LABEL = '5MB';
 export const SUPPORTED_UPLOAD_TYPES_LABEL =
   'PDF, images, Office documents, spreadsheets, presentations, text files, or ZIP archives';
+export const SUPPORTED_UPLOAD_ACCEPT =
+  '.pdf,.png,.jpg,.jpeg,.webp,.gif,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.csv,.txt,.md,.zip';
 
 const uploadSizeLimitMessage = `This file is too large. Upload files up to ${MAX_FILE_SIZE_LABEL} each.`;
 const unsupportedFileTypeMessage = `This file type cannot be uploaded yet. Try ${SUPPORTED_UPLOAD_TYPES_LABEL}.`;
@@ -32,11 +34,68 @@ const spreadsheetMimeTypes = new Set([
 
 const archiveMimeTypes = new Set([
   'application/zip',
+  'application/x-zip-compressed',
   'application/x-rar-compressed',
   'application/x-7z-compressed',
 ]);
 
 const archiveExtensions = new Set(['zip', 'rar', '7z']);
+
+const uploadImageMimeTypes = new Set([
+  'image/gif',
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+]);
+
+const uploadTextMimeTypes = new Set([
+  'application/csv',
+  'text/csv',
+  'text/markdown',
+  'text/plain',
+]);
+
+const uploadMimeTypesByExtension = new Map<string, Set<string>>([
+  ['pdf', new Set(['application/pdf'])],
+  ['png', uploadImageMimeTypes],
+  ['jpg', uploadImageMimeTypes],
+  ['jpeg', uploadImageMimeTypes],
+  ['webp', uploadImageMimeTypes],
+  ['gif', uploadImageMimeTypes],
+  ['doc', new Set(['application/msword'])],
+  [
+    'docx',
+    new Set([
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    ]),
+  ],
+  ['ppt', new Set(['application/vnd.ms-powerpoint'])],
+  [
+    'pptx',
+    new Set([
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+    ]),
+  ],
+  ['xls', new Set(['application/vnd.ms-excel'])],
+  [
+    'xlsx',
+    new Set([
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    ]),
+  ],
+  [
+    'csv',
+    new Set([
+      'application/csv',
+      'application/vnd.ms-excel',
+      'text/csv',
+      'text/plain',
+    ]),
+  ],
+  ['txt', uploadTextMimeTypes],
+  ['md', uploadTextMimeTypes],
+  ['zip', new Set(['application/zip', 'application/x-zip-compressed'])],
+]);
 
 function getExtension(filename: string): string {
   const parts = filename.toLowerCase().split('.');
@@ -70,6 +129,28 @@ export function validateFileDescription(description: string): string | null {
   return description.length <= MAX_FILE_DESCRIPTION_LENGTH
     ? null
     : 'File descriptions must be 200 characters or fewer.';
+}
+
+export function validateUploadFileType(
+  filename: string,
+  mimeType: string,
+): string | null {
+  const extension = getExtension(filename);
+  const allowedMimeTypes = uploadMimeTypesByExtension.get(extension);
+
+  if (!allowedMimeTypes) return unsupportedFileTypeMessage;
+
+  const normalizedMimeType = normalizeMimeType(mimeType);
+  if (
+    !normalizedMimeType ||
+    normalizedMimeType === 'application/octet-stream'
+  ) {
+    return null;
+  }
+
+  return allowedMimeTypes.has(normalizedMimeType)
+    ? null
+    : unsupportedFileTypeMessage;
 }
 
 export function canPreviewFile(mimeType: string): boolean {

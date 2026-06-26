@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { BrandLogo } from '../components/BrandLogo';
 import { ErrorState } from '../components/ErrorState';
 import { PasswordField } from '../components/PasswordField';
 import { useAuth } from '../hooks/useAuth';
@@ -59,7 +60,13 @@ export function AuthPage() {
     passwordReset?: boolean;
   } | null;
   const passwordReset = authState?.passwordReset;
-  const { requestPasswordReset, signIn, signUp, isDemoMode } = useAuth();
+  const {
+    requestPasswordReset,
+    signIn,
+    signInWithGoogle,
+    signUp,
+    isDemoMode,
+  } = useAuth();
   const [mode, setMode] = useState<AuthMode>(
     authState?.authMode === 'recovery' ? 'recovery' : 'login',
   );
@@ -131,10 +138,34 @@ export function AuthPage() {
     }
   }
 
+  async function handleGoogleSignIn() {
+    setError(null);
+    setMessage(null);
+    setSubmitting(true);
+
+    try {
+      const result = await signInWithGoogle();
+      if (result.error) {
+        setError(getAuthErrorMessage(result.error, mode));
+        return;
+      }
+
+      if (result.message) {
+        setMessage(result.message);
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   return (
     <div className="mx-auto grid w-full max-w-md gap-5">
       <div className="panel p-5 sm:p-6">
-        <img src="/brand/inuni-logo-horizontal-dark.png" alt="InUni" className="h-16 w-auto object-contain" />
+        <BrandLogo
+          alt="InUni"
+          className="h-16 w-auto object-contain"
+          variant="horizontal"
+        />
         <h1 className="section-title">
           {mode === 'login'
             ? 'Log in'
@@ -156,6 +187,27 @@ export function AuthPage() {
         noValidate
         onSubmit={handleSubmit}
       >
+        {mode !== 'recovery' ? (
+          <>
+            <button
+              className="secondary-button"
+              disabled={submitting}
+              onClick={() => void handleGoogleSignIn()}
+              type="button"
+            >
+              Continue with Google
+            </button>
+            <div
+              aria-hidden="true"
+              className="flex items-center gap-3 text-xs font-semibold uppercase text-slate-400"
+            >
+              <span className="h-px flex-1 bg-line" />
+              <span>or</span>
+              <span className="h-px flex-1 bg-line" />
+            </div>
+          </>
+        ) : null}
+
         <label className="grid gap-2">
           <span className="field-label">Email</span>
           <input

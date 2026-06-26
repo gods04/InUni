@@ -10,6 +10,7 @@ import type {
 } from '../types/files';
 import type { ForumUser } from '../types/forum';
 import { getDisplayName } from './format';
+import { canParticipate, isUctVerifiedEmail } from './permissions';
 import {
   SIGNED_FILE_URL_TTL_SECONDS,
   classifyFileType,
@@ -18,6 +19,7 @@ import {
   validateDailyUpload,
   validateFileDescription,
   validateFileSize,
+  validateUploadFileType,
 } from './fileValidation';
 
 const filesKey = 'inuni.files';
@@ -225,6 +227,9 @@ function validateDrafts(
     const sizeError = validateFileSize(draft.file.size);
     if (sizeError) throw new Error(sizeError);
 
+    const typeError = validateUploadFileType(draft.file.name, draft.file.type);
+    if (typeError) throw new Error(typeError);
+
     const descriptionError = validateFileDescription(draft.description);
     if (descriptionError) throw new Error(descriptionError);
   }
@@ -329,6 +334,7 @@ export function createDemoUserForFiles(email: string): ForumUser {
       role: 'student',
       isBanned: false,
       banReason: null,
+      isUctVerified: isUctVerifiedEmail(email, true),
       createdAt: '2026-06-16T00:00:00.000Z',
     },
   };
@@ -544,7 +550,18 @@ export const mockFileStore = {
     );
   },
 
-  async createSignedDownloadUrl(fileId: string): Promise<SignedFileUrl> {
+  async createSignedDownloadUrl(
+    fileId: string,
+    user: ForumUser | null | undefined,
+  ): Promise<SignedFileUrl> {
+    if (!user) {
+      throw new Error('Log in to download files.');
+    }
+
+    if (!canParticipate(user.profile)) {
+      throw new Error('Your restricted account cannot download files.');
+    }
+
     updateFile(fileId, (file) => ({
       ...file,
       downloadCount: file.downloadCount + 1,

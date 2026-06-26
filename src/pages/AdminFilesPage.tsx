@@ -4,6 +4,7 @@ import { EmptyState } from '../components/EmptyState';
 import { ErrorState } from '../components/ErrorState';
 import { LoadingState } from '../components/LoadingState';
 import { UserAvatar } from '../components/UserAvatar';
+import { useAuth } from '../hooks/useAuth';
 import { createSignedDownloadUrl } from '../lib/fileApi';
 import { canPreviewFile, classifyFileType } from '../lib/fileValidation';
 import {
@@ -65,6 +66,7 @@ function ReviewDetail({
 }
 
 export function AdminFilesPage() {
+  const { user } = useAuth();
   const [tab, setTab] = useState<Tab>('pending');
   const [pendingFiles, setPendingFiles] = useState<LinkedFile[]>([]);
   const [hiddenFiles, setHiddenFiles] = useState<LinkedFile[]>([]);
@@ -143,7 +145,7 @@ export function AdminFilesPage() {
     setError(null);
 
     try {
-      const signedUrl = await createSignedDownloadUrl(file.id);
+      const signedUrl = await createSignedDownloadUrl(file.id, user);
       if (target === 'preview') {
         window.open(signedUrl.url, '_blank', 'noopener,noreferrer');
         return;

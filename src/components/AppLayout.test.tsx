@@ -25,6 +25,7 @@ function makeUser(role: UserRole): ForumUser {
       role,
       isBanned: false,
       banReason: null,
+      isUctVerified: role === 'student',
       createdAt: '2026-06-17T00:00:00.000Z',
     },
   };

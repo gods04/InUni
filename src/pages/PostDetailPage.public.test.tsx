@@ -76,6 +76,9 @@ describe('PostDetailPage public access', () => {
     expect(screen.getByText('Existing comment should be public.')).toBeInTheDocument();
     expect(screen.queryByText('Could not load files.')).not.toBeInTheDocument();
     expect(screen.getByText('Only logged-in users can comment.')).toBeInTheDocument();
+    expect(
+      screen.getByRole('link', { name: 'Log in to comment' }),
+    ).toHaveAttribute('href', '/login');
     expect(mocks.getFilesForPost).not.toHaveBeenCalled();
     expect(mocks.getFilesForComment).not.toHaveBeenCalled();
   });

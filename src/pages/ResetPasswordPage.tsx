@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { BrandLogo } from '../components/BrandLogo';
 import { ErrorState } from '../components/ErrorState';
 import { LoadingState } from '../components/LoadingState';
 import { PasswordField } from '../components/PasswordField';
@@ -58,10 +59,10 @@ export function ResetPasswordPage() {
   if (!hasPasswordRecoverySession) {
     return (
       <div className="mx-auto w-full max-w-md panel p-5 sm:p-6">
-        <img
-          src="/brand/inuni-logo-horizontal-dark.png"
+        <BrandLogo
           alt="InUni"
           className="h-16 w-auto object-contain"
+          variant="horizontal"
         />
         <h1 className="section-title">Reset link expired</h1>
         <p className="mt-2 text-sm text-slate-600">
@@ -81,10 +82,10 @@ export function ResetPasswordPage() {
   return (
     <div className="mx-auto grid w-full max-w-md gap-5">
       <div className="panel p-5 sm:p-6">
-        <img
-          src="/brand/inuni-logo-horizontal-dark.png"
+        <BrandLogo
           alt="InUni"
           className="h-16 w-auto object-contain"
+          variant="horizontal"
         />
         <h1 className="section-title">Choose a new password</h1>
         <p className="mt-1 text-sm text-slate-600">

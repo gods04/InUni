@@ -1,6 +1,5 @@
 import { mockComments, mockPosts } from './mockData';
 import { getDisplayName } from './format';
-import { isUctVerifiedEmail } from './permissions';
 import type {
   Category,
   ForumComment,
@@ -65,6 +64,10 @@ function getPostsFromStore(): Post[] {
       : profiles.find((profile) => profile.id === post.authorId)?.avatarUrl ??
         post.authorAvatarUrl ??
         null,
+    authorIsUctVerified: post.isAnonymous
+      ? post.authorIsUctVerified
+      : profiles.find((profile) => profile.id === post.authorId)
+          ?.isUctVerified ?? post.authorIsUctVerified,
     commentCount: comments.filter((comment) => comment.postId === post.id).length,
   }));
 }
@@ -78,6 +81,8 @@ function getCommentsFromStore(): ForumComment[] {
       ...comment,
       authorName: profile?.displayName ?? comment.authorName,
       authorAvatarUrl: profile?.avatarUrl ?? comment.authorAvatarUrl ?? null,
+      authorIsUctVerified:
+        profile?.isUctVerified ?? comment.authorIsUctVerified,
     };
   });
 }
@@ -115,10 +120,7 @@ export const mockForumStore = {
         ? 'Anonymous'
         : user.profile.displayName || getDisplayName(user.email),
       authorAvatarUrl: input.isAnonymous ? null : user.profile.avatarUrl ?? null,
-      authorIsUctVerified: isUctVerifiedEmail(
-        user.email,
-        user.emailConfirmed,
-      ),
+      authorIsUctVerified: user.profile.isUctVerified,
       isAnonymous: input.isAnonymous,
       createdAt: new Date().toISOString(),
       commentCount: 0,
@@ -136,10 +138,7 @@ export const mockForumStore = {
       authorId: user.id,
       authorName: user.profile.displayName || getDisplayName(user.email),
       authorAvatarUrl: user.profile.avatarUrl ?? null,
-      authorIsUctVerified: isUctVerifiedEmail(
-        user.email,
-        user.emailConfirmed,
-      ),
+      authorIsUctVerified: user.profile.isUctVerified,
       content: input.content,
       createdAt: new Date().toISOString(),
     };

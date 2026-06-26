@@ -24,6 +24,7 @@ export interface Profile {
   role: UserRole;
   isBanned: boolean;
   banReason: string | null;
+  isUctVerified: boolean;
   createdAt: string;
 }
 

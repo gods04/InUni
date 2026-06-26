@@ -1,5 +1,4 @@
 import { canPreviewFile, classifyFileType } from '../lib/fileValidation';
-import { createSignedDownloadUrl } from '../lib/fileApi';
 import type { LinkedFile } from '../types/files';
 import { UserAvatar } from './UserAvatar';
 
@@ -22,16 +21,6 @@ function formatFileSize(sizeBytes: number): string {
 
 function getKindLabel(file: LinkedFile): string {
   return classifyFileType(file.displayFilename, file.mimeType).replace('_', ' ');
-}
-
-async function openSignedUrl(file: LinkedFile, target: 'download' | 'preview') {
-  const signedUrl = await createSignedDownloadUrl(file.id);
-  if (target === 'preview') {
-    window.open(signedUrl.url, '_blank', 'noopener,noreferrer');
-    return;
-  }
-
-  window.location.assign(signedUrl.url);
 }
 
 export function FileList({
@@ -97,28 +86,24 @@ export function FileList({
             </div>
 
             <div className="flex flex-wrap gap-2 sm:justify-end">
-              {previewable ? (
+              {previewable && onPreview ? (
                 <button
                   className="secondary-button"
-                  onClick={() =>
-                    void (onPreview ? onPreview(file) : openSignedUrl(file, 'preview'))
-                  }
+                  onClick={() => void onPreview(file)}
                   type="button"
                 >
                   Preview
                 </button>
               ) : null}
-              <button
-                className="primary-button"
-                onClick={() =>
-                  void (onDownload
-                    ? onDownload(file)
-                    : openSignedUrl(file, 'download'))
-                }
-                type="button"
-              >
-                Download
-              </button>
+              {onDownload ? (
+                <button
+                  className="primary-button"
+                  onClick={() => void onDownload(file)}
+                  type="button"
+                >
+                  Download
+                </button>
+              ) : null}
               {onReport ? (
                 <button
                   aria-label={`Report ${file.displayFilename}`}

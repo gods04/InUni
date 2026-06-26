@@ -134,6 +134,25 @@ http://127.0.0.1:5173/profile
 http://127.0.0.1:5173/reset-password
 ```
 
+### Google OAuth setup
+
+The login page includes a Google sign-in option. Before enabling it for real
+users, configure the provider in Supabase:
+
+1. In Google Cloud, create an OAuth client for the Supabase callback URL shown
+   in Authentication > Providers > Google.
+2. In Supabase, open Authentication > Providers > Google, enable the provider,
+   and add the Google client ID and client secret.
+3. In Authentication > URL Configuration, keep the `/profile` redirect URLs
+   listed above. Google sign-in returns users to `/profile`.
+4. Confirm that Google accounts using `@uct.ac.za` or `@myuct.ac.za` emails
+   receive the profile-level UCT Verified badge after Supabase confirms the
+   email address.
+5. Test locally and on the deployed Cloudflare Pages URL before announcing the
+   option.
+
+If Google is not configured, the app shows a setup message instead of signing in.
+
 If password reset emails time out, check Supabase Authentication SMTP settings.
 For Brevo, port `2525` is usually safer than port `587` on Supabase.
 

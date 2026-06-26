@@ -26,6 +26,15 @@ function AttachmentPickerHarness({
 }
 
 describe('AttachmentPicker', () => {
+  it('hints the supported upload extensions to the file picker', () => {
+    render(<AttachmentPickerHarness />);
+
+    expect(screen.getByLabelText('Attach files')).toHaveAttribute(
+      'accept',
+      '.pdf,.png,.jpg,.jpeg,.webp,.gif,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.csv,.txt,.md,.zip',
+    );
+  });
+
   it('adds selected files and lets students describe them', async () => {
     const user = userEvent.setup();
     render(<AttachmentPickerHarness />);
@@ -66,13 +75,28 @@ describe('AttachmentPicker', () => {
 
     await user.upload(
       screen.getByLabelText('Attach files'),
-      makeFile('recording.mov', 'video/quicktime', 5 * 1024 * 1024 + 1),
+      makeFile('large-notes.pdf', 'application/pdf', 5 * 1024 * 1024 + 1),
     );
 
     expect(screen.getByRole('alert')).toHaveTextContent(
       'This file is too large. Upload files up to 5MB each.',
     );
-    expect(screen.queryByText('recording.mov')).not.toBeInTheDocument();
+    expect(screen.queryByText('large-notes.pdf')).not.toBeInTheDocument();
+  });
+
+  it('rejects unsupported upload file types before adding drafts', async () => {
+    const user = userEvent.setup({ applyAccept: false });
+    render(<AttachmentPickerHarness />);
+
+    await user.upload(
+      screen.getByLabelText('Attach files'),
+      makeFile('installer.exe', 'application/x-msdownload'),
+    );
+
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'This file type cannot be uploaded yet. Try PDF, images, Office documents, spreadsheets, presentations, text files, or ZIP archives.',
+    );
+    expect(screen.queryByText('installer.exe')).not.toBeInTheDocument();
   });
 
   it('collects Shared Files review metadata for selected files', async () => {

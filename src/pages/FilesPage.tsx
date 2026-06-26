@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { EmptyState } from '../components/EmptyState';
 import { ErrorState } from '../components/ErrorState';
 import { FileList } from '../components/FileList';
@@ -47,13 +48,18 @@ const initialFilters: SharedFileFilters = {
   sort: 'newest',
 };
 
+interface PageStatus {
+  message: string;
+  loginPrompt?: boolean;
+}
+
 export function FilesPage() {
   const { user } = useAuth();
   const [files, setFiles] = useState<LinkedFile[]>([]);
   const [filters, setFilters] = useState<SharedFileFilters>(initialFilters);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [status, setStatus] = useState<string | null>(null);
+  const [status, setStatus] = useState<PageStatus | null>(null);
   const [reportTarget, setReportTarget] = useState<LinkedFile | null>(null);
 
   useEffect(() => {
@@ -89,16 +95,19 @@ export function FilesPage() {
     setStatus(null);
 
     if (!user) {
-      setStatus('Log in to preview or download files.');
+      setStatus({
+        message: 'Log in to preview or download files.',
+        loginPrompt: true,
+      });
       return;
     }
 
     if (!canParticipate(user.profile)) {
-      setStatus('Your restricted account cannot download files.');
+      setStatus({ message: 'Your restricted account cannot download files.' });
       return;
     }
 
-    const signedUrl = await createSignedDownloadUrl(file.id);
+    const signedUrl = await createSignedDownloadUrl(file.id, user);
     if (target === 'preview') {
       window.open(signedUrl.url, '_blank', 'noopener,noreferrer');
       return;
@@ -111,12 +120,12 @@ export function FilesPage() {
     setStatus(null);
 
     if (!user) {
-      setStatus('Log in to report files.');
+      setStatus({ message: 'Log in to report files.', loginPrompt: true });
       return;
     }
 
     if (!canParticipate(user.profile)) {
-      setStatus('Your restricted account cannot report files.');
+      setStatus({ message: 'Your restricted account cannot report files.' });
       return;
     }
 
@@ -126,7 +135,7 @@ export function FilesPage() {
   async function submitReport(input: FileReportInput) {
     if (!user) return;
     await reportFile(input, user);
-    setStatus('Report submitted. Thank you.');
+    setStatus({ message: 'Report submitted. Thank you.' });
   }
 
   return (
@@ -140,7 +149,7 @@ export function FilesPage() {
         </div>
       </section>
 
-      <section className="panel grid gap-4 p-4 sm:p-5">
+      <section className="panel grid min-w-0 gap-4 p-4 sm:p-5">
         <label className="grid gap-2">
           <span className="field-label">Search shared files</span>
           <input
@@ -208,13 +217,16 @@ export function FilesPage() {
           </label>
         </div>
 
-        <div className="flex flex-wrap gap-2">
+        <div
+          aria-label="Sort shared files"
+          className="grid min-w-0 grid-cols-2 gap-2 sm:flex sm:flex-wrap"
+        >
           {sortOptions.map((option) => (
             <button
               className={
                 filters.sort === option.value
-                  ? 'primary-button'
-                  : 'secondary-button'
+                  ? 'primary-button w-full sm:w-auto'
+                  : 'secondary-button w-full sm:w-auto'
               }
               key={option.value}
               onClick={() => updateFilters({ sort: option.value })}
@@ -227,7 +239,16 @@ export function FilesPage() {
       </section>
 
       {status ? (
-        <p className="text-sm font-semibold text-slate-600">{status}</p>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <p className="text-sm font-semibold text-slate-600">
+            {status.message}
+          </p>
+          {status.loginPrompt ? (
+            <Link className="secondary-button w-fit" to="/login">
+              Log in
+            </Link>
+          ) : null}
+        </div>
       ) : null}
       {error ? <ErrorState message={error} /> : null}
       {loading ? <LoadingState label="Loading files..." /> : null}

@@ -13,7 +13,7 @@ import { UserAvatar } from '../components/UserAvatar';
 import { useAuth } from '../hooks/useAuth';
 import { createSignedDownloadUrl, getUserFiles } from '../lib/fileApi';
 import { getUserPosts } from '../lib/forumApi';
-import { canParticipate, isUctVerifiedEmail } from '../lib/permissions';
+import { canParticipate } from '../lib/permissions';
 import type { LinkedFile } from '../types/files';
 import type { Post } from '../types/forum';
 
@@ -124,7 +124,7 @@ export function ProfilePage() {
       return;
     }
 
-    const signedUrl = await createSignedDownloadUrl(file.id);
+    const signedUrl = await createSignedDownloadUrl(file.id, user);
     if (target === 'preview') {
       window.open(signedUrl.url, '_blank', 'noopener,noreferrer');
       return;
@@ -210,7 +210,7 @@ export function ProfilePage() {
           </h1>
           <p className="mt-1 text-sm text-slate-600">{user.email}</p>
           <div className="mt-3 flex flex-wrap items-center gap-2">
-            {isUctVerifiedEmail(user.email, user.emailConfirmed) ? (
+            {user.profile.isUctVerified ? (
               <UctVerifiedBadge />
             ) : (
               <span className="badge bg-slate-100 text-slate-600">
@@ -260,7 +260,7 @@ export function ProfilePage() {
             Display name
           </label>
           <input
-            className="input-field"
+            className="field-input"
             disabled={profileEditingDisabled || profileBusy}
             id="display-name"
             maxLength={80}

@@ -20,6 +20,7 @@ import {
   isMissingAvatarPathError,
   isMissingRpcFunctionError,
 } from '../lib/supabaseCompat';
+import { isUctVerifiedEmail } from '../lib/permissions';
 import type { ForumUser, Profile, UserRole } from '../types/forum';
 
 interface AuthResult {
@@ -34,6 +35,7 @@ export interface AuthContextValue {
   hasAuthSession: boolean;
   hasPasswordRecoverySession: boolean;
   signIn: (email: string, password: string) => Promise<AuthResult>;
+  signInWithGoogle: () => Promise<AuthResult>;
   signUp: (email: string, password: string) => Promise<AuthResult>;
   requestPasswordReset: (email: string) => Promise<AuthResult>;
   updatePassword: (password: string) => Promise<AuthResult>;
@@ -51,6 +53,7 @@ interface ProfileRow {
   role: UserRole;
   is_banned: boolean;
   ban_reason: string | null;
+  is_uct_verified: boolean;
   created_at: string;
 }
 
@@ -60,11 +63,13 @@ const demoProfilesKey = 'inuni.profiles';
 const passwordRecoverySessionKey = 'inuni.passwordRecoverySession';
 const passwordRecoveryConfigurationMessage =
   'Password recovery requires Supabase configuration.';
+const googleOAuthConfigurationMessage =
+  'Google login requires Supabase Google OAuth configuration.';
 const profilePhotoBucket = 'inuni-avatars';
 const profileSelectWithAvatar =
-  'id, username, display_name, avatar_path, role, is_banned, ban_reason, created_at';
+  'id, username, display_name, avatar_path, role, is_banned, ban_reason, is_uct_verified, created_at';
 const profileSelectWithoutAvatar =
-  'id, username, display_name, role, is_banned, ban_reason, created_at';
+  'id, username, display_name, role, is_banned, ban_reason, is_uct_verified, created_at';
 
 function readPasswordRecoverySessionUserId(): string | null {
   if (typeof window === 'undefined') {
@@ -106,7 +111,20 @@ function mapProfile(row: ProfileRow): Profile {
     role: row.role,
     isBanned: row.is_banned,
     banReason: row.ban_reason,
+    isUctVerified: row.is_uct_verified,
     createdAt: row.created_at,
+  };
+}
+
+function normalizeStoredProfile(
+  profile: Profile & { isUctVerified?: boolean },
+  email: string,
+  emailConfirmed: boolean,
+): Profile {
+  return {
+    ...profile,
+    isUctVerified:
+      profile.isUctVerified ?? isUctVerifiedEmail(email, emailConfirmed),
   };
 }
 
@@ -164,13 +182,17 @@ function createDemoUser(email: string): ForumUser {
   const normalizedEmail = email.trim().toLowerCase();
   const displayName = getDisplayName(normalizedEmail);
   const id = `demo-${normalizedEmail}`;
-  let storedProfile: Profile | undefined;
+  let storedProfile:
+    | (Profile & { isUctVerified?: boolean })
+    | undefined;
 
   if (typeof window !== 'undefined') {
     const rawProfiles = window.localStorage.getItem(demoProfilesKey);
     if (rawProfiles) {
       try {
-        storedProfile = (JSON.parse(rawProfiles) as Profile[]).find(
+        storedProfile = (
+          JSON.parse(rawProfiles) as Array<Profile & { isUctVerified?: boolean }>
+        ).find(
           (profile) => profile.id === id,
         );
       } catch {
@@ -183,17 +205,20 @@ function createDemoUser(email: string): ForumUser {
     id,
     email: normalizedEmail,
     emailConfirmed: true,
-    profile: storedProfile ?? {
-      id,
-      username: displayName.toLowerCase().replace(/\s+/g, '_'),
-      displayName,
-      avatarPath: null,
-      avatarUrl: null,
-      role: normalizedEmail === 'admin@inuni.local' ? 'admin' : 'student',
-      isBanned: false,
-      banReason: null,
-      createdAt: new Date().toISOString(),
-    },
+    profile: storedProfile
+      ? normalizeStoredProfile(storedProfile, normalizedEmail, true)
+      : {
+          id,
+          username: displayName.toLowerCase().replace(/\s+/g, '_'),
+          displayName,
+          avatarPath: null,
+          avatarUrl: null,
+          role: normalizedEmail === 'admin@inuni.local' ? 'admin' : 'student',
+          isBanned: false,
+          banReason: null,
+          isUctVerified: isUctVerifiedEmail(normalizedEmail, true),
+          createdAt: new Date().toISOString(),
+        },
   };
 }
 
@@ -210,7 +235,19 @@ function readDemoUser(): ForumUser | null {
   try {
     const stored = JSON.parse(raw) as Partial<ForumUser>;
     if (stored.email && stored.profile) {
-      return stored as ForumUser;
+      const normalizedEmail = stored.email.trim().toLowerCase();
+      const emailConfirmed = stored.emailConfirmed ?? true;
+
+      return {
+        id: stored.id ?? `demo-${normalizedEmail}`,
+        email: normalizedEmail,
+        emailConfirmed,
+        profile: normalizeStoredProfile(
+          stored.profile as Profile & { isUctVerified?: boolean },
+          normalizedEmail,
+          emailConfirmed,
+        ),
+      };
     }
 
     return stored.email ? createDemoUser(stored.email) : null;
@@ -416,6 +453,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                   : 'Could not load your profile.',
             };
           }
+        }
+
+        return {};
+      },
+      async signInWithGoogle() {
+        if (!isSupabaseConfigured || !supabase) {
+          return { error: googleOAuthConfigurationMessage };
+        }
+
+        const { error } = await supabase.auth.signInWithOAuth({
+          provider: 'google',
+          options: {
+            redirectTo: getAuthRedirectUrl(window.location.origin, '/profile'),
+          },
+        });
+
+        if (error) {
+          return { error: error.message };
         }
 
         return {};

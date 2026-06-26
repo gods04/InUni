@@ -1,11 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { getSharedFiles, uploadLinkedFiles } from './fileApi';
+import {
+  createSignedDownloadUrl,
+  getSharedFiles,
+  uploadLinkedFiles,
+} from './fileApi';
 
 const mocks = vi.hoisted(() => ({
   from: vi.fn(),
   getPublicUrl: vi.fn((path: string) => ({
     data: { publicUrl: `https://cdn.inuni.test/${path}` },
   })),
+  createStorageSignedDownloadUrl: vi.fn(),
   storageFrom: vi.fn(),
   uploadFile: vi.fn(),
 }));
@@ -22,6 +27,8 @@ vi.mock('./supabase', () => ({
 
 vi.mock('./supabaseStorageProvider', () => ({
   supabaseStorageProvider: {
+    createSignedDownloadUrl: (...args: unknown[]) =>
+      mocks.createStorageSignedDownloadUrl(...args),
     uploadFile: (...args: unknown[]) => mocks.uploadFile(...args),
   },
 }));
@@ -40,6 +47,7 @@ function createQuery(result: QueryResult = { data: null, error: null }) {
     order: vi.fn(() => query),
     select: vi.fn(() => query),
     single: vi.fn(() => Promise.resolve(result)),
+    update: vi.fn(() => query),
     then: (
       resolve: (value: QueryResult) => unknown,
       reject: (reason: unknown) => unknown,
@@ -108,6 +116,7 @@ const uploader = {
     role: 'student' as const,
     isBanned: false,
     banReason: null,
+    isUctVerified: true,
     createdAt: '2026-06-16T00:00:00.000Z',
   },
 };
@@ -126,9 +135,14 @@ function makeDraft(file: File) {
 describe('fileApi Supabase boundary', () => {
   beforeEach(() => {
     mocks.from.mockReset();
+    mocks.createStorageSignedDownloadUrl.mockReset();
     mocks.getPublicUrl.mockClear();
     mocks.storageFrom.mockReset();
     mocks.uploadFile.mockReset();
+    mocks.createStorageSignedDownloadUrl.mockResolvedValue({
+      url: 'https://files.inuni.test/signed/guide.pdf',
+      expiresAt: '2026-06-16T10:05:00.000Z',
+    });
     mocks.uploadFile.mockResolvedValue({
       bucket: 'inuni-files',
       path: 'owner-1/file-1/guide.pdf',
@@ -196,6 +210,70 @@ describe('fileApi Supabase boundary', () => {
     expect(mocks.storageFrom).not.toHaveBeenCalled();
   });
 
+  it('rejects unsupported upload types before creating Supabase metadata', async () => {
+    await expect(
+      uploadLinkedFiles(
+        { type: 'post', postId: 'post-1' },
+        [makeDraft(new File(['unsafe'], 'unsafe.exe', { type: 'application/x-msdownload' }))],
+        uploader,
+      ),
+    ).rejects.toThrow(
+      'This file type cannot be uploaded yet. Try PDF, images, Office documents, spreadsheets, presentations, text files, or ZIP archives.',
+    );
+
+    expect(mocks.from).not.toHaveBeenCalled();
+    expect(mocks.uploadFile).not.toHaveBeenCalled();
+  });
+
+  it('requires an active user before creating signed Supabase download URLs', async () => {
+    await expect(createSignedDownloadUrl('file-1', null)).rejects.toThrow(
+      'Log in to download files.',
+    );
+
+    expect(mocks.from).not.toHaveBeenCalled();
+    expect(mocks.createStorageSignedDownloadUrl).not.toHaveBeenCalled();
+  });
+
+  it('blocks restricted users before creating signed Supabase download URLs', async () => {
+    const restrictedUser = {
+      ...uploader,
+      profile: {
+        ...uploader.profile,
+        isBanned: true,
+        banReason: 'Repeated unsafe uploads',
+      },
+    };
+
+    await expect(
+      createSignedDownloadUrl('file-1', restrictedUser),
+    ).rejects.toThrow(
+      'Your restricted account cannot download files.',
+    );
+
+    expect(mocks.from).not.toHaveBeenCalled();
+    expect(mocks.createStorageSignedDownloadUrl).not.toHaveBeenCalled();
+  });
+
+  it('creates signed Supabase download URLs for active users and increments the count', async () => {
+    const fileQuery = createQuery({ data: fileRow, error: null });
+    const updateQuery = createQuery();
+    queueQueries(fileQuery, updateQuery);
+
+    const signedUrl = await createSignedDownloadUrl('file-1', uploader);
+
+    expect(signedUrl).toMatchObject({
+      url: 'https://files.inuni.test/signed/guide.pdf',
+    });
+    expect(fileQuery.select).toHaveBeenCalledWith(
+      'id, storage_path, download_count',
+    );
+    expect(mocks.createStorageSignedDownloadUrl).toHaveBeenCalledWith(
+      'owner-1/file-1/guide.pdf',
+    );
+    expect(updateQuery.update).toHaveBeenCalledWith({ download_count: 3 });
+    expect(updateQuery.eq).toHaveBeenCalledWith('id', 'file-1');
+  });
+
   it('maps blocked storage uploads to a clear user-facing error and removes metadata', async () => {
     const insertQuery = createQuery({
       data: { ...fileRow, status: 'uploading' },
@@ -210,7 +288,7 @@ describe('fileApi Supabase boundary', () => {
     await expect(
       uploadLinkedFiles(
         { type: 'post', postId: 'post-1' },
-        [makeDraft(new File(['unsafe'], 'unsafe.exe', { type: 'application/x-msdownload' }))],
+        [makeDraft(new File(['unsafe'], 'unsafe.zip', { type: 'application/zip' }))],
         uploader,
       ),
     ).rejects.toThrow(

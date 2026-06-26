@@ -9,6 +9,8 @@ import { UserAvatar } from './UserAvatar';
 interface CommentListProps {
   comments: ForumComment[];
   filesByCommentId?: Record<string, LinkedFile[]>;
+  onFileDownload?: (file: LinkedFile) => Promise<void> | void;
+  onFilePreview?: (file: LinkedFile) => Promise<void> | void;
   onReport?: (target: ReportTarget) => void;
   reportDisabled?: boolean;
 }
@@ -16,6 +18,8 @@ interface CommentListProps {
 export function CommentList({
   comments,
   filesByCommentId = {},
+  onFileDownload,
+  onFilePreview,
   onReport,
   reportDisabled = false,
 }: CommentListProps) {
@@ -77,7 +81,12 @@ export function CommentList({
           <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-700">{comment.content}</p>
           {filesByCommentId[comment.id]?.length ? (
             <div className="mt-3">
-              <FileList files={filesByCommentId[comment.id]} variant="embedded" />
+              <FileList
+                files={filesByCommentId[comment.id]}
+                onDownload={onFileDownload}
+                onPreview={onFilePreview}
+                variant="embedded"
+              />
             </div>
           ) : null}
         </article>

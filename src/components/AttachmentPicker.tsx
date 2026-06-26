@@ -3,7 +3,9 @@ import type { ChangeEvent } from 'react';
 import {
   MAX_ATTACHMENTS_PER_CONTEXT,
   MAX_FILE_DESCRIPTION_LENGTH,
+  SUPPORTED_UPLOAD_ACCEPT,
   validateFileSize,
+  validateUploadFileType,
 } from '../lib/fileValidation';
 import type { FileUploadDraft } from '../types/files';
 
@@ -67,6 +69,14 @@ export function AttachmentPicker({
       return;
     }
 
+    const unsupportedFile = selectedFiles.find((file) =>
+      validateUploadFileType(file.name, file.type),
+    );
+    if (unsupportedFile) {
+      setError(validateUploadFileType(unsupportedFile.name, unsupportedFile.type));
+      return;
+    }
+
     setError(null);
     onChange([...value, ...selectedFiles.map(makeDraft)]);
   }
@@ -83,6 +93,7 @@ export function AttachmentPicker({
       </div>
 
       <input
+        accept={SUPPORTED_UPLOAD_ACCEPT}
         className="field-input cursor-pointer bg-white"
         disabled={disabled}
         id={inputId}
