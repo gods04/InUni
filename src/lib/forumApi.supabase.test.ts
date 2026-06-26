@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { curatedSeedComments } from './curatedSeedForum';
 import { getComments, getPost, getPosts } from './forumApi';
 
 const mocks = vi.hoisted(() => ({
@@ -123,11 +124,56 @@ describe('forumApi Supabase boundary', () => {
     ).toMatchObject({
       category: 'Study',
       title: 'Exam study spaces: what is actually calm late at night?',
-      authorName: 'yxxche006',
-      authorIsUctVerified: true,
+      authorName: 'Maya',
+      authorIsUctVerified: false,
     });
     expect(posts.some((post) => post.category === 'Campus Life')).toBe(true);
     expect(posts.some((post) => post.category === 'Questions')).toBe(true);
+  });
+
+  it('keeps curated seed authors fictional and hides research sources from post copy', async () => {
+    const postsQuery = createQuery({ data: [], error: null });
+    queueQueries(postsQuery);
+
+    const posts = await getPosts();
+    const forbiddenAuthorNames = [
+      'chenxianjian9',
+      'orange',
+      'yxxche006',
+    ];
+    const forbiddenAuthorIds = [
+      'a32e236a-a142-46c9-acab-c09a282e022a',
+      'b28fdf5b-bc1c-4d94-b111-72a44a21363c',
+      'd2efbdca-986e-4bce-a0a9-1e0b7d3cde6d',
+      '323bc38c-75d0-4f9b-aefc-466c0aa61f96',
+    ];
+    const forbiddenCopyPattern = /Source:|Sources:|https?:\/\//i;
+
+    expect(posts).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ authorName: 'Maya' }),
+        expect.objectContaining({ authorName: 'Jeff' }),
+        expect.objectContaining({ authorName: 'Bob' }),
+      ]),
+    );
+    expect(
+      posts.some((post) => forbiddenAuthorNames.includes(post.authorName)),
+    ).toBe(false);
+    expect(
+      posts.some((post) => forbiddenAuthorIds.includes(post.authorId)),
+    ).toBe(false);
+    expect(posts.some((post) => forbiddenCopyPattern.test(post.content))).toBe(
+      false,
+    );
+    expect(posts.every((post) => !post.authorIsUctVerified)).toBe(true);
+    expect(
+      curatedSeedComments.some((comment) =>
+        forbiddenAuthorIds.includes(comment.authorId),
+      ),
+    ).toBe(false);
+    expect(
+      curatedSeedComments.every((comment) => !comment.authorIsUctVerified),
+    ).toBe(true);
   });
 
   it('filters curated seed posts by category when the production forum is empty', async () => {
@@ -155,8 +201,13 @@ describe('forumApi Supabase boundary', () => {
     });
     expect(comments).toHaveLength(2);
     expect(comments[0]).toMatchObject({
-      authorName: 'orange',
+      authorName: 'Lena',
       content: expect.stringContaining('Baxter'),
     });
+    expect(
+      comments.some((comment) =>
+        ['chenxianjian9', 'orange', 'yxxche006'].includes(comment.authorName),
+      ),
+    ).toBe(false);
   });
 });
