@@ -1,3 +1,8 @@
+import {
+  getCuratedSeedComments,
+  getCuratedSeedPost,
+  getCuratedSeedPosts,
+} from './curatedSeedForum';
 import { mockForumStore } from './mockStore';
 import { isSupabaseConfigured, supabase } from './supabase';
 import { isMissingAvatarPathError } from './supabaseCompat';
@@ -176,6 +181,11 @@ export async function getPosts(category?: Category): Promise<Post[]> {
   }
 
   const rows = (data ?? []) as PostRow[];
+
+  if (rows.length === 0) {
+    return getCuratedSeedPosts(category);
+  }
+
   const [profiles, commentCounts] = await Promise.all([
     getProfilesMap(rows.map((row) => row.author_id)),
     getCommentCounts(rows.map((row) => row.id)),
@@ -201,7 +211,7 @@ export async function getPost(postId: string): Promise<Post | null> {
   }
 
   if (!data) {
-    return null;
+    return getCuratedSeedPost(postId);
   }
 
   const row = data as PostRow;
@@ -230,6 +240,11 @@ export async function getComments(postId: string): Promise<ForumComment[]> {
   }
 
   const rows = (data ?? []) as CommentRow[];
+
+  if (rows.length === 0 && getCuratedSeedPost(postId)) {
+    return getCuratedSeedComments(postId);
+  }
+
   const profiles = await getProfilesMap(rows.map((row) => row.author_id));
 
   return rows.map((row) => mapComment(row, profiles.get(row.author_id)));

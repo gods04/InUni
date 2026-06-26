@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { getPosts } from './forumApi';
+import { getComments, getPost, getPosts } from './forumApi';
 
 const mocks = vi.hoisted(() => ({
   from: vi.fn(),
@@ -28,6 +28,7 @@ function createQuery(result: QueryResult = { data: null, error: null }) {
   const query = {
     eq: vi.fn(() => query),
     in: vi.fn(() => query),
+    maybeSingle: vi.fn(() => Promise.resolve(result)),
     order: vi.fn(() => query),
     select: vi.fn(() => query),
     then: (
@@ -104,5 +105,58 @@ describe('forumApi Supabase boundary', () => {
       'id, username, display_name, is_uct_verified',
     );
     expect(mocks.storageFrom).not.toHaveBeenCalled();
+  });
+
+  it('shows curated UCT seed posts when the production forum is still empty', async () => {
+    const postsQuery = createQuery({ data: [], error: null });
+    queueQueries(postsQuery);
+
+    const posts = await getPosts();
+
+    expect(posts.length).toBeGreaterThan(3);
+    expect(
+      posts.find(
+        (post) =>
+          post.title ===
+          'Exam study spaces: what is actually calm late at night?',
+      ),
+    ).toMatchObject({
+      category: 'Study',
+      title: 'Exam study spaces: what is actually calm late at night?',
+      authorName: 'yxxche006',
+      authorIsUctVerified: true,
+    });
+    expect(posts.some((post) => post.category === 'Campus Life')).toBe(true);
+    expect(posts.some((post) => post.category === 'Questions')).toBe(true);
+  });
+
+  it('filters curated seed posts by category when the production forum is empty', async () => {
+    const postsQuery = createQuery({ data: [], error: null });
+    queueQueries(postsQuery);
+
+    const posts = await getPosts('Questions');
+
+    expect(posts.length).toBeGreaterThan(0);
+    expect(posts.every((post) => post.category === 'Questions')).toBe(true);
+  });
+
+  it('opens curated seed post details and comments when the database has no matching row', async () => {
+    const postQuery = createQuery({ data: null, error: null });
+    const commentsQuery = createQuery({ data: [], error: null });
+    queueQueries(postQuery, commentsQuery);
+
+    const post = await getPost('11111111-1111-4111-8111-111111111111');
+    const comments = await getComments('11111111-1111-4111-8111-111111111111');
+
+    expect(post).toMatchObject({
+      id: '11111111-1111-4111-8111-111111111111',
+      title: 'Exam study spaces: what is actually calm late at night?',
+      commentCount: 2,
+    });
+    expect(comments).toHaveLength(2);
+    expect(comments[0]).toMatchObject({
+      authorName: 'orange',
+      content: expect.stringContaining('Baxter'),
+    });
   });
 });
