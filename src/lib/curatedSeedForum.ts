@@ -8,6 +8,62 @@ function hoursAgo(hours: number): string {
 
 const unsortedCuratedSeedPosts: Post[] = [
   {
+    id: '99999999-9999-4999-8999-999999999991',
+    title: 'Engineering handbook: where do I check course rules?',
+    category: 'General',
+    content:
+      'Leaving this here because a lot of people get mixed up between admissions info and degree rules.\n\nFor Engineering and the Built Environment, the undergraduate handbook is the place to check curriculum rules, course codes, progression rules and programme structure:\n\nhttps://uct.ac.za/sites/default/files/media/documents/uct_ac_za/405/2026_Engineering%20and%20the%20Built%20Environment_UG_Handbook_7a.pdf\n\nFor entry requirements and programme summaries, the undergraduate prospectus is usually easier to start with:\n\nhttps://uct.ac.za/students/prospective-students/undergraduate-prospectus',
+    authorId: 'seed-author-maya',
+    authorName: 'Maya',
+    authorAvatarUrl: null,
+    authorIsUctVerified: false,
+    isAnonymous: false,
+    createdAt: hoursAgo(1.2),
+    commentCount: 2,
+  },
+  {
+    id: '99999999-9999-4999-8999-999999999992',
+    title: 'Commerce handbook link for BCom and BBusSc',
+    category: 'General',
+    content:
+      'If you are comparing Commerce options, this is the public UCT Commerce undergraduate handbook link I would keep open:\n\nhttps://uct.ac.za/sites/default/files/media/documents/uct_ac_za/405/2026_Commerce_UG_Handbook_6a.pdf\n\nIt is better for degree rules, majors and curriculum structure. If you are still checking whether you qualify for a programme, start from the undergraduate prospectus as well:\n\nhttps://uct.ac.za/students/prospective-students/undergraduate-prospectus',
+    authorId: 'seed-author-jeff',
+    authorName: 'Jeff',
+    authorAvatarUrl: null,
+    authorIsUctVerified: false,
+    isAnonymous: false,
+    createdAt: hoursAgo(1.8),
+    commentCount: 2,
+  },
+  {
+    id: '99999999-9999-4999-8999-999999999993',
+    title: 'Open Day planning: which faculty talks are worth prioritising?',
+    category: 'Questions',
+    content:
+      'For anyone planning a campus visit or Open Day style route: do you usually prioritise faculty talks, residence info, or walking around the actual buildings first?\n\nI am trying to make a route that is useful for someone deciding between Engineering, Commerce and Science, without turning the day into a race across campus.',
+    authorId: 'seed-author-bob',
+    authorName: 'Bob',
+    authorAvatarUrl: null,
+    authorIsUctVerified: false,
+    isAnonymous: false,
+    createdAt: hoursAgo(2.4),
+    commentCount: 2,
+  },
+  {
+    id: '99999999-9999-4999-8999-999999999994',
+    title: 'Club and society events: what is actually beginner-friendly?',
+    category: 'Campus Life',
+    content:
+      'I keep seeing campus groups advertise talks, practices and socials, but it is hard to tell what is beginner-friendly and what assumes you already know people there.\n\nWhich societies or campus events have you joined where it felt normal to arrive alone?',
+    authorId: 'seed-author-priya',
+    authorName: 'Priya',
+    authorAvatarUrl: null,
+    authorIsUctVerified: false,
+    isAnonymous: false,
+    createdAt: hoursAgo(3.1),
+    commentCount: 2,
+  },
+  {
     id: '11111111-1111-4111-8111-111111111111',
     title: 'Exam study spaces: what is actually calm late at night?',
     category: 'Study',
@@ -127,6 +183,94 @@ export const curatedSeedPosts = [...unsortedCuratedSeedPosts].sort(
 );
 
 export const curatedSeedComments: ForumComment[] = [
+  {
+    id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb1',
+    postId: '99999999-9999-4999-8999-999999999991',
+    authorId: 'seed-author-lena',
+    authorName: 'Lena',
+    authorAvatarUrl: null,
+    authorIsUctVerified: false,
+    content:
+      'The prospectus is way easier for the first pass. The handbook is better once you already know which degree you are checking.',
+    createdAt: hoursAgo(1.0),
+  },
+  {
+    id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb2',
+    postId: '99999999-9999-4999-8999-999999999991',
+    authorId: 'seed-author-sam',
+    authorName: 'Sam',
+    authorAvatarUrl: null,
+    authorIsUctVerified: false,
+    content:
+      'Also check prerequisite chains before choosing electives. Some courses only make sense if you are planning the next year too.',
+    createdAt: hoursAgo(0.7),
+  },
+  {
+    id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb3',
+    postId: '99999999-9999-4999-8999-999999999992',
+    authorId: 'seed-author-noah',
+    authorName: 'Noah',
+    authorAvatarUrl: null,
+    authorIsUctVerified: false,
+    content:
+      'For Commerce, I would compare majors first and then work backwards through the handbook. Otherwise it gets overwhelming fast.',
+    createdAt: hoursAgo(1.4),
+  },
+  {
+    id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb4',
+    postId: '99999999-9999-4999-8999-999999999992',
+    authorId: 'seed-author-priya',
+    authorName: 'Priya',
+    authorAvatarUrl: null,
+    authorIsUctVerified: false,
+    content:
+      'The distinction between BCom and BBusSc is exactly the kind of thing I wish someone explained earlier.',
+    createdAt: hoursAgo(1.1),
+  },
+  {
+    id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb5',
+    postId: '99999999-9999-4999-8999-999999999993',
+    authorId: 'seed-author-maya',
+    authorName: 'Maya',
+    authorAvatarUrl: null,
+    authorIsUctVerified: false,
+    content:
+      'Faculty talks first, then residence and campus walking. If you walk first, you can lose half the day just figuring out stairs.',
+    createdAt: hoursAgo(2.0),
+  },
+  {
+    id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb6',
+    postId: '99999999-9999-4999-8999-999999999993',
+    authorId: 'seed-author-jeff',
+    authorName: 'Jeff',
+    authorAvatarUrl: null,
+    authorIsUctVerified: false,
+    content:
+      'If the person is deciding between faculties, I would add one student-life stop too. The vibe matters more than people admit.',
+    createdAt: hoursAgo(1.6),
+  },
+  {
+    id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb7',
+    postId: '99999999-9999-4999-8999-999999999994',
+    authorId: 'seed-author-bob',
+    authorName: 'Bob',
+    authorAvatarUrl: null,
+    authorIsUctVerified: false,
+    content:
+      'Anything that says beginners welcome and has a clear meeting place is usually fine. The vague ones are harder.',
+    createdAt: hoursAgo(2.6),
+  },
+  {
+    id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb8',
+    postId: '99999999-9999-4999-8999-999999999994',
+    authorId: 'seed-author-lena',
+    authorName: 'Lena',
+    authorAvatarUrl: null,
+    authorIsUctVerified: false,
+    content:
+      'I prefer events where there is an actual activity. Standing around trying to introduce yourself is the hard mode.',
+    createdAt: hoursAgo(2.2),
+  },
   {
     id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1',
     postId: '11111111-1111-4111-8111-111111111111',

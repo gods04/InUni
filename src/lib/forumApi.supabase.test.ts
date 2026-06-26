@@ -59,6 +59,10 @@ const postRow = {
   created_at: '2026-06-16T10:00:00.000Z',
 };
 
+function extractUrls(text: string): string[] {
+  return text.match(/https?:\/\/\S+/g) ?? [];
+}
+
 describe('forumApi Supabase boundary', () => {
   beforeEach(() => {
     mocks.from.mockReset();
@@ -131,7 +135,7 @@ describe('forumApi Supabase boundary', () => {
     expect(posts.some((post) => post.category === 'Questions')).toBe(true);
   });
 
-  it('keeps curated seed authors fictional and hides research sources from post copy', async () => {
+  it('keeps curated seed authors fictional and avoids third-party source traces', async () => {
     const postsQuery = createQuery({ data: [], error: null });
     queueQueries(postsQuery);
 
@@ -147,7 +151,7 @@ describe('forumApi Supabase boundary', () => {
       'd2efbdca-986e-4bce-a0a9-1e0b7d3cde6d',
       '323bc38c-75d0-4f9b-aefc-466c0aa61f96',
     ];
-    const forbiddenCopyPattern = /Source:|Sources:|https?:\/\//i;
+    const forbiddenCopyPattern = /Source:|Sources:|Instagram|Facebook|Reddit|u\//i;
 
     expect(posts).toEqual(
       expect.arrayContaining([
@@ -165,6 +169,11 @@ describe('forumApi Supabase boundary', () => {
     expect(posts.some((post) => forbiddenCopyPattern.test(post.content))).toBe(
       false,
     );
+    expect(
+      posts.flatMap((post) => extractUrls(post.content)).every((url) =>
+        url.startsWith('https://uct.ac.za/'),
+      ),
+    ).toBe(true);
     expect(posts.every((post) => !post.authorIsUctVerified)).toBe(true);
     expect(
       curatedSeedComments.some((comment) =>
@@ -174,6 +183,44 @@ describe('forumApi Supabase boundary', () => {
     expect(
       curatedSeedComments.every((comment) => !comment.authorIsUctVerified),
     ).toBe(true);
+  });
+
+  it('includes public UCT handbook resource posts for Engineering and Commerce', async () => {
+    const postsQuery = createQuery({ data: [], error: null });
+    queueQueries(postsQuery);
+
+    const posts = await getPosts('General');
+    const engineering = posts.find(
+      (post) =>
+        post.title === 'Engineering handbook: where do I check course rules?',
+    );
+    const commerce = posts.find(
+      (post) => post.title === 'Commerce handbook link for BCom and BBusSc',
+    );
+
+    expect(engineering).toMatchObject({
+      category: 'General',
+      authorName: 'Maya',
+      isAnonymous: false,
+    });
+    expect(engineering?.content).toContain(
+      'https://uct.ac.za/sites/default/files/media/documents/uct_ac_za/405/2026_Engineering%20and%20the%20Built%20Environment_UG_Handbook_7a.pdf',
+    );
+    expect(engineering?.content).toContain(
+      'https://uct.ac.za/students/prospective-students/undergraduate-prospectus',
+    );
+
+    expect(commerce).toMatchObject({
+      category: 'General',
+      authorName: 'Jeff',
+      isAnonymous: false,
+    });
+    expect(commerce?.content).toContain(
+      'https://uct.ac.za/sites/default/files/media/documents/uct_ac_za/405/2026_Commerce_UG_Handbook_6a.pdf',
+    );
+    expect(commerce?.content).toContain(
+      'https://uct.ac.za/students/prospective-students/undergraduate-prospectus',
+    );
   });
 
   it('filters curated seed posts by category when the production forum is empty', async () => {
