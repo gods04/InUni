@@ -5,6 +5,7 @@ import { formatRelativeTime, getPreview } from '../lib/format';
 import { createReport } from '../lib/forumApi';
 import { canParticipate } from '../lib/permissions';
 import type { Category, Post, ReportTarget } from '../types/forum';
+import { getTextWithReadableLinks } from './LinkedText';
 import { ReportDialog } from './ReportDialog';
 import { UctVerifiedBadge } from './UctVerifiedBadge';
 import { UserAvatar } from './UserAvatar';
@@ -48,11 +49,13 @@ export function PostCard({ post }: { post: Post }) {
           <span className="text-xs font-semibold text-slate-500">{formatRelativeTime(post.createdAt)}</span>
         </div>
 
-        <Link to={`/post/${post.id}`} className="group">
-          <h2 className="text-xl font-semibold tracking-normal text-ink group-hover:text-brand-700">
+        <Link to={`/post/${post.id}`} className="group block min-w-0">
+          <h2 className="break-words text-xl font-semibold tracking-normal text-ink group-hover:text-brand-700">
             {post.title}
           </h2>
-          <p className="mt-2 text-sm leading-6 text-slate-600">{getPreview(post.content)}</p>
+          <p className="mt-2 min-w-0 break-words text-sm leading-6 text-slate-600 [overflow-wrap:anywhere]">
+            {getPreview(getTextWithReadableLinks(post.content))}
+          </p>
         </Link>
 
         <div className="flex flex-col gap-3 border-t border-slate-100 pt-4 sm:flex-row sm:items-center sm:justify-between">

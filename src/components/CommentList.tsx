@@ -3,6 +3,7 @@ import { formatRelativeTime } from '../lib/format';
 import type { LinkedFile } from '../types/files';
 import type { ForumComment, ReportTarget } from '../types/forum';
 import { FileList } from './FileList';
+import { LinkedText } from './LinkedText';
 import { UctVerifiedBadge } from './UctVerifiedBadge';
 import { UserAvatar } from './UserAvatar';
 
@@ -78,7 +79,9 @@ export function CommentList({
               </Link>
             )}
           </div>
-          <p className="mt-2 min-w-0 whitespace-pre-wrap break-words text-sm leading-6 text-slate-700 [overflow-wrap:anywhere]">{comment.content}</p>
+          <p className="mt-2 min-w-0 whitespace-pre-wrap break-words text-sm leading-6 text-slate-700 [overflow-wrap:anywhere]">
+            <LinkedText text={comment.content} />
+          </p>
           {filesByCommentId[comment.id]?.length ? (
             <div className="mt-3">
               <FileList

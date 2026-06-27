@@ -21,6 +21,9 @@ const post = {
   commentCount: 2,
 };
 
+const longHandbookUrl =
+  'https://uct.ac.za/sites/default/files/media/documents/uct_ac_za/405/2026_Engineering%20and%20the%20Built%20Environment_UG_Handbook_7a.pdf';
+
 describe('PostCard', () => {
   it('shows UCT verification for a named verified author', () => {
     render(
@@ -51,5 +54,25 @@ describe('PostCard', () => {
     );
     expect(screen.queryByText('UCT Verified')).not.toBeInTheDocument();
     expect(screen.queryByLabelText('Amahle avatar')).not.toBeInTheDocument();
+  });
+
+  it('uses readable labels for long URL previews', () => {
+    render(
+      <MemoryRouter>
+        <PostCard
+          post={{
+            ...post,
+            content: `Official handbook link: ${longHandbookUrl}`,
+          }}
+        />
+      </MemoryRouter>,
+    );
+
+    expect(
+      screen.getByText(/Engineering and the Built Environment UG Handbook PDF/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText((content) => content.includes(longHandbookUrl)),
+    ).not.toBeInTheDocument();
   });
 });

@@ -7,6 +7,7 @@ import { CommentList } from '../components/CommentList';
 import { EmptyState } from '../components/EmptyState';
 import { ErrorState } from '../components/ErrorState';
 import { FileList } from '../components/FileList';
+import { LinkedText } from '../components/LinkedText';
 import { LoadingState } from '../components/LoadingState';
 import { ReportDialog } from '../components/ReportDialog';
 import { Seo } from '../components/Seo';
@@ -257,7 +258,7 @@ export function PostDetailPage() {
         </div>
 
         <div className="mt-6 min-w-0 space-y-4 whitespace-pre-wrap break-words text-base leading-8 text-slate-700 [overflow-wrap:anywhere]">
-          {post.content}
+          <LinkedText text={post.content} />
         </div>
 
         {postFiles.length > 0 ? (

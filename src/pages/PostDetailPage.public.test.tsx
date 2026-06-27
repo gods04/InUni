@@ -86,7 +86,7 @@ describe('PostDetailPage public access', () => {
     expect(mocks.getFilesForComment).not.toHaveBeenCalled();
   });
 
-  it('wraps long resource URLs inside the post body', async () => {
+  it('renders long resource URLs as readable links without changing post content', async () => {
     mocks.getPost.mockResolvedValue({
       ...post,
       content: `Official handbook link:\n\n${longHandbookUrl}`,
@@ -98,10 +98,37 @@ describe('PostDetailPage public access', () => {
       </MemoryRouter>,
     );
 
-    const postBody = await screen.findByText((content) =>
-      content.includes(longHandbookUrl),
+    const handbookLink = await screen.findByRole('link', {
+      name: /Engineering and the Built Environment UG Handbook PDF/i,
+    });
+
+    expect(handbookLink).toHaveAttribute('href', longHandbookUrl);
+    expect(handbookLink).toHaveAttribute('target', '_blank');
+    expect(screen.getByText('Official handbook link:')).toBeInTheDocument();
+    expect(
+      screen.queryByText((content) => content.includes(longHandbookUrl)),
+    ).not.toBeInTheDocument();
+  });
+
+  it('renders long resource URLs in comments as readable links', async () => {
+    mocks.getComments.mockResolvedValue([
+      {
+        ...comment,
+        content: `Try this handbook:\n${longHandbookUrl}`,
+      },
+    ]);
+
+    render(
+      <MemoryRouter>
+        <PostDetailPage />
+      </MemoryRouter>,
     );
 
-    expect(postBody).toHaveClass('break-words');
+    const handbookLink = await screen.findByRole('link', {
+      name: /Engineering and the Built Environment UG Handbook PDF/i,
+    });
+
+    expect(handbookLink).toHaveAttribute('href', longHandbookUrl);
+    expect(screen.getByText('Try this handbook:')).toBeInTheDocument();
   });
 });
