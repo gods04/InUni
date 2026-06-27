@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { ForumUser } from '../types/forum';
 import { ProfilePage } from './ProfilePage';
 
 const mocks = vi.hoisted(() => ({
@@ -13,7 +14,7 @@ const mocks = vi.hoisted(() => ({
   uploadProfilePhoto: vi.fn(),
 }));
 
-const testUser = {
+const testUser: ForumUser = {
   id: 'user-1',
   email: 'student@uct.ac.za',
   emailConfirmed: true,
@@ -55,6 +56,8 @@ describe('ProfilePage identity editing', () => {
   beforeEach(() => {
     testUser.email = 'student@uct.ac.za';
     testUser.emailConfirmed = true;
+    testUser.profile.avatarUrl = null;
+    testUser.profile.avatarPath = null;
     testUser.profile.isUctVerified = true;
     mocks.createSignedDownloadUrl.mockReset();
     mocks.getUserFiles.mockReset();
@@ -112,7 +115,7 @@ describe('ProfilePage identity editing', () => {
     expect(screen.queryByText('Email not UCT verified')).not.toBeInTheDocument();
   });
 
-  it('uploads and removes a profile photo', async () => {
+  it('uses a custom upload profile picture control', async () => {
     const user = userEvent.setup();
     render(
       <MemoryRouter>
@@ -121,14 +124,34 @@ describe('ProfilePage identity editing', () => {
     );
     const photo = new File(['avatar'], 'avatar.png', { type: 'image/png' });
 
-    await user.upload(await screen.findByLabelText('Profile photo'), photo);
+    expect(
+      await screen.findByRole('button', { name: 'Upload profile picture' }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('Remove photo')).not.toBeInTheDocument();
+
+    await user.upload(screen.getByLabelText('Upload profile picture'), photo);
 
     expect(mocks.uploadProfilePhoto).toHaveBeenCalledWith(photo);
     expect(await screen.findByText('Profile photo updated.')).toBeInTheDocument();
+    expect(mocks.removeProfilePhoto).not.toHaveBeenCalled();
+  });
 
-    await user.click(screen.getByRole('button', { name: 'Remove photo' }));
+  it('uses change photo wording when the account already has a profile photo', async () => {
+    testUser.profile.avatarUrl = 'https://cdn.inuni.test/avatar.png';
 
-    expect(mocks.removeProfilePhoto).toHaveBeenCalledOnce();
-    expect(await screen.findByText('Profile photo removed.')).toBeInTheDocument();
+    render(
+      <MemoryRouter>
+        <ProfilePage />
+      </MemoryRouter>,
+    );
+
+    expect(
+      await screen.findByRole('button', { name: 'Change photo' }),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText('Change photo')).toHaveAttribute(
+      'type',
+      'file',
+    );
+    expect(screen.queryByText('Remove photo')).not.toBeInTheDocument();
   });
 });

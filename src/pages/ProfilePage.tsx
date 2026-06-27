@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { ChangeEvent, FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { BanNotice } from '../components/BanNotice';
@@ -22,10 +22,10 @@ export function ProfilePage() {
   const {
     user,
     isDemoMode,
-    removeProfilePhoto,
     updateDisplayName,
     uploadProfilePhoto,
   } = useAuth();
+  const photoInputRef = useRef<HTMLInputElement>(null);
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -173,23 +173,6 @@ export function ProfilePage() {
     }
   }
 
-  async function deleteProfilePhoto() {
-    setPhotoBusy(true);
-    setProfileError(null);
-    setProfileStatus(null);
-
-    try {
-      const result = await removeProfilePhoto();
-      if (result.error) {
-        setProfileError(result.error);
-        return;
-      }
-      setProfileStatus('Profile photo removed.');
-    } finally {
-      setPhotoBusy(false);
-    }
-  }
-
   if (!user) {
     return (
       <>
@@ -205,6 +188,9 @@ export function ProfilePage() {
   }
 
   const profileEditingDisabled = user.profile.isBanned;
+  const photoActionLabel = user.profile.avatarUrl
+    ? 'Change photo'
+    : 'Upload profile picture';
 
   return (
     <div className="grid gap-5">
@@ -293,25 +279,33 @@ export function ProfilePage() {
           </button>
         </form>
 
-        <div className="flex flex-wrap items-end gap-3">
-          <label className="grid gap-2 text-sm font-semibold text-slate-700">
-            <span>Profile photo</span>
+        <div
+          aria-label="Profile photo"
+          className="grid gap-2 sm:max-w-md"
+          role="group"
+        >
+          <span className="text-sm font-semibold text-slate-700">
+            Profile photo
+          </span>
+          <div className="flex flex-wrap items-center gap-3">
             <input
               accept="image/png,image/jpeg,image/webp"
-              className="block text-sm text-slate-600 file:mr-3 file:rounded-full file:border-0 file:bg-brand-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-brand-700"
+              aria-label={photoActionLabel}
+              className="sr-only"
               disabled={profileEditingDisabled || photoBusy}
               onChange={changeProfilePhoto}
+              ref={photoInputRef}
               type="file"
             />
-          </label>
-          <button
-            className="secondary-button"
-            disabled={profileEditingDisabled || photoBusy}
-            onClick={deleteProfilePhoto}
-            type="button"
-          >
-            {photoBusy ? 'Updating...' : 'Remove photo'}
-          </button>
+            <button
+              className="secondary-button"
+              disabled={profileEditingDisabled || photoBusy}
+              onClick={() => photoInputRef.current?.click()}
+              type="button"
+            >
+              {photoBusy ? 'Updating...' : photoActionLabel}
+            </button>
+          </div>
         </div>
       </section>
 
