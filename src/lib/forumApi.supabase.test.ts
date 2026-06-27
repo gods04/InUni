@@ -166,6 +166,7 @@ describe('forumApi Supabase boundary', () => {
     queueQueries(postsQuery, profileQuery, commentCountQuery);
 
     const posts = await getPosts();
+    const realPost = posts.find((post) => post.id === 'real-post-1');
 
     expect(posts).toEqual(
       expect.arrayContaining([
@@ -183,7 +184,7 @@ describe('forumApi Supabase boundary', () => {
         }),
       ]),
     );
-    expect(posts[0]).toMatchObject({
+    expect(realPost).toMatchObject({
       id: 'real-post-1',
       authorName: 'ur dad',
       commentCount: 0,
