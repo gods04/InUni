@@ -67,6 +67,28 @@ describe('AppLayout', () => {
     expect(screen.getByRole('link', { name: 'Tools' })).toBeInTheDocument();
   });
 
+  it('uses a full-width header bar with the logo separated from right-side nav', async () => {
+    render(
+      <MemoryRouter>
+        <Routes>
+          <Route element={<AppLayout />}>
+            <Route index element={<p>Forum content</p>} />
+          </Route>
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    await screen.findByRole('link', { name: /Admin/ });
+
+    const headerShell = screen
+      .getByLabelText('InUni home')
+      .closest('header')
+      ?.firstElementChild;
+
+    expect(headerShell).toHaveClass('max-w-none');
+    expect(headerShell).not.toHaveClass('max-w-5xl');
+  });
+
   it('leaves the admin nav link unbadged when no files need review', async () => {
     getFileReviewCount.mockResolvedValue(0);
 

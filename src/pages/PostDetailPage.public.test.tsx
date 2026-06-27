@@ -34,7 +34,7 @@ const comment = {
 };
 
 const longHandbookUrl =
-  'https://uct.ac.za/sites/default/files/media/documents/uct_ac_za/405/2026_Engineering%20and%20the%20Built%20Environment_UG_Handbook_7a.pdf';
+  'https://uct.ac.za/sites/default/files/media/documents/2026-ebe-handbook-7a-final-web.pdf';
 
 vi.mock('../hooks/useAuth', () => ({
   useAuth: () => ({ user: null }),

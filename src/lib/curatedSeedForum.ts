@@ -12,7 +12,7 @@ const unsortedCuratedSeedPosts: Post[] = [
     title: 'Engineering handbook: where do I check course rules?',
     category: 'General',
     content:
-      'Leaving this here because a lot of people get mixed up between admissions info and degree rules.\n\nFor Engineering and the Built Environment, the undergraduate handbook is the place to check curriculum rules, course codes, progression rules and programme structure:\n\nhttps://uct.ac.za/sites/default/files/media/documents/uct_ac_za/405/2026_Engineering%20and%20the%20Built%20Environment_UG_Handbook_7a.pdf\n\nFor entry requirements and programme summaries, the undergraduate prospectus is usually easier to start with:\n\nhttps://uct.ac.za/students/prospective-students/undergraduate-prospectus',
+      'Leaving this here because a lot of people get mixed up between admissions info and degree rules.\n\nFor Engineering and the Built Environment, the undergraduate handbook is the place to check curriculum rules, course codes, progression rules and programme structure:\n\nhttps://uct.ac.za/sites/default/files/media/documents/2026-ebe-handbook-7a-final-web.pdf\n\nFor entry requirements and programme summaries, the undergraduate prospectus is usually easier to start with:\n\nhttps://uct.ac.za/students/prospective-students/undergraduate-prospectus',
     authorId: 'seed-author-maya',
     authorName: 'Maya',
     authorAvatarUrl: null,
@@ -26,7 +26,7 @@ const unsortedCuratedSeedPosts: Post[] = [
     title: 'Commerce handbook link for BCom and BBusSc',
     category: 'General',
     content:
-      'If you are comparing Commerce options, this is the public UCT Commerce undergraduate handbook link I would keep open:\n\nhttps://uct.ac.za/sites/default/files/media/documents/uct_ac_za/405/2026_Commerce_UG_Handbook_6a.pdf\n\nIt is better for degree rules, majors and curriculum structure. If you are still checking whether you qualify for a programme, start from the undergraduate prospectus as well:\n\nhttps://uct.ac.za/students/prospective-students/undergraduate-prospectus',
+      'If you are comparing Commerce options, this is the public UCT Commerce undergraduate handbook link I would keep open:\n\nhttps://uct.ac.za/sites/default/files/media/documents/2026-commerce-handbook-6a-final-web.pdf\n\nIt is better for degree rules, majors and curriculum structure. If you are still checking whether you qualify for a programme, start from the undergraduate prospectus as well:\n\nhttps://uct.ac.za/students/prospective-students/undergraduate-prospectus',
     authorId: 'seed-author-jeff',
     authorName: 'Jeff',
     authorAvatarUrl: null,

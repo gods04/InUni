@@ -174,6 +174,11 @@ describe('forumApi Supabase boundary', () => {
         url.startsWith('https://uct.ac.za/'),
       ),
     ).toBe(true);
+    expect(
+      posts.flatMap((post) => extractUrls(post.content)).some((url) =>
+        url.includes('/uct_ac_za/405/'),
+      ),
+    ).toBe(false);
     expect(posts.every((post) => !post.authorIsUctVerified)).toBe(true);
     expect(
       curatedSeedComments.some((comment) =>
@@ -204,7 +209,7 @@ describe('forumApi Supabase boundary', () => {
       isAnonymous: false,
     });
     expect(engineering?.content).toContain(
-      'https://uct.ac.za/sites/default/files/media/documents/uct_ac_za/405/2026_Engineering%20and%20the%20Built%20Environment_UG_Handbook_7a.pdf',
+      'https://uct.ac.za/sites/default/files/media/documents/2026-ebe-handbook-7a-final-web.pdf',
     );
     expect(engineering?.content).toContain(
       'https://uct.ac.za/students/prospective-students/undergraduate-prospectus',
@@ -216,7 +221,7 @@ describe('forumApi Supabase boundary', () => {
       isAnonymous: false,
     });
     expect(commerce?.content).toContain(
-      'https://uct.ac.za/sites/default/files/media/documents/uct_ac_za/405/2026_Commerce_UG_Handbook_6a.pdf',
+      'https://uct.ac.za/sites/default/files/media/documents/2026-commerce-handbook-6a-final-web.pdf',
     );
     expect(commerce?.content).toContain(
       'https://uct.ac.za/students/prospective-students/undergraduate-prospectus',

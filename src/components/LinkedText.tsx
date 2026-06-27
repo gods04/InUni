@@ -39,6 +39,14 @@ export function getLinkDisplayText(rawUrl: string) {
     const hostname = url.hostname.replace(/^www\./i, '');
     const decodedPath = decodePathname(url.pathname);
 
+    if (/ebe-handbook/i.test(decodedPath)) {
+      return 'Engineering and the Built Environment UG Handbook PDF';
+    }
+
+    if (/commerce-handbook/i.test(decodedPath)) {
+      return 'Commerce UG Handbook PDF';
+    }
+
     if (/undergraduate-prospectus/i.test(decodedPath)) {
       return hostname.endsWith('uct.ac.za')
         ? 'UCT undergraduate prospectus'
