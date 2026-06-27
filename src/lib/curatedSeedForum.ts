@@ -451,6 +451,10 @@ export function getCuratedSeedPost(postId: string): Post | null {
   return curatedSeedPosts.find((post) => post.id === postId) ?? null;
 }
 
+export function isCuratedSeedPostId(postId: string): boolean {
+  return curatedSeedPosts.some((post) => post.id === postId);
+}
+
 export function getCuratedSeedComments(postId: string): ForumComment[] {
   return curatedSeedComments.filter((comment) => comment.postId === postId);
 }

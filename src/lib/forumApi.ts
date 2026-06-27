@@ -2,6 +2,7 @@ import {
   getCuratedSeedComments,
   getCuratedSeedPost,
   getCuratedSeedPosts,
+  isCuratedSeedPostId,
 } from './curatedSeedForum';
 import { mockForumStore } from './mockStore';
 import { isSupabaseConfigured, supabase } from './supabase';
@@ -299,6 +300,12 @@ export async function createPost(input: NewPostInput, user: ForumUser): Promise<
 export async function createComment(input: NewCommentInput, user: ForumUser): Promise<ForumComment> {
   if (!isSupabaseConfigured) {
     return mockForumStore.createComment(input, user);
+  }
+
+  if (isCuratedSeedPostId(input.postId)) {
+    throw new Error(
+      'Starter posts are read-only. Create a new post to continue this conversation.',
+    );
   }
 
   const client = requireSupabase();

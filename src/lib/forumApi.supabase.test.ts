@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { curatedSeedComments } from './curatedSeedForum';
-import { getComments, getPost, getPosts } from './forumApi';
+import { createComment, getComments, getPost, getPosts } from './forumApi';
+import type { ForumUser } from '../types/forum';
 
 const mocks = vi.hoisted(() => ({
   from: vi.fn(),
@@ -57,6 +58,22 @@ const postRow = {
   author_id: 'owner-1',
   is_anonymous: false,
   created_at: '2026-06-16T10:00:00.000Z',
+};
+
+const user: ForumUser = {
+  id: 'user-1',
+  email: 'orange@uct.ac.za',
+  emailConfirmed: true,
+  profile: {
+    id: 'user-1',
+    username: 'orange',
+    displayName: 'orange',
+    role: 'student',
+    isBanned: false,
+    banReason: null,
+    isUctVerified: false,
+    createdAt: '2026-06-16T00:00:00.000Z',
+  },
 };
 
 function extractUrls(text: string): string[] {
@@ -317,5 +334,21 @@ describe('forumApi Supabase boundary', () => {
         ['chenxianjian9', 'orange', 'yxxche006'].includes(comment.authorName),
       ),
     ).toBe(false);
+  });
+
+  it('rejects comments on curated seed posts before calling Supabase', async () => {
+    await expect(
+      createComment(
+        {
+          postId: '99999999-9999-4999-8999-999999999991',
+          content: 'you',
+        },
+        user,
+      ),
+    ).rejects.toThrow(
+      'Starter posts are read-only. Create a new post to continue this conversation.',
+    );
+
+    expect(mocks.from).not.toHaveBeenCalled();
   });
 });

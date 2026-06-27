@@ -25,6 +25,7 @@ import {
   getComments,
   getPost,
 } from '../lib/forumApi';
+import { isCuratedSeedPostId } from '../lib/curatedSeedForum';
 import { formatRelativeTime } from '../lib/format';
 import { canParticipate } from '../lib/permissions';
 import { validateComment } from '../lib/validation';
@@ -216,6 +217,8 @@ export function PostDetailPage() {
     );
   }
 
+  const isStarterPost = isCuratedSeedPostId(post.id);
+
   return (
     <div className="grid min-w-0 gap-5">
       <Seo
@@ -277,7 +280,7 @@ export function PostDetailPage() {
 
         <div className="mt-6 border-t border-slate-100 pt-5">
           <div className="flex flex-wrap items-center gap-3">
-            {user ? (
+            {isStarterPost ? null : user ? (
               <button
                 className="danger-button"
                 onClick={() =>
@@ -316,51 +319,62 @@ export function PostDetailPage() {
           filesByCommentId={commentFiles}
           onFileDownload={(file) => openFile(file, 'download')}
           onFilePreview={(file) => openFile(file, 'preview')}
-          onReport={user ? openReport : undefined}
+          onReport={user && !isStarterPost ? openReport : undefined}
           reportDisabled={Boolean(user && !canParticipate(user.profile))}
         />
 
         {user && !canParticipate(user.profile) ? (
           <BanNotice reason={user.profile.banReason} />
-        ) : (
-        <form className="panel grid gap-4 p-4 sm:p-5" onSubmit={handleSubmit}>
-          <label className="grid gap-2">
-            <span className="field-label">Add a comment</span>
-            <textarea
-              className="field-input min-h-28 resize-y"
-              placeholder={user ? 'Write a helpful reply...' : 'Log in to comment'}
-              value={commentText}
-              onChange={(event) => setCommentText(event.target.value)}
-              disabled={!user || submitting}
-            />
-          </label>
-
-          <AttachmentPicker
-            disabled={!user || submitting}
-            maxFiles={5}
-            onChange={setCommentAttachments}
-            value={commentAttachments}
-          />
-
-          {commentError ? <ErrorState message={commentError} /> : null}
-
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm text-slate-500">
-              {user
-                ? `Posting as ${user.profile.displayName}`
-                : 'Only logged-in users can comment.'}
+        ) : isStarterPost ? (
+          <div className="panel grid gap-3 p-4 sm:p-5">
+            <h3 className="text-base font-semibold text-ink">Add a comment</h3>
+            <p className="text-sm leading-6 text-slate-600">
+              Starter posts are read-only. Create a new post if you want to
+              continue this conversation.
             </p>
-            {user ? (
-              <button className="primary-button" type="submit" disabled={submitting}>
-                {submitting ? 'Posting...' : 'Post comment'}
-              </button>
-            ) : (
-              <Link className="primary-button" to="/login">
-                Log in to comment
-              </Link>
-            )}
+            <Link className="primary-button w-fit" to="/create">
+              Create a new post
+            </Link>
           </div>
-        </form>
+        ) : (
+          <form className="panel grid gap-4 p-4 sm:p-5" onSubmit={handleSubmit}>
+            <label className="grid gap-2">
+              <span className="field-label">Add a comment</span>
+              <textarea
+                className="field-input min-h-28 resize-y"
+                placeholder={user ? 'Write a helpful reply...' : 'Log in to comment'}
+                value={commentText}
+                onChange={(event) => setCommentText(event.target.value)}
+                disabled={!user || submitting}
+              />
+            </label>
+
+            <AttachmentPicker
+              disabled={!user || submitting}
+              maxFiles={5}
+              onChange={setCommentAttachments}
+              value={commentAttachments}
+            />
+
+            {commentError ? <ErrorState message={commentError} /> : null}
+
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-sm text-slate-500">
+                {user
+                  ? `Posting as ${user.profile.displayName}`
+                  : 'Only logged-in users can comment.'}
+              </p>
+              {user ? (
+                <button className="primary-button" type="submit" disabled={submitting}>
+                  {submitting ? 'Posting...' : 'Post comment'}
+                </button>
+              ) : (
+                <Link className="primary-button" to="/login">
+                  Log in to comment
+                </Link>
+              )}
+            </div>
+          </form>
         )}
       </section>
 
