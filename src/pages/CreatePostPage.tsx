@@ -6,6 +6,7 @@ import { BanNotice } from '../components/BanNotice';
 import { BrandLogo } from '../components/BrandLogo';
 import { ErrorState } from '../components/ErrorState';
 import { LoginPrompt } from '../components/LoginPrompt';
+import { Seo } from '../components/Seo';
 import { useAuth } from '../hooks/useAuth';
 import { uploadLinkedFiles } from '../lib/fileApi';
 import { createPost } from '../lib/forumApi';
@@ -66,7 +67,17 @@ export function CreatePostPage() {
   }
 
   if (!user) {
-    return <LoginPrompt message="Log in or create an account before posting to InUni." />;
+    return (
+      <>
+        <Seo
+          canonicalPath="/create"
+          description="Create an InUni post."
+          noindex
+          title="Create post | InUni"
+        />
+        <LoginPrompt message="Log in or create an account before posting to InUni." />
+      </>
+    );
   }
 
   if (!canParticipate(user.profile)) {
@@ -75,6 +86,12 @@ export function CreatePostPage() {
 
   return (
     <div className="mx-auto grid w-full max-w-3xl gap-5">
+      <Seo
+        canonicalPath="/create"
+        description="Create an InUni post."
+        noindex
+        title="Create post | InUni"
+      />
       <div className="panel flex items-center gap-4 p-5">
         <BrandLogo
           aria-hidden="true"

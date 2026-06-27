@@ -8,6 +8,7 @@ import { FileList } from '../components/FileList';
 import { LoadingState } from '../components/LoadingState';
 import { LoginPrompt } from '../components/LoginPrompt';
 import { PostCard } from '../components/PostCard';
+import { Seo } from '../components/Seo';
 import { UctVerifiedBadge } from '../components/UctVerifiedBadge';
 import { UserAvatar } from '../components/UserAvatar';
 import { useAuth } from '../hooks/useAuth';
@@ -190,13 +191,29 @@ export function ProfilePage() {
   }
 
   if (!user) {
-    return <LoginPrompt message="Log in to view your profile and posts." />;
+    return (
+      <>
+        <Seo
+          canonicalPath="/profile"
+          description="View an InUni account profile."
+          noindex
+          title="Profile | InUni"
+        />
+        <LoginPrompt message="Log in to view your profile and posts." />
+      </>
+    );
   }
 
   const profileEditingDisabled = user.profile.isBanned;
 
   return (
     <div className="grid gap-5">
+      <Seo
+        canonicalPath="/profile"
+        description="View an InUni account profile."
+        noindex
+        title="Profile | InUni"
+      />
       <section className="panel grid gap-4 overflow-hidden p-5 sm:grid-cols-[auto_1fr_auto] sm:items-center sm:p-7">
         <UserAvatar
           name={user.profile.displayName}

@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AdminReportsQueue } from '../components/AdminReportsQueue';
+import { Seo } from '../components/Seo';
 
 export function AdminReportsPage() {
   const [reportCount, setReportCount] = useState(0);
@@ -10,6 +11,12 @@ export function AdminReportsPage() {
 
   return (
     <div className="grid gap-5">
+      <Seo
+        canonicalPath="/admin/reports"
+        description="InUni administrator reports queue."
+        noindex
+        title="Reports queue | InUni"
+      />
       <section className="panel flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
         <div>
           <p className="text-sm font-semibold text-brand-700">

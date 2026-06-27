@@ -9,6 +9,7 @@ import {
   Utensils,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { Seo } from '../components/Seo';
 
 interface ActiveTool {
   detail: string;
@@ -52,6 +53,11 @@ const plannedTools: PlannedTool[] = [
 export function ToolsPage() {
   return (
     <div className="grid gap-5">
+      <Seo
+        canonicalPath="/tools"
+        description="Open UCT student tools on InUni, including the forum, shared files, campus resources, and planned study utilities."
+        title="UCT Student Tools | InUni"
+      />
       <section className="border-b border-line pb-6">
         <p className="text-sm font-semibold text-brand-700">UCT utilities</p>
         <h1 className="section-title">Student tools</h1>

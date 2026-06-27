@@ -5,6 +5,7 @@ import { BrandLogo } from '../components/BrandLogo';
 import { ErrorState } from '../components/ErrorState';
 import { LoadingState } from '../components/LoadingState';
 import { PasswordField } from '../components/PasswordField';
+import { Seo } from '../components/Seo';
 import { useAuth } from '../hooks/useAuth';
 
 export function ResetPasswordPage() {
@@ -53,12 +54,28 @@ export function ResetPasswordPage() {
   }
 
   if (loading) {
-    return <LoadingState label="Checking your reset link..." />;
+    return (
+      <>
+        <Seo
+          canonicalPath="/reset-password"
+          description="Reset an InUni account password."
+          noindex
+          title="Reset password | InUni"
+        />
+        <LoadingState label="Checking your reset link..." />
+      </>
+    );
   }
 
   if (!hasPasswordRecoverySession) {
     return (
       <div className="mx-auto w-full max-w-md panel p-5 sm:p-6">
+        <Seo
+          canonicalPath="/reset-password"
+          description="Reset an InUni account password."
+          noindex
+          title="Reset password | InUni"
+        />
         <BrandLogo
           alt="InUni"
           className="h-16 w-auto object-contain"
@@ -81,6 +98,12 @@ export function ResetPasswordPage() {
 
   return (
     <div className="mx-auto grid w-full max-w-md gap-5">
+      <Seo
+        canonicalPath="/reset-password"
+        description="Reset an InUni account password."
+        noindex
+        title="Reset password | InUni"
+      />
       <div className="panel p-5 sm:p-6">
         <BrandLogo
           alt="InUni"

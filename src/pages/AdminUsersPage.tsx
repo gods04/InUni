@@ -5,6 +5,7 @@ import { ConfirmDialog } from '../components/ConfirmDialog';
 import { EmptyState } from '../components/EmptyState';
 import { ErrorState } from '../components/ErrorState';
 import { LoadingState } from '../components/LoadingState';
+import { Seo } from '../components/Seo';
 import { useAuth } from '../hooks/useAuth';
 import { searchUsers, setUserBan } from '../lib/adminApi';
 import type { Profile } from '../types/forum';
@@ -110,6 +111,12 @@ export function AdminUsersPage() {
 
   return (
     <div className="grid gap-5">
+      <Seo
+        canonicalPath="/admin/users"
+        description="InUni administrator user moderation."
+        noindex
+        title="User moderation | InUni"
+      />
       <section className="panel p-5 sm:p-6">
         <Link
           className="text-sm font-semibold text-brand-700 hover:text-brand-600"

@@ -3,6 +3,7 @@ import { ConfirmDialog } from '../components/ConfirmDialog';
 import { EmptyState } from '../components/EmptyState';
 import { ErrorState } from '../components/ErrorState';
 import { LoadingState } from '../components/LoadingState';
+import { Seo } from '../components/Seo';
 import { UserAvatar } from '../components/UserAvatar';
 import { useAuth } from '../hooks/useAuth';
 import { createSignedDownloadUrl } from '../lib/fileApi';
@@ -193,6 +194,12 @@ export function AdminFilesPage() {
 
   return (
     <div className="grid gap-5">
+      <Seo
+        canonicalPath="/admin/files"
+        description="InUni administrator file review."
+        noindex
+        title="File review | InUni"
+      />
       <section className="panel p-5 sm:p-6">
         <p className="text-sm font-semibold text-brand-700">Administrator</p>
         <h1 className="section-title">File review</h1>

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { ErrorState } from '../components/ErrorState';
 import { FileReviewCountBadge } from '../components/FileReviewCountBadge';
 import { LoadingState } from '../components/LoadingState';
+import { Seo } from '../components/Seo';
 import {
   getAdminDashboardMetrics,
   type AdminDashboardActivityItem,
@@ -96,6 +97,12 @@ export function AdminPage() {
 
   return (
     <div className="grid gap-5">
+      <Seo
+        canonicalPath="/admin"
+        description="InUni administrator dashboard."
+        noindex
+        title="Admin dashboard | InUni"
+      />
       <section className="panel flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
         <div>
           <p className="text-sm font-semibold text-brand-700">

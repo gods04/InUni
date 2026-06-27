@@ -5,6 +5,7 @@ import { ErrorState } from '../components/ErrorState';
 import { FileList } from '../components/FileList';
 import { FileReportDialog } from '../components/FileReportDialog';
 import { LoadingState } from '../components/LoadingState';
+import { Seo } from '../components/Seo';
 import { useAuth } from '../hooks/useAuth';
 import {
   createSignedDownloadUrl,
@@ -140,6 +141,11 @@ export function FilesPage() {
 
   return (
     <div className="grid gap-5">
+      <Seo
+        canonicalPath="/files"
+        description="Browse approved UCT study notes, templates, PDFs, class resources, and shared student files on InUni."
+        title="UCT Shared Files | InUni"
+      />
       <section className="flex flex-col gap-5 border-b border-line pb-7 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="section-title">Files</h1>

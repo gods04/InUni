@@ -6,6 +6,7 @@ import { EmptyState } from '../components/EmptyState';
 import { ErrorState } from '../components/ErrorState';
 import { LoadingState } from '../components/LoadingState';
 import { PostCard } from '../components/PostCard';
+import { Seo } from '../components/Seo';
 import { getPosts } from '../lib/forumApi';
 import type { Category, CategoryFilter, Post } from '../types/forum';
 
@@ -59,6 +60,19 @@ export function HomePage() {
 
   return (
     <div className="grid gap-7">
+      <Seo
+        canonicalPath="/"
+        description="InUni is a UCT student forum for campus questions, study help, handbooks, shared files, and student conversations."
+        structuredData={{
+          '@context': 'https://schema.org',
+          '@type': 'WebSite',
+          description:
+            'A UCT student forum for campus questions, study help, handbooks, shared files, and student conversations.',
+          name: 'InUni',
+          url: 'https://inuni.co.za/',
+        }}
+        title="InUni | UCT Student Forum"
+      />
       <section className="flex flex-col gap-5 border-b border-line pb-7 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-4">
           <BrandLogo

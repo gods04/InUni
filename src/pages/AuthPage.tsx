@@ -4,6 +4,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { BrandLogo } from '../components/BrandLogo';
 import { ErrorState } from '../components/ErrorState';
 import { PasswordField } from '../components/PasswordField';
+import { Seo } from '../components/Seo';
 import { useAuth } from '../hooks/useAuth';
 
 type AuthMode = 'login' | 'signup' | 'recovery';
@@ -160,6 +161,12 @@ export function AuthPage() {
 
   return (
     <div className="mx-auto grid w-full max-w-md gap-5">
+      <Seo
+        canonicalPath="/login"
+        description="Log in to InUni to post, comment, upload files, and manage your UCT student forum profile."
+        noindex
+        title="Log in | InUni"
+      />
       <div className="panel p-5 sm:p-6">
         <BrandLogo
           alt="InUni"

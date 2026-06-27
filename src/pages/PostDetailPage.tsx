@@ -9,6 +9,7 @@ import { ErrorState } from '../components/ErrorState';
 import { FileList } from '../components/FileList';
 import { LoadingState } from '../components/LoadingState';
 import { ReportDialog } from '../components/ReportDialog';
+import { Seo } from '../components/Seo';
 import { UctVerifiedBadge } from '../components/UctVerifiedBadge';
 import { useAuth } from '../hooks/useAuth';
 import {
@@ -216,6 +217,24 @@ export function PostDetailPage() {
 
   return (
     <div className="grid min-w-0 gap-5">
+      <Seo
+        canonicalPath={`/post/${post.id}`}
+        description={`${post.title} - a UCT student forum discussion on InUni.`}
+        structuredData={{
+          '@context': 'https://schema.org',
+          '@type': 'DiscussionForumPosting',
+          articleBody: post.content,
+          author: {
+            '@type': 'Person',
+            name: post.authorName,
+          },
+          datePublished: post.createdAt,
+          headline: post.title,
+          url: `https://inuni.co.za/post/${post.id}`,
+        }}
+        title={`${post.title} | InUni`}
+        type="article"
+      />
       <Link className="w-fit text-sm font-semibold text-brand-700 hover:text-brand-600" to="/">
         Back to feed
       </Link>
