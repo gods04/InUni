@@ -32,9 +32,9 @@ export function CommentList({
   }
 
   return (
-    <div className="space-y-3">
+    <div className="min-w-0 space-y-3">
       {comments.map((comment) => (
-        <article className="rounded-lg border border-line bg-white p-4 shadow-sm" key={comment.id}>
+        <article className="min-w-0 rounded-lg border border-line bg-white p-4 shadow-sm" key={comment.id}>
           <div className="flex items-start justify-between gap-3">
             <div className="flex min-w-0 items-center gap-3">
               <UserAvatar
@@ -78,7 +78,7 @@ export function CommentList({
               </Link>
             )}
           </div>
-          <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-700">{comment.content}</p>
+          <p className="mt-2 min-w-0 whitespace-pre-wrap break-words text-sm leading-6 text-slate-700 [overflow-wrap:anywhere]">{comment.content}</p>
           {filesByCommentId[comment.id]?.length ? (
             <div className="mt-3">
               <FileList

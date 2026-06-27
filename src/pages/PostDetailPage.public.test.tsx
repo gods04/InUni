@@ -33,6 +33,9 @@ const comment = {
   createdAt: '2026-06-16T10:10:00.000Z',
 };
 
+const longHandbookUrl =
+  'https://uct.ac.za/sites/default/files/media/documents/uct_ac_za/405/2026_Engineering%20and%20the%20Built%20Environment_UG_Handbook_7a.pdf';
+
 vi.mock('../hooks/useAuth', () => ({
   useAuth: () => ({ user: null }),
 }));
@@ -81,5 +84,24 @@ describe('PostDetailPage public access', () => {
     ).toHaveAttribute('href', '/login');
     expect(mocks.getFilesForPost).not.toHaveBeenCalled();
     expect(mocks.getFilesForComment).not.toHaveBeenCalled();
+  });
+
+  it('wraps long resource URLs inside the post body', async () => {
+    mocks.getPost.mockResolvedValue({
+      ...post,
+      content: `Official handbook link:\n\n${longHandbookUrl}`,
+    });
+
+    render(
+      <MemoryRouter>
+        <PostDetailPage />
+      </MemoryRouter>,
+    );
+
+    const postBody = await screen.findByText((content) =>
+      content.includes(longHandbookUrl),
+    );
+
+    expect(postBody).toHaveClass('break-words');
   });
 });

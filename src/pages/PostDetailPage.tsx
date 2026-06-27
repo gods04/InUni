@@ -215,19 +215,19 @@ export function PostDetailPage() {
   }
 
   return (
-    <div className="grid gap-5">
+    <div className="grid min-w-0 gap-5">
       <Link className="w-fit text-sm font-semibold text-brand-700 hover:text-brand-600" to="/">
         Back to feed
       </Link>
 
-      <article className="panel p-5 sm:p-7">
+      <article className="panel min-w-0 p-5 sm:p-7">
         <div className="flex flex-wrap items-center gap-2">
           <span className="badge bg-brand-50 text-brand-700">{post.category}</span>
           {post.isAnonymous ? <span className="badge bg-slate-100 text-slate-700">Anonymous</span> : null}
           <span className="text-xs font-semibold text-slate-500">{formatRelativeTime(post.createdAt)}</span>
         </div>
 
-        <h1 className="mt-4 text-3xl font-semibold tracking-normal text-ink">{post.title}</h1>
+        <h1 className="mt-4 break-words text-3xl font-semibold tracking-normal text-ink">{post.title}</h1>
         <div className="mt-3 text-sm text-slate-500">
           By <span className="font-bold text-slate-800">{post.authorName}</span>{' '}
           {!post.isAnonymous && post.authorIsUctVerified ? (
@@ -237,7 +237,7 @@ export function PostDetailPage() {
           <span>{post.commentCount} comments</span>
         </div>
 
-        <div className="mt-6 space-y-4 whitespace-pre-wrap text-base leading-8 text-slate-700">
+        <div className="mt-6 min-w-0 space-y-4 whitespace-pre-wrap break-words text-base leading-8 text-slate-700 [overflow-wrap:anywhere]">
           {post.content}
         </div>
 
