@@ -94,9 +94,9 @@ describe('forumApi Supabase boundary', () => {
     queueQueries(postsQuery, profileQuery, commentCountQuery, fallbackProfileQuery);
 
     const posts = await getPosts();
+    const post = posts.find((item) => item.id === 'post-1');
 
-    expect(posts).toHaveLength(1);
-    expect(posts[0]).toMatchObject({
+    expect(post).toMatchObject({
       authorAvatarUrl: null,
       authorIsUctVerified: true,
       authorName: 'Student One',
@@ -133,6 +133,61 @@ describe('forumApi Supabase boundary', () => {
     });
     expect(posts.some((post) => post.category === 'Campus Life')).toBe(true);
     expect(posts.some((post) => post.category === 'Questions')).toBe(true);
+  });
+
+  it('keeps curated seed posts visible after real posts are created', async () => {
+    const postsQuery = createQuery({
+      data: [
+        {
+          id: 'real-post-1',
+          title: 'lonely as fuck',
+          content: 'im looking for a partner because im lonely',
+          category: 'Campus Life',
+          author_id: 'real-user-1',
+          is_anonymous: false,
+          created_at: '2026-06-27T10:00:00.000Z',
+        },
+      ],
+      error: null,
+    });
+    const profileQuery = createQuery({
+      data: [
+        {
+          id: 'real-user-1',
+          username: 'ur-dad',
+          display_name: 'ur dad',
+          avatar_path: null,
+          is_uct_verified: false,
+        },
+      ],
+      error: null,
+    });
+    const commentCountQuery = createQuery({ data: [], error: null });
+    queueQueries(postsQuery, profileQuery, commentCountQuery);
+
+    const posts = await getPosts();
+
+    expect(posts).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: 'real-post-1',
+          title: 'lonely as fuck',
+        }),
+        expect.objectContaining({
+          id: '99999999-9999-4999-8999-999999999991',
+          title: 'Engineering handbook: where do I check course rules?',
+        }),
+        expect.objectContaining({
+          id: '99999999-9999-4999-8999-999999999992',
+          title: 'Commerce handbook link for BCom and BBusSc',
+        }),
+      ]),
+    );
+    expect(posts[0]).toMatchObject({
+      id: 'real-post-1',
+      authorName: 'ur dad',
+      commentCount: 0,
+    });
   });
 
   it('keeps curated seed authors fictional and avoids third-party source traces', async () => {

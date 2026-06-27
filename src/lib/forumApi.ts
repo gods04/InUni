@@ -150,6 +150,18 @@ function mapPost(row: PostRow, profile: ProfileRow | undefined, commentCount: nu
   };
 }
 
+function mergeWithCuratedSeedPosts(posts: Post[], category?: Category): Post[] {
+  const postIds = new Set(posts.map((post) => post.id));
+  const seedPosts = getCuratedSeedPosts(category).filter(
+    (post) => !postIds.has(post.id),
+  );
+
+  return [...posts, ...seedPosts].sort(
+    (left, right) =>
+      new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime(),
+  );
+}
+
 function mapComment(row: CommentRow, profile: ProfileRow | undefined): ForumComment {
   return {
     id: row.id,
@@ -191,7 +203,11 @@ export async function getPosts(category?: Category): Promise<Post[]> {
     getCommentCounts(rows.map((row) => row.id)),
   ]);
 
-  return rows.map((row) => mapPost(row, profiles.get(row.author_id), commentCounts.get(row.id) ?? 0));
+  const posts = rows.map((row) =>
+    mapPost(row, profiles.get(row.author_id), commentCounts.get(row.id) ?? 0),
+  );
+
+  return mergeWithCuratedSeedPosts(posts, category);
 }
 
 export async function getPost(postId: string): Promise<Post | null> {
