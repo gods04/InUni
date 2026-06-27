@@ -14,6 +14,7 @@ interface CommentListProps {
   onFilePreview?: (file: LinkedFile) => Promise<void> | void;
   onReport?: (target: ReportTarget) => void;
   reportDisabled?: boolean;
+  showReportActions?: boolean;
 }
 
 export function CommentList({
@@ -23,6 +24,7 @@ export function CommentList({
   onFilePreview,
   onReport,
   reportDisabled = false,
+  showReportActions = true,
 }: CommentListProps) {
   if (comments.length === 0) {
     return (
@@ -54,7 +56,7 @@ export function CommentList({
                 </span>
               </div>
             </div>
-            {onReport ? (
+            {!showReportActions ? null : onReport ? (
               <button
                 className="text-xs font-semibold text-slate-500 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-50"
                 disabled={reportDisabled}

@@ -42,6 +42,16 @@ const seedPost = {
   commentCount: 2,
 };
 
+const seedComment = {
+  id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb2',
+  postId: seedPostId,
+  authorId: 'seed-author-sam',
+  authorName: 'Sam',
+  authorIsUctVerified: false,
+  content: 'Also check prerequisite chains before choosing electives.',
+  createdAt: '2026-06-27T10:30:00.000Z',
+};
+
 vi.mock('../hooks/useAuth', () => ({
   useAuth: () => ({ user }),
 }));
@@ -69,7 +79,7 @@ describe('PostDetailPage starter posts', () => {
   beforeEach(() => {
     Object.values(mocks).forEach((mock) => mock.mockReset());
     mocks.getPost.mockResolvedValue(seedPost);
-    mocks.getComments.mockResolvedValue([]);
+    mocks.getComments.mockResolvedValue([seedComment]);
     mocks.getFilesForPost.mockResolvedValue([]);
     mocks.getFilesForComment.mockResolvedValue([]);
   });
@@ -98,5 +108,8 @@ describe('PostDetailPage starter posts', () => {
       screen.queryByPlaceholderText('Write a helpful reply...'),
     ).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Report' })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('link', { name: 'Log in to report' }),
+    ).not.toBeInTheDocument();
   });
 });

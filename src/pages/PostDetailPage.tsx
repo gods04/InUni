@@ -321,6 +321,7 @@ export function PostDetailPage() {
           onFilePreview={(file) => openFile(file, 'preview')}
           onReport={user && !isStarterPost ? openReport : undefined}
           reportDisabled={Boolean(user && !canParticipate(user.profile))}
+          showReportActions={!isStarterPost}
         />
 
         {user && !canParticipate(user.profile) ? (
