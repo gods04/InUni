@@ -125,19 +125,24 @@ export function PostCard({ post }: { post: Post }) {
   }
 
   return (
-    <article className="panel relative overflow-hidden p-4 transition hover:border-brand-100 sm:p-5">
-      <div className="flex flex-col gap-4">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className={`badge ${categoryStyles[post.category]}`}>{post.category}</span>
-          {post.isAnonymous ? <span className="badge bg-slate-100 text-slate-700">Anonymous</span> : null}
-          <span className="text-xs font-semibold text-slate-500">{formatRelativeTime(post.createdAt)}</span>
+    <article className="panel relative overflow-hidden transition hover:-translate-y-0.5 hover:border-brand-100 hover:shadow-soft">
+      <div className="flex flex-col gap-4 p-4 sm:p-5">
+        <div className="flex flex-wrap items-center gap-2 text-xs font-semibold text-slate-500">
+          <span className={`badge ${categoryStyles[post.category]}`}>
+            {post.category}
+          </span>
+          {post.isAnonymous ? (
+            <span className="badge bg-slate-100 text-slate-700">Anonymous</span>
+          ) : null}
+          <span aria-hidden="true" className="text-slate-400">·</span>
+          <span>{formatRelativeTime(post.createdAt)}</span>
         </div>
 
         <Link to={`/post/${post.id}`} className="group block min-w-0">
-          <h2 className="break-words text-xl font-semibold tracking-normal text-ink group-hover:text-brand-700">
+          <h2 className="break-words text-2xl font-bold leading-tight tracking-normal text-ink group-hover:text-brand-700">
             {post.title}
           </h2>
-          <p className="mt-2 min-w-0 break-words text-sm leading-6 text-slate-600 [overflow-wrap:anywhere]">
+          <p className="mt-3 min-w-0 break-words text-base leading-7 text-slate-600 [overflow-wrap:anywhere]">
             {getPreview(getTextWithReadableLinks(post.content))}
           </p>
         </Link>
@@ -180,7 +185,10 @@ export function PostCard({ post }: { post: Post }) {
         ) : null}
 
         <div className="flex flex-col gap-3 border-t border-slate-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex flex-wrap items-center gap-2 text-sm text-slate-500">
+          <div
+            aria-label="Post metadata"
+            className="flex min-w-0 flex-wrap items-center gap-2 text-sm text-slate-500"
+          >
             {!post.isAnonymous ? (
               <UserAvatar
                 name={post.authorName}
@@ -200,17 +208,23 @@ export function PostCard({ post }: { post: Post }) {
             <span>·</span>
             <span>{post.commentCount} comments</span>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
+          <div
+            aria-label="Post actions"
+            className="flex flex-wrap items-center gap-2"
+          >
             {user ? (
               <button
-                className="danger-button"
+                className="rounded-full px-3 py-1.5 text-xs font-semibold text-red-500 transition hover:bg-red-50 hover:text-red-700 focus:outline-none focus:ring-4 focus:ring-red-100"
                 onClick={openReport}
                 type="button"
               >
                 Report
               </button>
             ) : (
-              <Link className="secondary-button" to="/login">
+              <Link
+                className="rounded-full border border-line px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-brand-100 hover:bg-brand-50 hover:text-ink focus:outline-none focus:ring-4 focus:ring-brand-100"
+                to="/login"
+              >
                 Log in to report
               </Link>
             )}

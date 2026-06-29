@@ -94,15 +94,15 @@ export function HomePage() {
         }}
         title="InUni | UCT Student Forum"
       />
-      <section className="flex flex-col gap-5 border-b border-line pb-7 sm:flex-row sm:items-center sm:justify-between">
+      <section className="flex flex-col gap-4 border-b border-line pb-5 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-4">
           <BrandLogo
             aria-hidden="true"
-            className="h-14 w-14 shrink-0 rounded-lg object-contain"
+            className="h-12 w-12 shrink-0 rounded-lg object-contain"
             variant="mark"
           />
           <div>
-            <h1 className="text-2xl font-semibold text-ink">
+            <h1 className="text-xl font-semibold text-ink sm:text-2xl">
               UCT community forum
             </h1>
             <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-600">
@@ -115,12 +115,14 @@ export function HomePage() {
         </Link>
       </section>
 
-      <section className="space-y-4">
-        <div className="grid gap-4">
+      <section className="space-y-3">
+        <div className="grid gap-3">
           <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(16rem,22rem)] sm:items-end">
             <div>
-              <h2 className="section-title">Latest conversations</h2>
-              <p className="mt-1 text-sm text-slate-600">
+              <h2 className="text-lg font-semibold text-ink">
+                Latest conversations
+              </h2>
+              <p className="mt-1 text-sm text-slate-500">
                 Browse the newest posts from the UCT community.
               </p>
             </div>

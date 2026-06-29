@@ -105,6 +105,20 @@ describe('PostCard', () => {
     expect(screen.getByLabelText('Amahle avatar')).toBeInTheDocument();
   });
 
+  it('separates post metadata from post actions', () => {
+    render(
+      <MemoryRouter>
+        <PostCard post={post} />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByLabelText('Post metadata')).toHaveTextContent('Amahle');
+    expect(screen.getByLabelText('Post metadata')).toHaveTextContent(
+      '2 comments',
+    );
+    expect(screen.getByLabelText('Post actions')).toHaveTextContent('Log in to report');
+  });
+
   it('does not expose verification on an anonymous post', () => {
     render(
       <MemoryRouter>
