@@ -65,6 +65,8 @@ const passwordRecoveryConfigurationMessage =
   'Password recovery requires Supabase configuration.';
 const googleOAuthConfigurationMessage =
   'Google login requires Supabase Google OAuth configuration.';
+const existingAccountMessage =
+  'An account already exists for this email. Log in instead.';
 const profilePhotoBucket = 'inuni-avatars';
 const profileSelectWithAvatar =
   'id, username, display_name, avatar_path, role, is_banned, ban_reason, is_uct_verified, created_at';
@@ -306,6 +308,24 @@ function createProfilePhotoPath(userId: string, file: File): string {
   return `${userId}/${randomId}.${getProfilePhotoExtension(file)}`;
 }
 
+function isExistingAccountAuthError(message: string): boolean {
+  const normalizedMessage = message.toLowerCase();
+  return (
+    normalizedMessage.includes('already registered') ||
+    normalizedMessage.includes('already exists')
+  );
+}
+
+function isObfuscatedExistingSignUpUser(
+  user: SupabaseUser | null | undefined,
+): boolean {
+  return Boolean(
+    user &&
+      Array.isArray(user.identities) &&
+      user.identities.length === 0,
+  );
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<ForumUser | null>(() =>
     isSupabaseConfigured ? null : readDemoUser(),
@@ -498,7 +518,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         });
 
         if (error) {
+          if (isExistingAccountAuthError(error.message)) {
+            return { error: existingAccountMessage };
+          }
+
           return { error: error.message };
+        }
+
+        if (
+          !data.session &&
+          isObfuscatedExistingSignUpUser(data.user)
+        ) {
+          return { error: existingAccountMessage };
         }
 
         if (data.user && data.session) {

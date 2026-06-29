@@ -91,6 +91,7 @@ function SupabaseAuthHarness() {
     hasPasswordRecoverySession,
     requestPasswordReset,
     removeProfilePhoto,
+    signUp,
     signInWithGoogle,
     signOut,
     updateDisplayName,
@@ -98,6 +99,7 @@ function SupabaseAuthHarness() {
     uploadProfilePhoto,
   } = useAuth();
   const [resetResult, setResetResult] = useState('{}');
+  const [signUpResult, setSignUpResult] = useState('{}');
   const [profileResult, setProfileResult] = useState('{}');
   const [googleResult, setGoogleResult] = useState('{}');
   const [updateResult, setUpdateResult] = useState('{}');
@@ -118,6 +120,17 @@ function SupabaseAuthHarness() {
           ? 'recovery session'
           : 'no recovery session'}
       </p>
+      <button
+        onClick={() => {
+          void signUp('student@uct.ac.za', 'password123').then((result) => {
+            setSignUpResult(JSON.stringify(result));
+          });
+        }}
+        type="button"
+      >
+        Create account
+      </button>
+      <output aria-label="signup result">{signUpResult}</output>
       <button
         onClick={() => {
           void requestPasswordReset('student@uct.ac.za').then((result) => {
@@ -322,6 +335,42 @@ describe('configured Supabase authentication', () => {
     expect(
       screen.getByRole('status', { name: 'google result' }),
     ).toHaveTextContent(JSON.stringify({ error: 'Provider is not configured' }));
+  });
+
+  it('detects an existing confirmed email when Supabase returns an obfuscated signup user', async () => {
+    supabaseMocks.signUp.mockResolvedValue({
+      data: {
+        user: {
+          ...supabaseUser,
+          identities: [],
+        },
+        session: null,
+      },
+      error: null,
+    });
+    const user = userEvent.setup();
+    renderAuthProvider();
+
+    await user.click(screen.getByRole('button', { name: 'Create account' }));
+
+    expect(supabaseMocks.signUp).toHaveBeenCalledWith({
+      email: 'student@uct.ac.za',
+      password: 'password123',
+      options: {
+        emailRedirectTo: `${window.location.origin}/profile`,
+        data: {
+          display_name: 'student',
+          username: 'student',
+        },
+      },
+    });
+    expect(
+      screen.getByRole('status', { name: 'signup result' }),
+    ).toHaveTextContent(
+      JSON.stringify({
+        error: 'An account already exists for this email. Log in instead.',
+      }),
+    );
   });
 
   it('updates the password and clears recovery readiness after success', async () => {

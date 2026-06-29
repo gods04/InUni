@@ -25,6 +25,14 @@ function getAuthErrorMessage(error: string, mode: AuthMode): string {
   }
 
   if (
+    mode === 'signup' &&
+    (normalizedError.includes('already registered') ||
+      normalizedError.includes('already exists'))
+  ) {
+    return 'An account already exists for this email. Log in instead.';
+  }
+
+  if (
     normalizedError.includes('invalid email') ||
     normalizedError.includes('valid email') ||
     normalizedError.includes('email address')

@@ -235,6 +235,29 @@ describe('AuthPage', () => {
     ).toBeInTheDocument();
   });
 
+  it('shows a clear signup error when the email already has an account', async () => {
+    signUp.mockResolvedValueOnce({ error: 'User already registered' });
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <AuthPage />
+      </MemoryRouter>,
+    );
+
+    await user.click(
+      screen.getByRole('button', { name: 'Need an account? Sign up' }),
+    );
+    await user.type(screen.getByLabelText('Email'), 'existing@uct.ac.za');
+    await user.type(screen.getByLabelText('Password'), 'password123');
+    await user.click(screen.getByRole('button', { name: 'Create account' }));
+
+    expect(
+      await screen.findByText(
+        'An account already exists for this email. Log in instead.',
+      ),
+    ).toBeInTheDocument();
+  });
+
   it('switches to recovery mode and requests a reset link', async () => {
     const user = userEvent.setup();
     render(
