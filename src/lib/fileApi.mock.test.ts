@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { getUserFiles } from './fileApi';
+import { createSignedPreviewUrl, getUserFiles } from './fileApi';
 import { createDemoUserForFiles, mockFileStore } from './mockFileStore';
 
 const student = createDemoUserForFiles('student@uct.ac.za');
@@ -207,6 +207,29 @@ describe('mockFileStore', () => {
     );
 
     const [storedFile] = await getUserFiles(student.id);
+    expect(storedFile.downloadCount).toBe(0);
+  });
+
+  it('creates mock preview URLs without incrementing download counts', async () => {
+    const [file] = await mockFileStore.uploadLinkedFiles({
+      context: { type: 'post', postId: 'post-1' },
+      drafts: [
+        {
+          file: makeFile('campus.png', 'image/png'),
+          description: '',
+          submitToSharedFiles: false,
+          courseCode: '',
+          campusOrFaculty: '',
+          tags: '',
+        },
+      ],
+      user: student,
+    });
+
+    const signedUrl = await createSignedPreviewUrl(file.id, student);
+    const [storedFile] = await getUserFiles(student.id);
+
+    expect(signedUrl.url).toBe(`mock://preview/${file.id}`);
     expect(storedFile.downloadCount).toBe(0);
   });
 

@@ -663,3 +663,31 @@ export async function createSignedDownloadUrl(
     throw new Error('Could not create download link.');
   }
 }
+
+export async function createSignedPreviewUrl(
+  fileId: string,
+  user: ForumUser | null | undefined,
+): Promise<SignedFileUrl> {
+  assertCanCreateSignedDownloadUrl(user);
+
+  if (!isSupabaseConfigured) {
+    return mockFileStore.createSignedPreviewUrl(fileId, user);
+  }
+
+  const client = requireSupabase();
+  const { data, error } = await client
+    .from('files')
+    .select('id, storage_path')
+    .eq('id', fileId)
+    .single();
+
+  if (error || !data) throw new Error('Could not create preview link.');
+
+  try {
+    return await supabaseStorageProvider.createPreviewUrl(
+      (data as { storage_path: string }).storage_path,
+    );
+  } catch {
+    throw new Error('Could not create preview link.');
+  }
+}

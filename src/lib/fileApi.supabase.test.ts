@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   createSignedDownloadUrl,
+  createSignedPreviewUrl,
   getSharedFiles,
   uploadLinkedFiles,
 } from './fileApi';
@@ -11,6 +12,7 @@ const mocks = vi.hoisted(() => ({
     data: { publicUrl: `https://cdn.inuni.test/${path}` },
   })),
   createStorageSignedDownloadUrl: vi.fn(),
+  createStoragePreviewUrl: vi.fn(),
   storageFrom: vi.fn(),
   uploadFile: vi.fn(),
 }));
@@ -29,6 +31,8 @@ vi.mock('./supabaseStorageProvider', () => ({
   supabaseStorageProvider: {
     createSignedDownloadUrl: (...args: unknown[]) =>
       mocks.createStorageSignedDownloadUrl(...args),
+    createPreviewUrl: (...args: unknown[]) =>
+      mocks.createStoragePreviewUrl(...args),
     uploadFile: (...args: unknown[]) => mocks.uploadFile(...args),
   },
 }));
@@ -135,12 +139,17 @@ function makeDraft(file: File) {
 describe('fileApi Supabase boundary', () => {
   beforeEach(() => {
     mocks.from.mockReset();
+    mocks.createStoragePreviewUrl.mockReset();
     mocks.createStorageSignedDownloadUrl.mockReset();
     mocks.getPublicUrl.mockClear();
     mocks.storageFrom.mockReset();
     mocks.uploadFile.mockReset();
     mocks.createStorageSignedDownloadUrl.mockResolvedValue({
       url: 'https://files.inuni.test/signed/guide.pdf',
+      expiresAt: '2026-06-16T10:05:00.000Z',
+    });
+    mocks.createStoragePreviewUrl.mockResolvedValue({
+      url: 'https://files.inuni.test/preview/guide.pdf',
       expiresAt: '2026-06-16T10:05:00.000Z',
     });
     mocks.uploadFile.mockResolvedValue({
@@ -272,6 +281,22 @@ describe('fileApi Supabase boundary', () => {
     );
     expect(updateQuery.update).toHaveBeenCalledWith({ download_count: 3 });
     expect(updateQuery.eq).toHaveBeenCalledWith('id', 'file-1');
+  });
+
+  it('creates signed Supabase preview URLs for active users without incrementing the count', async () => {
+    const fileQuery = createQuery({ data: fileRow, error: null });
+    queueQueries(fileQuery);
+
+    const signedUrl = await createSignedPreviewUrl('file-1', uploader);
+
+    expect(signedUrl).toMatchObject({
+      url: 'https://files.inuni.test/preview/guide.pdf',
+    });
+    expect(fileQuery.select).toHaveBeenCalledWith('id, storage_path');
+    expect(mocks.createStoragePreviewUrl).toHaveBeenCalledWith(
+      'owner-1/file-1/guide.pdf',
+    );
+    expect(mocks.from).toHaveBeenCalledTimes(1);
   });
 
   it('maps blocked storage uploads to a clear user-facing error and removes metadata', async () => {

@@ -1,10 +1,21 @@
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { LinkedFile } from '../types/files';
 import { PostCard } from './PostCard';
 
+const mocks = vi.hoisted(() => ({
+  createSignedPreviewUrl: vi.fn(),
+  currentUser: null as unknown,
+}));
+
 vi.mock('../hooks/useAuth', () => ({
-  useAuth: () => ({ user: null }),
+  useAuth: () => ({ user: mocks.currentUser }),
+}));
+
+vi.mock('../lib/fileApi', () => ({
+  createSignedPreviewUrl: (...args: unknown[]) =>
+    mocks.createSignedPreviewUrl(...args),
 }));
 
 const post = {
@@ -24,7 +35,57 @@ const post = {
 const longHandbookUrl =
   'https://uct.ac.za/sites/default/files/media/documents/2026-ebe-handbook-7a-final-web.pdf';
 
+const user = {
+  id: 'user-1',
+  email: 'student@uct.ac.za',
+  emailConfirmed: true,
+  profile: {
+    id: 'user-1',
+    username: 'student',
+    displayName: 'Student',
+    role: 'student',
+    isBanned: false,
+    banReason: null,
+    isUctVerified: true,
+    createdAt: '2026-06-16T00:00:00.000Z',
+  },
+};
+
+function makeFile(overrides: Partial<LinkedFile>): LinkedFile {
+  return {
+    id: 'file-1',
+    ownerId: 'user-1',
+    ownerName: 'Student',
+    storageProvider: 'mock',
+    storageBucket: 'mock-files',
+    storagePath: 'user-1/file-1/notes.pdf',
+    originalFilename: 'notes.pdf',
+    displayFilename: 'notes.pdf',
+    mimeType: 'application/pdf',
+    extension: 'pdf',
+    sizeBytes: 4096,
+    description: '',
+    status: 'available',
+    scanStatus: 'not_scanned',
+    downloadCount: 0,
+    reportCount: 0,
+    createdAt: '2026-06-16T10:00:00.000Z',
+    updatedAt: '2026-06-16T10:00:00.000Z',
+    links: [],
+    ...overrides,
+  };
+}
+
 describe('PostCard', () => {
+  beforeEach(() => {
+    mocks.currentUser = null;
+    mocks.createSignedPreviewUrl.mockReset();
+    mocks.createSignedPreviewUrl.mockResolvedValue({
+      url: 'https://files.inuni.test/photo.jpg',
+      expiresAt: '2026-06-16T10:05:00.000Z',
+    });
+  });
+
   it('shows UCT verification for a named verified author', () => {
     render(
       <MemoryRouter>
@@ -74,5 +135,80 @@ describe('PostCard', () => {
     expect(
       screen.queryByText((content) => content.includes(longHandbookUrl)),
     ).not.toBeInTheDocument();
+  });
+
+  it('shows attached non-image files in the feed card', () => {
+    render(
+      <MemoryRouter>
+        <PostCard
+          post={{
+            ...post,
+            attachments: [
+              makeFile({
+                displayFilename: 'lecture-notes.pdf',
+                originalFilename: 'lecture-notes.pdf',
+              }),
+            ],
+          }}
+        />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByText('Attachments')).toBeInTheDocument();
+    expect(screen.getByText('lecture-notes.pdf')).toBeInTheDocument();
+  });
+
+  it('shows image attachment previews for logged-in users', async () => {
+    mocks.currentUser = user;
+
+    render(
+      <MemoryRouter>
+        <PostCard
+          post={{
+            ...post,
+            attachments: [
+              makeFile({
+                id: 'image-1',
+                displayFilename: 'campus-photo.jpg',
+                originalFilename: 'campus-photo.jpg',
+                mimeType: 'image/jpeg',
+                extension: 'jpg',
+              }),
+            ],
+          }}
+        />
+      </MemoryRouter>,
+    );
+
+    const image = await screen.findByRole('img', {
+      name: 'campus-photo.jpg preview',
+    });
+
+    expect(image).toHaveAttribute('src', 'https://files.inuni.test/photo.jpg');
+    expect(mocks.createSignedPreviewUrl).toHaveBeenCalledWith('image-1', user);
+  });
+
+  it('does not request image signed URLs for logged-out users', () => {
+    render(
+      <MemoryRouter>
+        <PostCard
+          post={{
+            ...post,
+            attachments: [
+              makeFile({
+                id: 'image-1',
+                displayFilename: 'campus-photo.jpg',
+                originalFilename: 'campus-photo.jpg',
+                mimeType: 'image/jpeg',
+                extension: 'jpg',
+              }),
+            ],
+          }}
+        />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByText('campus-photo.jpg')).toBeInTheDocument();
+    expect(mocks.createSignedPreviewUrl).not.toHaveBeenCalled();
   });
 });

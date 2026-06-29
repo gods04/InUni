@@ -575,4 +575,29 @@ export const mockFileStore = {
       ).toISOString(),
     };
   },
+
+  async createSignedPreviewUrl(
+    fileId: string,
+    user: ForumUser | null | undefined,
+  ): Promise<SignedFileUrl> {
+    if (!user) {
+      throw new Error('Log in to download files.');
+    }
+
+    if (!canParticipate(user.profile)) {
+      throw new Error('Your restricted account cannot download files.');
+    }
+
+    const file = getFiles().find((item) => item.id === fileId);
+    if (!file) {
+      throw new Error('File not found.');
+    }
+
+    return {
+      url: `mock://preview/${fileId}`,
+      expiresAt: new Date(
+        Date.now() + SIGNED_FILE_URL_TTL_SECONDS * 1000,
+      ).toISOString(),
+    };
+  },
 };

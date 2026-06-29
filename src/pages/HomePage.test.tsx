@@ -6,6 +6,8 @@ import type { Post } from '../types/forum';
 import { HomePage } from './HomePage';
 
 const mocks = vi.hoisted(() => ({
+  currentUser: null as unknown,
+  getFilesForPost: vi.fn(),
   getPosts: vi.fn(),
 }));
 
@@ -31,12 +33,20 @@ vi.mock('../lib/forumApi', () => ({
   getPosts: (...args: unknown[]) => mocks.getPosts(...args),
 }));
 
+vi.mock('../lib/fileApi', () => ({
+  createSignedPreviewUrl: vi.fn(),
+  getFilesForPost: (...args: unknown[]) => mocks.getFilesForPost(...args),
+}));
+
 vi.mock('../hooks/useAuth', () => ({
-  useAuth: () => ({ user: null }),
+  useAuth: () => ({ user: mocks.currentUser }),
 }));
 
 describe('HomePage', () => {
   beforeEach(() => {
+    mocks.currentUser = null;
+    mocks.getFilesForPost.mockReset();
+    mocks.getFilesForPost.mockResolvedValue([]);
     mocks.getPosts.mockReset();
     mocks.getPosts.mockResolvedValue([
       makePost({
@@ -108,5 +118,61 @@ describe('HomePage', () => {
       within(screen.getByText('No posts found').closest('section') ?? document.body)
         .queryByRole('link', { name: 'Create post' }),
     ).not.toBeInTheDocument();
+  });
+
+  it('loads and shows post attachments in the feed for logged-in users', async () => {
+    mocks.currentUser = {
+      id: 'user-1',
+      email: 'student@uct.ac.za',
+      emailConfirmed: true,
+      profile: {
+        id: 'user-1',
+        username: 'student',
+        displayName: 'Student',
+        role: 'student',
+        isBanned: false,
+        banReason: null,
+        isUctVerified: true,
+        createdAt: '2026-06-16T00:00:00.000Z',
+      },
+    };
+    mocks.getPosts.mockResolvedValue([
+      makePost({
+        id: 'post-with-file',
+        title: 'Photo from campus',
+      }),
+    ]);
+    mocks.getFilesForPost.mockResolvedValue([
+      {
+        id: 'file-1',
+        ownerId: 'user-1',
+        ownerName: 'Student',
+        storageProvider: 'mock',
+        storageBucket: 'mock-files',
+        storagePath: 'user-1/file-1/timetable.pdf',
+        originalFilename: 'timetable.pdf',
+        displayFilename: 'timetable.pdf',
+        mimeType: 'application/pdf',
+        extension: 'pdf',
+        sizeBytes: 2048,
+        description: '',
+        status: 'available',
+        scanStatus: 'not_scanned',
+        downloadCount: 0,
+        reportCount: 0,
+        createdAt: '2026-06-16T00:00:00.000Z',
+        updatedAt: '2026-06-16T00:00:00.000Z',
+        links: [],
+      },
+    ]);
+
+    render(
+      <MemoryRouter>
+        <HomePage />
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByText('timetable.pdf')).toBeInTheDocument();
+    expect(mocks.getFilesForPost).toHaveBeenCalledWith('post-with-file');
   });
 });

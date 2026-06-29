@@ -7,10 +7,13 @@ import { ErrorState } from '../components/ErrorState';
 import { LoadingState } from '../components/LoadingState';
 import { PostCard } from '../components/PostCard';
 import { Seo } from '../components/Seo';
+import { useAuth } from '../hooks/useAuth';
+import { getFilesForPost } from '../lib/fileApi';
 import { getPosts } from '../lib/forumApi';
 import type { Category, CategoryFilter, Post } from '../types/forum';
 
 export function HomePage() {
+  const { user } = useAuth();
   const [category, setCategory] = useState<CategoryFilter>('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [posts, setPosts] = useState<Post[]>([]);
@@ -37,8 +40,26 @@ export function HomePage() {
 
       try {
         const nextPosts = await getPosts(category === 'All' ? undefined : (category as Category));
+        const postsWithAttachments = user
+          ? await Promise.all(
+              nextPosts.map(async (post) => {
+                try {
+                  return {
+                    ...post,
+                    attachments: await getFilesForPost(post.id),
+                  };
+                } catch {
+                  return {
+                    ...post,
+                    attachments: [],
+                  };
+                }
+              }),
+            )
+          : nextPosts;
+
         if (isActive) {
-          setPosts(nextPosts);
+          setPosts(postsWithAttachments);
         }
       } catch (caughtError) {
         if (isActive) {
@@ -56,7 +77,7 @@ export function HomePage() {
     return () => {
       isActive = false;
     };
-  }, [category]);
+  }, [category, user?.id]);
 
   return (
     <div className="grid gap-7">
