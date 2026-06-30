@@ -131,4 +131,20 @@ describe('PostDetailPage public access', () => {
     expect(handbookLink).toHaveAttribute('href', longHandbookUrl);
     expect(screen.getByText('Try this handbook:')).toBeInTheDocument();
   });
+
+  it('marks a post as edited when the update timestamp changed', async () => {
+    mocks.getPost.mockResolvedValue({
+      ...post,
+      createdAt: '2026-06-16T10:00:00.000Z',
+      updatedAt: '2026-06-16T10:15:00.000Z',
+    });
+
+    render(
+      <MemoryRouter>
+        <PostDetailPage />
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByText('Edited')).toBeInTheDocument();
+  });
 });

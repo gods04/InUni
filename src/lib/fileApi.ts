@@ -608,6 +608,49 @@ export async function getUserFiles(userId: string): Promise<LinkedFile[]> {
   return hydrateFiles(rows, linkRows);
 }
 
+export async function deleteFile(fileId: string, user: ForumUser): Promise<void> {
+  if (!canParticipate(user.profile)) {
+    throw new Error('Your restricted account cannot delete files.');
+  }
+
+  if (!isSupabaseConfigured) {
+    const userFiles = await mockFileStore.getUserFiles(user.id);
+    if (!userFiles.some((file) => file.id === fileId)) {
+      throw new Error('You can only delete files you uploaded.');
+    }
+
+    return mockFileStore.deleteFile(fileId);
+  }
+
+  const client = requireSupabase();
+  const { data, error } = await client
+    .from('files')
+    .select('storage_path')
+    .eq('id', fileId)
+    .eq('owner_id', user.id)
+    .single();
+
+  if (error || !data) {
+    throw new Error('You can only delete files you uploaded.');
+  }
+
+  try {
+    await supabaseStorageProvider.deleteFile(
+      (data as { storage_path: string }).storage_path,
+    );
+  } catch {
+    throw new Error('Could not delete this file.');
+  }
+
+  const { error: deleteError } = await client
+    .from('files')
+    .delete()
+    .eq('id', fileId)
+    .eq('owner_id', user.id);
+
+  if (deleteError) throw new Error('Could not delete this file.');
+}
+
 export async function reportFile(
   input: FileReportInput,
   user: ForumUser,

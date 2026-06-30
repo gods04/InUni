@@ -6,6 +6,7 @@ interface FileListProps {
   files: LinkedFile[];
   emptyMessage?: string;
   onDownload?: (file: LinkedFile) => Promise<void> | void;
+  onDelete?: (file: LinkedFile) => Promise<void> | void;
   onPreview?: (file: LinkedFile) => Promise<void> | void;
   onReport?: (file: LinkedFile) => void;
   variant?: 'panel' | 'embedded';
@@ -27,6 +28,7 @@ export function FileList({
   files,
   emptyMessage = 'No files yet.',
   onDownload,
+  onDelete,
   onPreview,
   onReport,
   variant = 'panel',
@@ -112,6 +114,16 @@ export function FileList({
                   type="button"
                 >
                   Report
+                </button>
+              ) : null}
+              {onDelete ? (
+                <button
+                  aria-label={`Delete ${file.displayFilename}`}
+                  className="danger-button"
+                  onClick={() => void onDelete(file)}
+                  type="button"
+                >
+                  Delete
                 </button>
               ) : null}
             </div>

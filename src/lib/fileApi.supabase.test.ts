@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   createSignedDownloadUrl,
   createSignedPreviewUrl,
+  deleteFile,
   getSharedFiles,
   uploadLinkedFiles,
 } from './fileApi';
@@ -14,6 +15,7 @@ const mocks = vi.hoisted(() => ({
   createStorageSignedDownloadUrl: vi.fn(),
   createStoragePreviewUrl: vi.fn(),
   storageFrom: vi.fn(),
+  deleteStorageFile: vi.fn(),
   uploadFile: vi.fn(),
 }));
 
@@ -33,6 +35,7 @@ vi.mock('./supabaseStorageProvider', () => ({
       mocks.createStorageSignedDownloadUrl(...args),
     createPreviewUrl: (...args: unknown[]) =>
       mocks.createStoragePreviewUrl(...args),
+    deleteFile: (...args: unknown[]) => mocks.deleteStorageFile(...args),
     uploadFile: (...args: unknown[]) => mocks.uploadFile(...args),
   },
 }));
@@ -141,6 +144,7 @@ describe('fileApi Supabase boundary', () => {
     mocks.from.mockReset();
     mocks.createStoragePreviewUrl.mockReset();
     mocks.createStorageSignedDownloadUrl.mockReset();
+    mocks.deleteStorageFile.mockReset();
     mocks.getPublicUrl.mockClear();
     mocks.storageFrom.mockReset();
     mocks.uploadFile.mockReset();
@@ -152,6 +156,7 @@ describe('fileApi Supabase boundary', () => {
       url: 'https://files.inuni.test/preview/guide.pdf',
       expiresAt: '2026-06-16T10:05:00.000Z',
     });
+    mocks.deleteStorageFile.mockResolvedValue(undefined);
     mocks.uploadFile.mockResolvedValue({
       bucket: 'inuni-files',
       path: 'owner-1/file-1/guide.pdf',
@@ -322,5 +327,27 @@ describe('fileApi Supabase boundary', () => {
 
     expect(deleteQuery.delete).toHaveBeenCalled();
     expect(deleteQuery.eq).toHaveBeenCalledWith('id', expect.any(String));
+  });
+
+  it('deletes user files through the current owner boundary', async () => {
+    const lookupQuery = createQuery({
+      data: { storage_path: 'owner-1/file-1/guide.pdf' },
+      error: null,
+    });
+    const deleteQuery = createQuery();
+    queueQueries(lookupQuery, deleteQuery);
+
+    await deleteFile('file-1', uploader);
+
+    expect(lookupQuery.select).toHaveBeenCalledWith('storage_path');
+    expect(lookupQuery.eq).toHaveBeenCalledWith('id', 'file-1');
+    expect(lookupQuery.eq).toHaveBeenCalledWith('owner_id', 'owner-1');
+    expect(mocks.deleteStorageFile).toHaveBeenCalledWith(
+      'owner-1/file-1/guide.pdf',
+    );
+    expect(mocks.createStorageSignedDownloadUrl).not.toHaveBeenCalled();
+    expect(deleteQuery.delete).toHaveBeenCalled();
+    expect(deleteQuery.eq).toHaveBeenCalledWith('id', 'file-1');
+    expect(deleteQuery.eq).toHaveBeenCalledWith('owner_id', 'owner-1');
   });
 });

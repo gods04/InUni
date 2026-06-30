@@ -1,6 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { curatedSeedComments } from './curatedSeedForum';
-import { createComment, getComments, getPost, getPosts } from './forumApi';
+import {
+  createComment,
+  deletePost,
+  getComments,
+  getPost,
+  getPosts,
+  updatePost,
+} from './forumApi';
 import type { ForumUser } from '../types/forum';
 
 const mocks = vi.hoisted(() => ({
@@ -29,10 +36,13 @@ interface QueryResult {
 function createQuery(result: QueryResult = { data: null, error: null }) {
   const query = {
     eq: vi.fn(() => query),
+    delete: vi.fn(() => query),
     in: vi.fn(() => query),
     maybeSingle: vi.fn(() => Promise.resolve(result)),
     order: vi.fn(() => query),
     select: vi.fn(() => query),
+    single: vi.fn(() => Promise.resolve(result)),
+    update: vi.fn(() => query),
     then: (
       resolve: (value: QueryResult) => unknown,
       reject: (reason: unknown) => unknown,
@@ -58,6 +68,7 @@ const postRow = {
   author_id: 'owner-1',
   is_anonymous: false,
   created_at: '2026-06-16T10:00:00.000Z',
+  updated_at: '2026-06-16T10:00:00.000Z',
 };
 
 const user: ForumUser = {
@@ -350,5 +361,70 @@ describe('forumApi Supabase boundary', () => {
     );
 
     expect(mocks.from).not.toHaveBeenCalled();
+  });
+
+  it('updates posts through the current author boundary and maps edited time', async () => {
+    const updateQuery = createQuery({
+      data: {
+        ...postRow,
+        author_id: 'user-1',
+        title: 'Updated title',
+        content: 'Updated content',
+        category: 'Questions',
+        is_anonymous: true,
+        updated_at: '2026-06-16T11:00:00.000Z',
+      },
+      error: null,
+    });
+    const profileQuery = createQuery({
+      data: [
+        {
+          id: 'user-1',
+          username: 'orange',
+          display_name: 'orange',
+          avatar_path: null,
+          is_uct_verified: false,
+        },
+      ],
+      error: null,
+    });
+    const commentCountQuery = createQuery({ data: [], error: null });
+    queueQueries(updateQuery, profileQuery, commentCountQuery);
+
+    const post = await updatePost(
+      'post-1',
+      {
+        title: 'Updated title',
+        content: 'Updated content',
+        category: 'Questions',
+        isAnonymous: true,
+      },
+      user,
+    );
+
+    expect(updateQuery.update).toHaveBeenCalledWith({
+      title: 'Updated title',
+      content: 'Updated content',
+      category: 'Questions',
+      is_anonymous: true,
+    });
+    expect(updateQuery.eq).toHaveBeenCalledWith('id', 'post-1');
+    expect(updateQuery.eq).toHaveBeenCalledWith('author_id', 'user-1');
+    expect(post).toMatchObject({
+      id: 'post-1',
+      title: 'Updated title',
+      updatedAt: '2026-06-16T11:00:00.000Z',
+    });
+  });
+
+  it('deletes posts through the current author boundary', async () => {
+    const deleteQuery = createQuery({ data: null, error: null });
+    queueQueries(deleteQuery);
+
+    await deletePost('post-1', user);
+
+    expect(deleteQuery.delete).toHaveBeenCalled();
+    expect(deleteQuery.eq).toHaveBeenCalledWith('id', 'post-1');
+    expect(deleteQuery.eq).toHaveBeenCalledWith('author_id', 'user-1');
   });
 });

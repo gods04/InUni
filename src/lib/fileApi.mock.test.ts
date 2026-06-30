@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { createSignedPreviewUrl, getUserFiles } from './fileApi';
+import { createSignedPreviewUrl, deleteFile, getUserFiles } from './fileApi';
 import { createDemoUserForFiles, mockFileStore } from './mockFileStore';
 
 const student = createDemoUserForFiles('student@uct.ac.za');
@@ -266,6 +266,48 @@ describe('mockFileStore', () => {
     const files = await getUserFiles(student.id);
 
     expect(files.map((file) => file.displayFilename)).toEqual(['mine.pdf']);
+  });
+
+  it('allows users to delete only their own uploaded files', async () => {
+    const [mine] = await mockFileStore.uploadLinkedFiles({
+      context: { type: 'post', postId: 'post-1' },
+      drafts: [
+        {
+          file: makeFile('mine.pdf', 'application/pdf'),
+          description: '',
+          submitToSharedFiles: false,
+          courseCode: '',
+          campusOrFaculty: '',
+          tags: '',
+        },
+      ],
+      user: student,
+    });
+    const [theirs] = await mockFileStore.uploadLinkedFiles({
+      context: { type: 'post', postId: 'post-2' },
+      drafts: [
+        {
+          file: makeFile('theirs.pdf', 'application/pdf'),
+          description: '',
+          submitToSharedFiles: false,
+          courseCode: '',
+          campusOrFaculty: '',
+          tags: '',
+        },
+      ],
+      user: otherStudent,
+    });
+
+    await expect(deleteFile(theirs.id, student)).rejects.toThrow(
+      'You can only delete files you uploaded.',
+    );
+
+    await deleteFile(mine.id, student);
+
+    expect(await getUserFiles(student.id)).toEqual([]);
+    expect((await getUserFiles(otherStudent.id)).map((file) => file.id)).toEqual([
+      theirs.id,
+    ]);
   });
 
   it('keeps profile avatar URLs on uploaded files', async () => {

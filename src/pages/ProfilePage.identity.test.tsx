@@ -7,10 +7,13 @@ import { ProfilePage } from './ProfilePage';
 
 const mocks = vi.hoisted(() => ({
   createSignedDownloadUrl: vi.fn(),
+  deleteFile: vi.fn(),
+  deletePost: vi.fn(),
   getUserFiles: vi.fn(),
   getUserPosts: vi.fn(),
   removeProfilePhoto: vi.fn(),
   updateDisplayName: vi.fn(),
+  updatePost: vi.fn(),
   uploadProfilePhoto: vi.fn(),
 }));
 
@@ -45,11 +48,14 @@ vi.mock('../hooks/useAuth', () => ({
 vi.mock('../lib/fileApi', () => ({
   createSignedDownloadUrl: (...args: unknown[]) =>
     mocks.createSignedDownloadUrl(...args),
+  deleteFile: (...args: unknown[]) => mocks.deleteFile(...args),
   getUserFiles: (...args: unknown[]) => mocks.getUserFiles(...args),
 }));
 
 vi.mock('../lib/forumApi', () => ({
+  deletePost: (...args: unknown[]) => mocks.deletePost(...args),
   getUserPosts: (...args: unknown[]) => mocks.getUserPosts(...args),
+  updatePost: (...args: unknown[]) => mocks.updatePost(...args),
 }));
 
 describe('ProfilePage identity editing', () => {
@@ -60,10 +66,13 @@ describe('ProfilePage identity editing', () => {
     testUser.profile.avatarPath = null;
     testUser.profile.isUctVerified = true;
     mocks.createSignedDownloadUrl.mockReset();
+    mocks.deleteFile.mockReset();
+    mocks.deletePost.mockReset();
     mocks.getUserFiles.mockReset();
     mocks.getUserPosts.mockReset();
     mocks.removeProfilePhoto.mockReset();
     mocks.updateDisplayName.mockReset();
+    mocks.updatePost.mockReset();
     mocks.uploadProfilePhoto.mockReset();
     mocks.createSignedDownloadUrl.mockResolvedValue({
       url: 'mock://download/file-1',

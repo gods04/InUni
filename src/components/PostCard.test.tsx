@@ -225,4 +225,20 @@ describe('PostCard', () => {
     expect(screen.getByText('campus-photo.jpg')).toBeInTheDocument();
     expect(mocks.createSignedPreviewUrl).not.toHaveBeenCalled();
   });
+
+  it('marks a post as edited when the update timestamp changed', () => {
+    render(
+      <MemoryRouter>
+        <PostCard
+          post={{
+            ...post,
+            createdAt: '2026-06-16T10:00:00.000Z',
+            updatedAt: '2026-06-16T10:15:00.000Z',
+          }}
+        />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByText('Edited')).toBeInTheDocument();
+  });
 });

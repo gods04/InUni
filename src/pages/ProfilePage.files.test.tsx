@@ -7,8 +7,11 @@ import { ProfilePage } from './ProfilePage';
 
 const mocks = vi.hoisted(() => ({
   createSignedDownloadUrl: vi.fn(),
+  deleteFile: vi.fn(),
+  deletePost: vi.fn(),
   getUserFiles: vi.fn(),
   getUserPosts: vi.fn(),
+  updatePost: vi.fn(),
 }));
 
 const testUser = {
@@ -57,22 +60,29 @@ vi.mock('../hooks/useAuth', () => ({
 vi.mock('../lib/fileApi', () => ({
   createSignedDownloadUrl: (...args: unknown[]) =>
     mocks.createSignedDownloadUrl(...args),
+  deleteFile: (...args: unknown[]) => mocks.deleteFile(...args),
   getUserFiles: (...args: unknown[]) => mocks.getUserFiles(...args),
 }));
 
 vi.mock('../lib/forumApi', () => ({
+  deletePost: (...args: unknown[]) => mocks.deletePost(...args),
   getUserPosts: (...args: unknown[]) => mocks.getUserPosts(...args),
+  updatePost: (...args: unknown[]) => mocks.updatePost(...args),
 }));
 
 describe('ProfilePage uploaded files', () => {
   beforeEach(() => {
     mocks.createSignedDownloadUrl.mockReset();
+    mocks.deleteFile.mockReset();
+    mocks.deletePost.mockReset();
     mocks.getUserFiles.mockReset();
     mocks.getUserPosts.mockReset();
+    mocks.updatePost.mockReset();
     mocks.createSignedDownloadUrl.mockResolvedValue({
       url: 'mock://download/file-1',
       expiresAt: '2026-06-16T10:05:00.000Z',
     });
+    mocks.deleteFile.mockResolvedValue(undefined);
     mocks.getUserFiles.mockResolvedValue([makeLinkedFile()]);
     mocks.getUserPosts.mockResolvedValue([]);
   });
@@ -112,5 +122,48 @@ describe('ProfilePage uploaded files', () => {
     );
 
     openSpy.mockRestore();
+  });
+
+  it('prioritizes posts before uploaded files on the profile page', async () => {
+    render(
+      <MemoryRouter>
+        <ProfilePage />
+      </MemoryRouter>,
+    );
+
+    const postsHeading = await screen.findByRole('heading', {
+      name: 'Your posts',
+    });
+    const filesHeading = await screen.findByRole('heading', {
+      name: 'My uploaded files',
+    });
+
+    expect(
+      postsHeading.compareDocumentPosition(filesHeading) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
+  it('requires confirmation before deleting an uploaded file', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <MemoryRouter>
+        <ProfilePage />
+      </MemoryRouter>,
+    );
+
+    await user.click(
+      await screen.findByRole('button', { name: 'Delete my-notes.pdf' }),
+    );
+
+    expect(screen.getByRole('dialog', { name: 'Delete file?' })).toBeInTheDocument();
+    expect(mocks.deleteFile).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole('button', { name: 'Delete file' }));
+
+    expect(mocks.deleteFile).toHaveBeenCalledWith('file-1', testUser);
+    expect(await screen.findByText('File deleted.')).toBeInTheDocument();
+    expect(screen.queryByText('my-notes.pdf')).not.toBeInTheDocument();
   });
 });

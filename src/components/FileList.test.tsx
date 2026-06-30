@@ -76,6 +76,21 @@ describe('FileList', () => {
     expect(onReport).toHaveBeenCalledWith(file);
   });
 
+  it('deletes a file through the provided callback', async () => {
+    const user = userEvent.setup();
+    const onDelete = vi.fn();
+    const file = makeLinkedFile({
+      id: 'file-delete',
+      displayFilename: 'old-upload.pdf',
+    });
+
+    render(<FileList files={[file]} onDelete={onDelete} />);
+
+    await user.click(screen.getByRole('button', { name: 'Delete old-upload.pdf' }));
+
+    expect(onDelete).toHaveBeenCalledWith(file);
+  });
+
   it('does not render preview or download actions without provided callbacks', () => {
     const file = makeLinkedFile({ id: 'file-readonly' });
 
@@ -83,6 +98,7 @@ describe('FileList', () => {
 
     expect(screen.queryByRole('button', { name: 'Preview' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Download' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Delete/ })).not.toBeInTheDocument();
   });
 
   it('shows the uploaded file owner avatar', () => {

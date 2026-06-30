@@ -10,6 +10,7 @@ import type {
   Profile,
   Report,
   ReportTarget,
+  UpdatePostInput,
 } from '../types/forum';
 
 const postsKey = 'inuni.posts';
@@ -110,6 +111,7 @@ export const mockForumStore = {
   },
 
   async createPost(input: NewPostInput, user: ForumUser): Promise<Post> {
+    const timestamp = new Date().toISOString();
     const post: Post = {
       id: createId('post'),
       title: input.title,
@@ -122,13 +124,73 @@ export const mockForumStore = {
       authorAvatarUrl: input.isAnonymous ? null : user.profile.avatarUrl ?? null,
       authorIsUctVerified: user.profile.isUctVerified,
       isAnonymous: input.isAnonymous,
-      createdAt: new Date().toISOString(),
+      createdAt: timestamp,
+      updatedAt: timestamp,
       commentCount: 0,
     };
 
     const posts = [post, ...getPostsFromStore()];
     writeList(postsKey, posts);
     return post;
+  },
+
+  async updatePost(
+    postId: string,
+    input: UpdatePostInput,
+    user: ForumUser,
+  ): Promise<Post> {
+    const posts = getPostsFromStore();
+    const post = posts.find((item) => item.id === postId);
+
+    if (!post || post.authorId !== user.id) {
+      throw new Error('You can only edit posts you created.');
+    }
+
+    const updatedPost: Post = {
+      ...post,
+      title: input.title,
+      content: input.content,
+      category: input.category,
+      isAnonymous: input.isAnonymous,
+      authorName: input.isAnonymous
+        ? 'Anonymous'
+        : user.profile.displayName || getDisplayName(user.email),
+      authorAvatarUrl: input.isAnonymous ? null : user.profile.avatarUrl ?? null,
+      authorIsUctVerified: user.profile.isUctVerified,
+      updatedAt: new Date().toISOString(),
+    };
+
+    writeList(
+      postsKey,
+      posts.map((item) => (item.id === postId ? updatedPost : item)),
+    );
+
+    return updatedPost;
+  },
+
+  async deletePost(postId: string, user: ForumUser): Promise<void> {
+    const posts = getPostsFromStore();
+    const post = posts.find((item) => item.id === postId);
+
+    if (!post || post.authorId !== user.id) {
+      throw new Error('You can only delete posts you created.');
+    }
+
+    writeList(
+      postsKey,
+      posts.filter((item) => item.id !== postId),
+    );
+    writeList(
+      commentsKey,
+      getCommentsFromStore().filter((comment) => comment.postId !== postId),
+    );
+    writeList(
+      reportsKey,
+      readList<Report>(reportsKey, []).filter(
+        (report) =>
+          report.target.type !== 'post' || report.target.postId !== postId,
+      ),
+    );
   },
 
   async createComment(input: NewCommentInput, user: ForumUser): Promise<ForumComment> {

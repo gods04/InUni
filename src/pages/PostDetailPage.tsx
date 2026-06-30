@@ -27,6 +27,7 @@ import {
 } from '../lib/forumApi';
 import { isCuratedSeedPostId } from '../lib/curatedSeedForum';
 import { formatRelativeTime } from '../lib/format';
+import { isPostEdited } from '../lib/postDisplay';
 import { canParticipate } from '../lib/permissions';
 import { validateComment } from '../lib/validation';
 import type { FileUploadDraft, LinkedFile } from '../types/files';
@@ -233,6 +234,7 @@ export function PostDetailPage() {
             name: post.authorName,
           },
           datePublished: post.createdAt,
+          dateModified: post.updatedAt ?? post.createdAt,
           headline: post.title,
           url: `https://inuni.co.za/post/${post.id}`,
         }}
@@ -248,6 +250,9 @@ export function PostDetailPage() {
           <span className="badge bg-brand-50 text-brand-700">{post.category}</span>
           {post.isAnonymous ? <span className="badge bg-slate-100 text-slate-700">Anonymous</span> : null}
           <span className="text-xs font-semibold text-slate-500">{formatRelativeTime(post.createdAt)}</span>
+          {isPostEdited(post) ? (
+            <span className="badge bg-slate-100 text-slate-600">Edited</span>
+          ) : null}
         </div>
 
         <h1 className="mt-4 break-words text-3xl font-semibold tracking-normal text-ink">{post.title}</h1>

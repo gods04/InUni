@@ -15,6 +15,7 @@ import type {
   NewPostInput,
   Post,
   ReportTarget,
+  UpdatePostInput,
 } from '../types/forum';
 
 interface ProfileRow {
@@ -33,6 +34,7 @@ interface PostRow {
   author_id: string;
   is_anonymous: boolean;
   created_at: string;
+  updated_at: string | null;
 }
 
 interface CommentRow {
@@ -47,6 +49,8 @@ const publicProfileSelectWithAvatar =
   'id, username, display_name, avatar_path, is_uct_verified';
 const publicProfileSelectWithoutAvatar =
   'id, username, display_name, is_uct_verified';
+const postSelect =
+  'id, title, content, category, author_id, is_anonymous, created_at, updated_at';
 
 function requireSupabase() {
   if (!supabase) {
@@ -147,6 +151,7 @@ function mapPost(row: PostRow, profile: ProfileRow | undefined, commentCount: nu
     authorIsUctVerified: profile?.is_uct_verified ?? false,
     isAnonymous: row.is_anonymous,
     createdAt: row.created_at,
+    updatedAt: row.updated_at,
     commentCount,
   };
 }
@@ -184,7 +189,7 @@ export async function getPosts(category?: Category): Promise<Post[]> {
   const client = requireSupabase();
   const query = client
     .from('posts')
-    .select('id, title, content, category, author_id, is_anonymous, created_at')
+    .select(postSelect)
     .order('created_at', { ascending: false });
 
   const { data, error } = category ? await query.eq('category', category) : await query;
@@ -219,7 +224,7 @@ export async function getPost(postId: string): Promise<Post | null> {
   const client = requireSupabase();
   const { data, error } = await client
     .from('posts')
-    .select('id, title, content, category, author_id, is_anonymous, created_at')
+    .select(postSelect)
     .eq('id', postId)
     .maybeSingle();
 
@@ -297,6 +302,71 @@ export async function createPost(input: NewPostInput, user: ForumUser): Promise<
   return post;
 }
 
+export async function updatePost(
+  postId: string,
+  input: UpdatePostInput,
+  user: ForumUser,
+): Promise<Post> {
+  if (!isSupabaseConfigured) {
+    return mockForumStore.updatePost(postId, input, user);
+  }
+
+  if (isCuratedSeedPostId(postId)) {
+    throw new Error('Starter posts are read-only.');
+  }
+
+  const client = requireSupabase();
+  const { data, error } = await client
+    .from('posts')
+    .update({
+      title: input.title,
+      content: input.content,
+      category: input.category,
+      is_anonymous: input.isAnonymous,
+    })
+    .eq('id', postId)
+    .eq('author_id', user.id)
+    .select(postSelect)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  if (!data) {
+    throw new Error('You can only edit posts you created.');
+  }
+
+  const row = data as PostRow;
+  const [profiles, commentCounts] = await Promise.all([
+    getProfilesMap([row.author_id]),
+    getCommentCounts([row.id]),
+  ]);
+
+  return mapPost(row, profiles.get(row.author_id), commentCounts.get(row.id) ?? 0);
+}
+
+export async function deletePost(postId: string, user: ForumUser): Promise<void> {
+  if (!isSupabaseConfigured) {
+    return mockForumStore.deletePost(postId, user);
+  }
+
+  if (isCuratedSeedPostId(postId)) {
+    throw new Error('Starter posts are read-only.');
+  }
+
+  const client = requireSupabase();
+  const { error } = await client
+    .from('posts')
+    .delete()
+    .eq('id', postId)
+    .eq('author_id', user.id);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+}
+
 export async function createComment(input: NewCommentInput, user: ForumUser): Promise<ForumComment> {
   if (!isSupabaseConfigured) {
     return mockForumStore.createComment(input, user);
@@ -361,7 +431,7 @@ export async function getUserPosts(userId: string): Promise<Post[]> {
   const client = requireSupabase();
   const { data, error } = await client
     .from('posts')
-    .select('id, title, content, category, author_id, is_anonymous, created_at')
+    .select(postSelect)
     .eq('author_id', userId)
     .order('created_at', { ascending: false });
 

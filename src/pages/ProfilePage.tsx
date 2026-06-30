@@ -2,21 +2,28 @@ import { useEffect, useRef, useState } from 'react';
 import type { ChangeEvent, FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { BanNotice } from '../components/BanNotice';
+import { ConfirmDialog } from '../components/ConfirmDialog';
 import { EmptyState } from '../components/EmptyState';
 import { ErrorState } from '../components/ErrorState';
 import { FileList } from '../components/FileList';
 import { LoadingState } from '../components/LoadingState';
 import { LoginPrompt } from '../components/LoginPrompt';
-import { PostCard } from '../components/PostCard';
 import { Seo } from '../components/Seo';
 import { UctVerifiedBadge } from '../components/UctVerifiedBadge';
 import { UserAvatar } from '../components/UserAvatar';
 import { useAuth } from '../hooks/useAuth';
-import { createSignedDownloadUrl, getUserFiles } from '../lib/fileApi';
-import { getUserPosts } from '../lib/forumApi';
+import {
+  createSignedDownloadUrl,
+  deleteFile as deleteUploadedFile,
+  getUserFiles,
+} from '../lib/fileApi';
+import { deletePost, getUserPosts, updatePost } from '../lib/forumApi';
+import { getPreview } from '../lib/format';
 import { canParticipate } from '../lib/permissions';
+import { isPostEdited } from '../lib/postDisplay';
+import { validatePost } from '../lib/validation';
 import type { LinkedFile } from '../types/files';
-import type { Post } from '../types/forum';
+import { categories, type Category, type Post, type UpdatePostInput } from '../types/forum';
 
 export function ProfilePage() {
   const {
@@ -33,11 +40,25 @@ export function ProfilePage() {
   const [filesLoading, setFilesLoading] = useState(false);
   const [filesError, setFilesError] = useState<string | null>(null);
   const [filesStatus, setFilesStatus] = useState<string | null>(null);
+  const [fileToDelete, setFileToDelete] = useState<LinkedFile | null>(null);
+  const [deletingFileId, setDeletingFileId] = useState<string | null>(null);
   const [displayName, setDisplayName] = useState('');
   const [profileBusy, setProfileBusy] = useState(false);
   const [photoBusy, setPhotoBusy] = useState(false);
   const [profileError, setProfileError] = useState<string | null>(null);
   const [profileStatus, setProfileStatus] = useState<string | null>(null);
+  const [editingPostId, setEditingPostId] = useState<string | null>(null);
+  const [editDraft, setEditDraft] = useState<UpdatePostInput>({
+    title: '',
+    content: '',
+    category: 'General',
+    isAnonymous: false,
+  });
+  const [savingPostId, setSavingPostId] = useState<string | null>(null);
+  const [deletingPostId, setDeletingPostId] = useState<string | null>(null);
+  const [postToDelete, setPostToDelete] = useState<Post | null>(null);
+  const [postActionError, setPostActionError] = useState<string | null>(null);
+  const [postActionStatus, setPostActionStatus] = useState<string | null>(null);
 
   useEffect(() => {
     setDisplayName(user?.profile.displayName ?? '');
@@ -134,6 +155,31 @@ export function ProfilePage() {
     window.location.assign(signedUrl.url);
   }
 
+  async function confirmDeleteFile() {
+    if (!user || !fileToDelete) return;
+
+    setDeletingFileId(fileToDelete.id);
+    setFilesError(null);
+    setFilesStatus(null);
+
+    try {
+      await deleteUploadedFile(fileToDelete.id, user);
+      setFiles((current) =>
+        current.filter((file) => file.id !== fileToDelete.id),
+      );
+      setFileToDelete(null);
+      setFilesStatus('File deleted.');
+    } catch (caughtError) {
+      setFilesError(
+        caughtError instanceof Error
+          ? caughtError.message
+          : 'Could not delete this file.',
+      );
+    } finally {
+      setDeletingFileId(null);
+    }
+  }
+
   async function saveProfile(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setProfileBusy(true);
@@ -173,6 +219,108 @@ export function ProfilePage() {
     }
   }
 
+  function startEditingPost(post: Post) {
+    setPostActionError(null);
+    setPostActionStatus(null);
+    setEditingPostId(post.id);
+    setEditDraft({
+      title: post.title,
+      content: post.content,
+      category: post.category,
+      isAnonymous: post.isAnonymous,
+    });
+  }
+
+  function cancelEditingPost() {
+    setEditingPostId(null);
+    setPostActionError(null);
+  }
+
+  async function savePost(event: FormEvent<HTMLFormElement>, post: Post) {
+    event.preventDefault();
+    setPostActionError(null);
+    setPostActionStatus(null);
+
+    if (!user) {
+      setPostActionError('Log in before editing a post.');
+      return;
+    }
+
+    if (post.authorId !== user.id) {
+      setPostActionError('You can only edit posts you created.');
+      return;
+    }
+
+    if (!canParticipate(user.profile)) {
+      setPostActionError('Restricted accounts cannot edit posts.');
+      return;
+    }
+
+    const validationError = validatePost(editDraft);
+    if (validationError) {
+      setPostActionError(validationError);
+      return;
+    }
+
+    setSavingPostId(post.id);
+
+    try {
+      const updatedPost = await updatePost(
+        post.id,
+        {
+          title: editDraft.title.trim(),
+          content: editDraft.content.trim(),
+          category: editDraft.category,
+          isAnonymous: editDraft.isAnonymous,
+        },
+        user,
+      );
+      setPosts((current) =>
+        current.map((item) => (item.id === post.id ? updatedPost : item)),
+      );
+      setEditingPostId(null);
+      setPostActionStatus('Changes saved.');
+    } catch (caughtError) {
+      setPostActionError(
+        caughtError instanceof Error ? caughtError.message : 'Could not update post.',
+      );
+    } finally {
+      setSavingPostId(null);
+    }
+  }
+
+  async function confirmDeletePost() {
+    if (!user || !postToDelete) return;
+
+    if (postToDelete.authorId !== user.id) {
+      setPostActionError('You can only delete posts you created.');
+      setPostToDelete(null);
+      return;
+    }
+
+    setDeletingPostId(postToDelete.id);
+    setPostActionError(null);
+    setPostActionStatus(null);
+
+    try {
+      await deletePost(postToDelete.id, user);
+      setPosts((current) =>
+        current.filter((post) => post.id !== postToDelete.id),
+      );
+      setPostToDelete(null);
+      setEditingPostId((current) =>
+        current === postToDelete.id ? null : current,
+      );
+      setPostActionStatus('Post deleted.');
+    } catch (caughtError) {
+      setPostActionError(
+        caughtError instanceof Error ? caughtError.message : 'Could not delete post.',
+      );
+    } finally {
+      setDeletingPostId(null);
+    }
+  }
+
   if (!user) {
     return (
       <>
@@ -188,6 +336,7 @@ export function ProfilePage() {
   }
 
   const profileEditingDisabled = user.profile.isBanned;
+  const postEditingDisabled = !canParticipate(user.profile);
   const photoActionLabel = user.profile.avatarUrl
     ? 'Change photo'
     : 'Upload profile picture';
@@ -315,34 +464,17 @@ export function ProfilePage() {
 
       <section className="grid gap-4">
         <div>
-          <h2 className="section-title">My uploaded files</h2>
-          <p className="mt-1 text-sm text-slate-600">
-            Files you uploaded that still exist on InUni.
-          </p>
-        </div>
-
-        {filesStatus ? (
-          <p className="text-sm font-semibold text-slate-600">{filesStatus}</p>
-        ) : null}
-        {filesError ? <ErrorState message={filesError} /> : null}
-        {filesLoading ? <LoadingState label="Loading your files..." /> : null}
-        {!filesLoading && !filesError ? (
-          <FileList
-            emptyMessage="No uploaded files yet."
-            files={files}
-            onDownload={(file) => openFile(file, 'download')}
-            onPreview={(file) => openFile(file, 'preview')}
-          />
-        ) : null}
-      </section>
-
-      <section className="grid gap-4">
-        <div>
           <h2 className="section-title">Your posts</h2>
           <p className="mt-1 text-sm text-slate-600">Posts you created with this account.</p>
         </div>
 
         {error ? <ErrorState message={error} /> : null}
+        {postActionError ? <ErrorState message={postActionError} /> : null}
+        {postActionStatus ? (
+          <p className="text-sm font-semibold text-brand-700">
+            {postActionStatus}
+          </p>
+        ) : null}
         {loading ? <LoadingState label="Loading your posts..." /> : null}
 
         {!loading && !error && posts.length === 0 ? (
@@ -359,12 +491,228 @@ export function ProfilePage() {
 
         {!loading && !error && posts.length > 0 ? (
           <div className="grid gap-4">
-            {posts.map((post) => (
-              <PostCard key={post.id} post={post} />
-            ))}
+            {posts.map((post) => {
+              const isEditing = editingPostId === post.id;
+              const isOwner = post.authorId === user.id;
+              const isSaving = savingPostId === post.id;
+
+              return (
+                <article className="panel grid gap-4 p-4 sm:p-5" key={post.id}>
+                  <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2 text-xs font-semibold text-slate-500">
+                        <span className="badge bg-slate-100 text-slate-700">
+                          {post.category}
+                        </span>
+                        {post.isAnonymous ? (
+                          <span className="badge bg-slate-100 text-slate-700">
+                            Anonymous
+                          </span>
+                        ) : null}
+                        <span>{new Date(post.createdAt).toLocaleDateString()}</span>
+                        {isPostEdited(post) ? (
+                          <span className="badge bg-slate-100 text-slate-600">
+                            Edited
+                          </span>
+                        ) : null}
+                      </div>
+
+                      <h3 className="mt-3 break-words text-xl font-semibold tracking-normal text-ink">
+                        {post.title}
+                      </h3>
+                      <p className="mt-2 min-w-0 break-words text-sm leading-6 text-slate-600 [overflow-wrap:anywhere]">
+                        {getPreview(post.content)}
+                      </p>
+                      <p className="mt-3 text-sm text-slate-500">
+                        {post.commentCount} comments
+                      </p>
+                    </div>
+
+                    <div className="flex shrink-0 flex-wrap gap-2">
+                      <Link
+                        aria-label={`View ${post.title}`}
+                        className="secondary-button"
+                        to={`/post/${post.id}`}
+                      >
+                        View
+                      </Link>
+                      {isOwner ? (
+                        <>
+                          <button
+                            aria-label={`Edit ${post.title}`}
+                            className="secondary-button"
+                            disabled={postEditingDisabled || isSaving}
+                            onClick={() => startEditingPost(post)}
+                            type="button"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            aria-label={`Delete ${post.title}`}
+                            className="danger-button"
+                            disabled={deletingPostId === post.id}
+                            onClick={() => setPostToDelete(post)}
+                            type="button"
+                          >
+                            Delete
+                          </button>
+                        </>
+                      ) : null}
+                    </div>
+                  </div>
+
+                  {isEditing ? (
+                    <form
+                      className="grid gap-4 border-t border-line pt-4"
+                      onSubmit={(event) => void savePost(event, post)}
+                    >
+                      <label className="grid gap-2">
+                        <span className="field-label">Title</span>
+                        <input
+                          className="field-input"
+                          disabled={isSaving}
+                          maxLength={120}
+                          onChange={(event) =>
+                            setEditDraft((current) => ({
+                              ...current,
+                              title: event.target.value,
+                            }))
+                          }
+                          value={editDraft.title}
+                        />
+                      </label>
+
+                      <label className="grid gap-2">
+                        <span className="field-label">Category</span>
+                        <select
+                          className="field-input"
+                          disabled={isSaving}
+                          onChange={(event) =>
+                            setEditDraft((current) => ({
+                              ...current,
+                              category: event.target.value as Category,
+                            }))
+                          }
+                          value={editDraft.category}
+                        >
+                          {categories.map((category) => (
+                            <option key={category} value={category}>
+                              {category}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+
+                      <label className="grid gap-2">
+                        <span className="field-label">Content</span>
+                        <textarea
+                          className="field-input min-h-36 resize-y"
+                          disabled={isSaving}
+                          onChange={(event) =>
+                            setEditDraft((current) => ({
+                              ...current,
+                              content: event.target.value,
+                            }))
+                          }
+                          value={editDraft.content}
+                        />
+                      </label>
+
+                      <label className="flex items-start gap-3 rounded-lg border border-line bg-slate-50 p-3">
+                        <input
+                          checked={editDraft.isAnonymous}
+                          className="mt-1 h-4 w-4 accent-brand-700"
+                          disabled={isSaving}
+                          onChange={(event) =>
+                            setEditDraft((current) => ({
+                              ...current,
+                              isAnonymous: event.target.checked,
+                            }))
+                          }
+                          type="checkbox"
+                        />
+                        <span className="text-sm font-semibold text-slate-700">
+                          Post anonymously
+                        </span>
+                      </label>
+
+                      <div className="flex flex-wrap justify-end gap-2">
+                        <button
+                          className="secondary-button"
+                          disabled={isSaving}
+                          onClick={cancelEditingPost}
+                          type="button"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          className="primary-button"
+                          disabled={isSaving}
+                          type="submit"
+                        >
+                          {isSaving ? 'Saving...' : 'Save changes'}
+                        </button>
+                      </div>
+                    </form>
+                  ) : null}
+                </article>
+              );
+            })}
           </div>
         ) : null}
       </section>
+
+      <section className="grid gap-4">
+        <div>
+          <h2 className="section-title">My uploaded files</h2>
+          <p className="mt-1 text-sm text-slate-600">
+            Files you uploaded that still exist on InUni.
+          </p>
+        </div>
+
+        {filesStatus ? (
+          <p className="text-sm font-semibold text-slate-600">{filesStatus}</p>
+        ) : null}
+        {filesError ? <ErrorState message={filesError} /> : null}
+        {filesLoading ? <LoadingState label="Loading your files..." /> : null}
+        {!filesLoading && !filesError ? (
+          <FileList
+            emptyMessage="No uploaded files yet."
+            files={files}
+            onDelete={setFileToDelete}
+            onDownload={(file) => openFile(file, 'download')}
+            onPreview={(file) => openFile(file, 'preview')}
+          />
+        ) : null}
+      </section>
+      <ConfirmDialog
+        busy={Boolean(postToDelete && deletingPostId === postToDelete.id)}
+        confirmLabel="Delete post"
+        destructive
+        message={
+          postToDelete
+            ? `Delete "${postToDelete.title}"? This removes it from the public forum.`
+            : ''
+        }
+        onCancel={() => setPostToDelete(null)}
+        onConfirm={confirmDeletePost}
+        open={Boolean(postToDelete)}
+        title="Delete post?"
+      />
+      <ConfirmDialog
+        busy={Boolean(fileToDelete && deletingFileId === fileToDelete.id)}
+        confirmLabel="Delete file"
+        destructive
+        message={
+          fileToDelete
+            ? `Delete "${fileToDelete.displayFilename}"? This removes it from posts, comments, and Shared Files.`
+            : ''
+        }
+        onCancel={() => setFileToDelete(null)}
+        onConfirm={confirmDeleteFile}
+        open={Boolean(fileToDelete)}
+        title="Delete file?"
+      />
     </div>
   );
 }

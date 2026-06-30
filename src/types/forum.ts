@@ -46,6 +46,7 @@ export interface Post {
   authorIsUctVerified: boolean;
   isAnonymous: boolean;
   createdAt: string;
+  updatedAt?: string | null;
   commentCount: number;
   attachments?: LinkedFile[];
 }
@@ -68,6 +69,13 @@ export interface NewPostInput {
   category: Category;
   isAnonymous: boolean;
   attachments?: FileUploadDraft[];
+}
+
+export interface UpdatePostInput {
+  title: string;
+  content: string;
+  category: Category;
+  isAnonymous: boolean;
 }
 
 export interface NewCommentInput {
