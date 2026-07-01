@@ -25,6 +25,10 @@ vi.mock('./pages/HomePage', () => ({
   HomePage: () => <h1>Forum route</h1>,
 }));
 
+vi.mock('./pages/LegalPage', () => ({
+  LegalPage: () => <h1>Terms route</h1>,
+}));
+
 vi.mock('./pages/FilesPage', () => ({
   FilesPage: () => <h1>Files route</h1>,
 }));
@@ -102,6 +106,42 @@ describe('MVP navigation', () => {
 
     expect(
       await screen.findByRole('heading', { name: 'Reset link expired' }),
+    ).toBeInTheDocument();
+  });
+
+  it('renders the public terms route', async () => {
+    render(
+      <MemoryRouter initialEntries={['/terms']}>
+        <App />
+      </MemoryRouter>,
+    );
+
+    expect(
+      await screen.findByRole('heading', { name: 'Terms route' }),
+    ).toBeInTheDocument();
+  });
+
+  it('renders the public privacy route', async () => {
+    render(
+      <MemoryRouter initialEntries={['/privacy']}>
+        <App />
+      </MemoryRouter>,
+    );
+
+    expect(
+      await screen.findByRole('heading', { name: 'Terms route' }),
+    ).toBeInTheDocument();
+  });
+
+  it('renders the public community rules route', async () => {
+    render(
+      <MemoryRouter initialEntries={['/community-rules']}>
+        <App />
+      </MemoryRouter>,
+    );
+
+    expect(
+      await screen.findByRole('heading', { name: 'Terms route' }),
     ).toBeInTheDocument();
   });
 });

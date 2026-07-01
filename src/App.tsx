@@ -38,6 +38,9 @@ const FilesPage = lazy(() =>
 const HomePage = lazy(() =>
   import('./pages/HomePage').then((module) => ({ default: module.HomePage })),
 );
+const LegalPage = lazy(() =>
+  import('./pages/LegalPage').then((module) => ({ default: module.LegalPage })),
+);
 const PostDetailPage = lazy(() =>
   import('./pages/PostDetailPage').then((module) => ({
     default: module.PostDetailPage,
@@ -116,6 +119,30 @@ export default function App() {
           element={
             <PageSuspense>
               <AuthPage />
+            </PageSuspense>
+          }
+        />
+        <Route
+          path="/terms"
+          element={
+            <PageSuspense>
+              <LegalPage />
+            </PageSuspense>
+          }
+        />
+        <Route
+          path="/privacy"
+          element={
+            <PageSuspense>
+              <LegalPage />
+            </PageSuspense>
+          }
+        />
+        <Route
+          path="/community-rules"
+          element={
+            <PageSuspense>
+              <LegalPage />
             </PageSuspense>
           }
         />

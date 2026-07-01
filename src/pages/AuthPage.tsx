@@ -1,11 +1,15 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { BrandLogo } from '../components/BrandLogo';
 import { ErrorState } from '../components/ErrorState';
 import { PasswordField } from '../components/PasswordField';
 import { Seo } from '../components/Seo';
 import { useAuth } from '../hooks/useAuth';
+import {
+  acceptLegalAgreement,
+  hasAcceptedLegalAgreement,
+} from '../lib/legalAgreement';
 
 type AuthMode = 'login' | 'signup' | 'recovery';
 
@@ -83,6 +87,9 @@ export function AuthPage() {
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [termsAccepted, setTermsAccepted] = useState(() =>
+    hasAcceptedLegalAgreement(),
+  );
   const [message, setMessage] = useState<string | null>(
     passwordReset ? 'Password updated. You can now log in.' : null,
   );
@@ -113,6 +120,13 @@ export function AuthPage() {
       return;
     }
 
+    if (mode === 'signup' && !termsAccepted) {
+      setError(
+        'You need to agree to the Terms, Privacy Policy, Disclaimer, and Community Rules before creating an account.',
+      );
+      return;
+    }
+
     setSubmitting(true);
 
     try {
@@ -126,6 +140,10 @@ export function AuthPage() {
       if (result.error) {
         setError(getAuthErrorMessage(result.error, mode));
         return;
+      }
+
+      if (mode === 'signup') {
+        acceptLegalAgreement();
       }
 
       if (mode === 'recovery') {
@@ -257,6 +275,27 @@ export function AuthPage() {
           >
             Forgot password?
           </button>
+        ) : null}
+
+        {mode === 'signup' ? (
+          <label className="flex gap-3 rounded-lg border border-line bg-slate-50 p-3 text-sm leading-6 text-slate-600">
+            <input
+              checked={termsAccepted}
+              className="mt-1 h-4 w-4 shrink-0 rounded border-line text-brand-700 focus:ring-brand-100"
+              onChange={(event) => setTermsAccepted(event.target.checked)}
+              type="checkbox"
+            />
+            <span>
+              I agree to the{' '}
+              <Link
+                className="font-semibold text-brand-700 hover:text-brand-600"
+                to="/terms"
+              >
+                Terms, Privacy Policy, Disclaimer, and Community Rules
+              </Link>
+              .
+            </span>
+          </label>
         ) : null}
 
         {error ? <ErrorState message={error} /> : null}

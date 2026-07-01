@@ -28,6 +28,7 @@ vi.mock('../hooks/useAuth', () => ({
 
 describe('AuthPage', () => {
   beforeEach(() => {
+    window.localStorage.clear();
     requestPasswordReset.mockClear();
     signIn.mockClear();
     signInWithGoogle.mockClear();
@@ -186,9 +187,54 @@ describe('AuthPage', () => {
     );
     await user.type(screen.getByLabelText('Email'), 'new@uct.ac.za');
     await user.type(screen.getByLabelText('Password'), 'password123');
+    await user.click(
+      screen.getByRole('checkbox', {
+        name: /I agree to the Terms, Privacy Policy, Disclaimer, and Community Rules/i,
+      }),
+    );
     await user.click(screen.getByRole('button', { name: 'Create account' }));
 
     expect(signUp).toHaveBeenCalledWith('new@uct.ac.za', 'password123');
+  });
+
+  it('requires terms agreement before submitting signup', async () => {
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <AuthPage />
+      </MemoryRouter>,
+    );
+
+    await user.click(
+      screen.getByRole('button', { name: 'Need an account? Sign up' }),
+    );
+    await user.type(screen.getByLabelText('Email'), 'new@uct.ac.za');
+    await user.type(screen.getByLabelText('Password'), 'password123');
+    await user.click(screen.getByRole('button', { name: 'Create account' }));
+
+    expect(
+      screen.getByText(
+        'You need to agree to the Terms, Privacy Policy, Disclaimer, and Community Rules before creating an account.',
+      ),
+    ).toBeInTheDocument();
+    expect(signUp).not.toHaveBeenCalled();
+  });
+
+  it('links signup users to the legal terms page', async () => {
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <AuthPage />
+      </MemoryRouter>,
+    );
+
+    await user.click(
+      screen.getByRole('button', { name: 'Need an account? Sign up' }),
+    );
+
+    expect(
+      screen.getByRole('link', { name: 'Terms, Privacy Policy, Disclaimer, and Community Rules' }),
+    ).toHaveAttribute('href', '/terms');
   });
 
   it('requires a longer password before submitting signup', async () => {
@@ -226,6 +272,11 @@ describe('AuthPage', () => {
     );
     await user.type(screen.getByLabelText('Email'), 'new@uct.ac.za');
     await user.type(screen.getByLabelText('Password'), 'password123');
+    await user.click(
+      screen.getByRole('checkbox', {
+        name: /I agree to the Terms, Privacy Policy, Disclaimer, and Community Rules/i,
+      }),
+    );
     await user.click(screen.getByRole('button', { name: 'Create account' }));
 
     expect(
@@ -249,6 +300,11 @@ describe('AuthPage', () => {
     );
     await user.type(screen.getByLabelText('Email'), 'existing@uct.ac.za');
     await user.type(screen.getByLabelText('Password'), 'password123');
+    await user.click(
+      screen.getByRole('checkbox', {
+        name: /I agree to the Terms, Privacy Policy, Disclaimer, and Community Rules/i,
+      }),
+    );
     await user.click(screen.getByRole('button', { name: 'Create account' }));
 
     expect(

@@ -5,6 +5,7 @@ import { getFileReviewCount } from '../lib/adminFileApi';
 import { recordPageView } from '../lib/localAnalytics';
 import { BrandLogo } from './BrandLogo';
 import { FileReviewCountBadge } from './FileReviewCountBadge';
+import { LegalAgreementGate } from './LegalAgreementGate';
 
 function navClass({ isActive }: { isActive: boolean }) {
   return [
@@ -205,6 +206,27 @@ export function AppLayout() {
       <main className="page-shell">
         <Outlet />
       </main>
+      <footer className="mx-auto flex w-full max-w-5xl flex-wrap justify-center gap-x-5 gap-y-2 px-4 pb-6 text-sm sm:px-6 lg:px-8">
+        <NavLink
+          className="font-semibold text-brand-700 hover:text-brand-600"
+          to="/privacy"
+        >
+          Privacy Policy
+        </NavLink>
+        <NavLink
+          className="font-semibold text-brand-700 hover:text-brand-600"
+          to="/terms"
+        >
+          Terms of Service
+        </NavLink>
+        <NavLink
+          className="font-semibold text-brand-700 hover:text-brand-600"
+          to="/community-rules"
+        >
+          Community Rules
+        </NavLink>
+      </footer>
+      <LegalAgreementGate />
     </div>
   );
 }
