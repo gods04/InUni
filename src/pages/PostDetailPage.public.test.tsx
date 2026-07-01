@@ -89,6 +89,20 @@ describe('PostDetailPage public access', () => {
     expect(mocks.getFilesForComment).not.toHaveBeenCalled();
   });
 
+  it('renders the back link as a bordered button', async () => {
+    render(
+      <MemoryRouter>
+        <PostDetailPage />
+      </MemoryRouter>,
+    );
+
+    const backLink = await screen.findByRole('link', { name: 'Back to feed' });
+
+    expect(backLink).toHaveAttribute('href', '/');
+    expect(backLink).toHaveClass('secondary-button');
+    expect(backLink).toHaveClass('w-fit');
+  });
+
   it('renders long resource URLs as readable links without changing post content', async () => {
     mocks.getPost.mockResolvedValue({
       ...post,

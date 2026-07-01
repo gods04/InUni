@@ -241,7 +241,7 @@ export function PostDetailPage() {
         title={`${post.title} | InUni`}
         type="article"
       />
-      <Link className="w-fit text-sm font-semibold text-brand-700 hover:text-brand-600" to="/">
+      <Link className="secondary-button w-fit" to="/">
         Back to feed
       </Link>
 
