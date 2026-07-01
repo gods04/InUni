@@ -216,6 +216,12 @@ export function PostCard({ post }: { post: Post }) {
             aria-label="Post actions"
             className="flex flex-wrap items-center gap-2"
           >
+            <Link
+              className="rounded-full border border-brand-100 bg-brand-50 px-3 py-1.5 text-xs font-semibold text-brand-700 transition hover:border-brand-200 hover:bg-brand-100 hover:text-ink focus:outline-none focus:ring-4 focus:ring-brand-100"
+              to={`/post/${post.id}#comments`}
+            >
+              Comment
+            </Link>
             {user ? (
               <button
                 className="rounded-full px-3 py-1.5 text-xs font-semibold text-red-500 transition hover:bg-red-50 hover:text-red-700 focus:outline-none focus:ring-4 focus:ring-red-100"

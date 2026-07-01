@@ -69,7 +69,7 @@ describe('PostDetailPage public access', () => {
   });
 
   it('shows the post and comments to logged-out visitors even when files require login', async () => {
-    render(
+    const { container } = render(
       <MemoryRouter>
         <PostDetailPage />
       </MemoryRouter>,
@@ -79,6 +79,9 @@ describe('PostDetailPage public access', () => {
     expect(screen.getByText('Existing comment should be public.')).toBeInTheDocument();
     expect(screen.queryByText('Could not load files.')).not.toBeInTheDocument();
     expect(screen.getByText('Only logged-in users can comment.')).toBeInTheDocument();
+    expect(container.querySelector('#comments')).toContainElement(
+      screen.getByRole('heading', { name: 'Comments' }),
+    );
     expect(
       screen.getByRole('link', { name: 'Log in to comment' }),
     ).toHaveAttribute('href', '/login');

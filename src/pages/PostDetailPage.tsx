@@ -313,7 +313,7 @@ export function PostDetailPage() {
         <p className="text-sm font-semibold text-slate-600">{fileStatus}</p>
       ) : null}
 
-      <section className="grid gap-4">
+      <section className="grid gap-4" id="comments">
         <div>
           <h2 className="text-2xl font-semibold tracking-normal text-ink">Comments</h2>
           <p className="mt-1 text-sm text-slate-600">Add context, answer questions, or help a classmate out.</p>

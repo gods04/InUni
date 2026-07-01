@@ -119,6 +119,19 @@ describe('PostCard', () => {
     expect(screen.getByLabelText('Post actions')).toHaveTextContent('Log in to report');
   });
 
+  it('links to the post comments from the card actions', () => {
+    render(
+      <MemoryRouter>
+        <PostCard post={post} />
+      </MemoryRouter>,
+    );
+
+    const commentLink = screen.getByRole('link', { name: 'Comment' });
+
+    expect(screen.getByLabelText('Post actions')).toContainElement(commentLink);
+    expect(commentLink).toHaveAttribute('href', '/post/post-1#comments');
+  });
+
   it('does not expose verification on an anonymous post', () => {
     render(
       <MemoryRouter>
