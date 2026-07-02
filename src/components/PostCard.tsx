@@ -5,6 +5,7 @@ import { createSignedPreviewUrl } from '../lib/fileApi';
 import { classifyFileType } from '../lib/fileValidation';
 import { formatRelativeTime, getPreview } from '../lib/format';
 import { createReport } from '../lib/forumApi';
+import { getPostPath } from '../lib/postSlug';
 import { isPostEdited } from '../lib/postDisplay';
 import { canParticipate } from '../lib/permissions';
 import type { LinkedFile } from '../types/files';
@@ -70,6 +71,7 @@ export function PostCard({ post }: { post: Post }) {
   const [reportOpen, setReportOpen] = useState(false);
   const [reportStatus, setReportStatus] = useState<string | null>(null);
   const target: ReportTarget = { type: 'post', postId: post.id };
+  const postPath = getPostPath(post);
   const previewedImages = attachments.filter(
     (file) => isImageFile(file) && previewUrls[file.id],
   );
@@ -142,7 +144,7 @@ export function PostCard({ post }: { post: Post }) {
           ) : null}
         </div>
 
-        <Link to={`/post/${post.id}`} className="group block min-w-0">
+        <Link to={postPath} className="group block min-w-0">
           <h2 className="break-words text-2xl font-bold leading-tight tracking-normal text-ink group-hover:text-brand-700">
             {post.title}
           </h2>
@@ -218,13 +220,13 @@ export function PostCard({ post }: { post: Post }) {
           >
             <Link
               className="rounded-full border border-brand-100 bg-brand-50 px-3 py-1.5 text-xs font-semibold text-brand-700 transition hover:border-brand-200 hover:bg-brand-100 hover:text-ink focus:outline-none focus:ring-4 focus:ring-brand-100"
-              to={`/post/${post.id}#comments`}
+              to={`${postPath}#comments`}
             >
               Comment
             </Link>
             {user ? (
               <button
-                className="rounded-full px-3 py-1.5 text-xs font-semibold text-red-500 transition hover:bg-red-50 hover:text-red-700 focus:outline-none focus:ring-4 focus:ring-red-100"
+                className="rounded-full border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-700 transition hover:bg-red-50 hover:text-red-800 focus:outline-none focus:ring-4 focus:ring-red-100"
                 onClick={openReport}
                 type="button"
               >

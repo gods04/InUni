@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { curatedSeedComments } from './curatedSeedForum';
 import {
   createComment,
+  createPost,
   deletePost,
   getComments,
   getPost,
@@ -30,7 +31,7 @@ vi.mock('./supabase', () => ({
 
 interface QueryResult {
   data: unknown;
-  error: { message?: string } | null;
+  error: { code?: string; message?: string } | null;
 }
 
 function createQuery(result: QueryResult = { data: null, error: null }) {
@@ -38,6 +39,7 @@ function createQuery(result: QueryResult = { data: null, error: null }) {
     eq: vi.fn(() => query),
     delete: vi.fn(() => query),
     in: vi.fn(() => query),
+    insert: vi.fn(() => query),
     maybeSingle: vi.fn(() => Promise.resolve(result)),
     order: vi.fn(() => query),
     select: vi.fn(() => query),
@@ -138,6 +140,40 @@ describe('forumApi Supabase boundary', () => {
       'id, username, display_name, is_uct_verified',
     );
     expect(mocks.storageFrom).not.toHaveBeenCalled();
+  });
+
+  it('loads posts with generated slugs when the slug migration has not been applied yet', async () => {
+    const postsQuery = createQuery({
+      data: null,
+      error: { code: '42703', message: 'column posts.slug does not exist' },
+    });
+    const legacyPostsQuery = createQuery({ data: [postRow], error: null });
+    const profileQuery = createQuery({
+      data: [
+        {
+          id: 'owner-1',
+          username: 'student',
+          display_name: 'Student One',
+          avatar_path: null,
+          is_uct_verified: true,
+        },
+      ],
+      error: null,
+    });
+    const commentCountQuery = createQuery({ data: [], error: null });
+    queueQueries(postsQuery, legacyPostsQuery, profileQuery, commentCountQuery);
+
+    const posts = await getPosts();
+    const post = posts.find((item) => item.id === 'post-1');
+
+    expect(post).toMatchObject({
+      id: 'post-1',
+      slug: 'study-plan',
+      title: 'Study plan',
+    });
+    expect(legacyPostsQuery.select).toHaveBeenCalledWith(
+      'id, title, content, category, author_id, is_anonymous, created_at, updated_at',
+    );
   });
 
   it('shows curated UCT seed posts when the production forum is still empty', async () => {
@@ -363,6 +399,73 @@ describe('forumApi Supabase boundary', () => {
     expect(mocks.from).not.toHaveBeenCalled();
   });
 
+  it('creates posts against legacy databases before the slug migration is applied', async () => {
+    const insertWithSlugQuery = createQuery({
+      data: null,
+      error: {
+        message: "Could not find the 'slug' column of 'posts' in the schema cache",
+      },
+    });
+    const legacyInsertQuery = createQuery({
+      data: { id: 'post-1' },
+      error: null,
+    });
+    const loadPostQuery = createQuery({
+      data: {
+        ...postRow,
+        id: 'post-1',
+        title: 'New UCT question',
+      },
+      error: null,
+    });
+    const profileQuery = createQuery({
+      data: [
+        {
+          id: 'owner-1',
+          username: 'student',
+          display_name: 'Student One',
+          avatar_path: null,
+          is_uct_verified: true,
+        },
+      ],
+      error: null,
+    });
+    const commentCountQuery = createQuery({ data: [], error: null });
+    queueQueries(
+      insertWithSlugQuery,
+      legacyInsertQuery,
+      loadPostQuery,
+      profileQuery,
+      commentCountQuery,
+    );
+
+    const post = await createPost(
+      {
+        title: 'New UCT question',
+        content: 'Where should I ask?',
+        category: 'Questions',
+        isAnonymous: false,
+      },
+      user,
+    );
+
+    expect(insertWithSlugQuery.insert).toHaveBeenCalledWith(
+      expect.objectContaining({ slug: 'new-uct-question' }),
+    );
+    const legacyInsertCalls = legacyInsertQuery.insert.mock.calls as unknown[][];
+    const legacyPayload = legacyInsertCalls[0]?.[0] as
+      | Record<string, unknown>
+      | undefined;
+
+    expect(legacyPayload).toBeDefined();
+    expect(legacyPayload).not.toHaveProperty('slug');
+    expect(post).toMatchObject({
+      id: 'post-1',
+      slug: 'new-uct-question',
+      title: 'New UCT question',
+    });
+  });
+
   it('updates posts through the current author boundary and maps edited time', async () => {
     const updateQuery = createQuery({
       data: {
@@ -404,6 +507,7 @@ describe('forumApi Supabase boundary', () => {
 
     expect(updateQuery.update).toHaveBeenCalledWith({
       title: 'Updated title',
+      slug: 'updated-title',
       content: 'Updated content',
       category: 'Questions',
       is_anonymous: true,

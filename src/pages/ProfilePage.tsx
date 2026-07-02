@@ -19,6 +19,7 @@ import {
 } from '../lib/fileApi';
 import { deletePost, getUserPosts, updatePost } from '../lib/forumApi';
 import { getPreview } from '../lib/format';
+import { getPostPath } from '../lib/postSlug';
 import { canParticipate } from '../lib/permissions';
 import { isPostEdited } from '../lib/postDisplay';
 import { validatePost } from '../lib/validation';
@@ -532,7 +533,7 @@ export function ProfilePage() {
                       <Link
                         aria-label={`View ${post.title}`}
                         className="secondary-button"
-                        to={`/post/${post.id}`}
+                        to={getPostPath(post)}
                       >
                         View
                       </Link>

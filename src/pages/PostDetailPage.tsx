@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { AttachmentPicker } from '../components/AttachmentPicker';
 import { BanNotice } from '../components/BanNotice';
 import { CommentList } from '../components/CommentList';
@@ -27,6 +27,7 @@ import {
 } from '../lib/forumApi';
 import { isCuratedSeedPostId } from '../lib/curatedSeedForum';
 import { formatRelativeTime } from '../lib/format';
+import { getPostPath } from '../lib/postSlug';
 import { isPostEdited } from '../lib/postDisplay';
 import { canParticipate } from '../lib/permissions';
 import { validateComment } from '../lib/validation';
@@ -35,6 +36,7 @@ import type { ForumComment, Post, ReportTarget } from '../types/forum';
 
 export function PostDetailPage() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [post, setPost] = useState<Post | null>(null);
   const [comments, setComments] = useState<ForumComment[]>([]);
@@ -63,11 +65,12 @@ export function PostDetailPage() {
       setError(null);
 
       try {
-        const [nextPost, nextComments] = await Promise.all([getPost(id), getComments(id)]);
+        const nextPost = await getPost(id);
+        const nextComments = nextPost ? await getComments(nextPost.id) : [];
         const shouldLoadFiles = Boolean(user);
         const [nextPostFiles, nextCommentFileEntries] = nextPost && shouldLoadFiles
           ? await Promise.all([
-              getFilesForPost(id),
+              getFilesForPost(nextPost.id),
               Promise.all(
                 nextComments.map(async (comment) => [
                   comment.id,
@@ -100,6 +103,15 @@ export function PostDetailPage() {
       isActive = false;
     };
   }, [id, user?.id]);
+
+  useEffect(() => {
+    if (!post || !id) return;
+
+    const postPath = getPostPath(post);
+    if (`/post/${id}` !== postPath) {
+      navigate(postPath, { replace: true });
+    }
+  }, [id, navigate, post]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -219,11 +231,12 @@ export function PostDetailPage() {
   }
 
   const isStarterPost = isCuratedSeedPostId(post.id);
+  const postPath = getPostPath(post);
 
   return (
     <div className="grid min-w-0 gap-5">
       <Seo
-        canonicalPath={`/post/${post.id}`}
+        canonicalPath={postPath}
         description={`${post.title} - a UCT student forum discussion on InUni.`}
         structuredData={{
           '@context': 'https://schema.org',
@@ -236,7 +249,7 @@ export function PostDetailPage() {
           datePublished: post.createdAt,
           dateModified: post.updatedAt ?? post.createdAt,
           headline: post.title,
-          url: `https://inuni.co.za/post/${post.id}`,
+          url: `https://inuni.co.za${postPath}`,
         }}
         title={`${post.title} | InUni`}
         type="article"
@@ -325,6 +338,7 @@ export function PostDetailPage() {
           onFileDownload={(file) => openFile(file, 'download')}
           onFilePreview={(file) => openFile(file, 'preview')}
           onReport={user && !isStarterPost ? openReport : undefined}
+          postAuthorId={post.authorId}
           reportDisabled={Boolean(user && !canParticipate(user.profile))}
           showReportActions={!isStarterPost}
         />

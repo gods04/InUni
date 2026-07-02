@@ -122,14 +122,35 @@ describe('PostCard', () => {
   it('links to the post comments from the card actions', () => {
     render(
       <MemoryRouter>
-        <PostCard post={post} />
+        <PostCard
+          post={{
+            ...post,
+            slug: 'uct-study-spaces',
+          }}
+        />
       </MemoryRouter>,
     );
 
     const commentLink = screen.getByRole('link', { name: 'Comment' });
 
     expect(screen.getByLabelText('Post actions')).toContainElement(commentLink);
-    expect(commentLink).toHaveAttribute('href', '/post/post-1#comments');
+    expect(commentLink).toHaveAttribute('href', '/post/uct-study-spaces#comments');
+  });
+
+  it('shows the feed report action as a bordered red button', () => {
+    mocks.currentUser = user;
+
+    render(
+      <MemoryRouter>
+        <PostCard post={post} />
+      </MemoryRouter>,
+    );
+
+    const reportButton = screen.getByRole('button', { name: 'Report' });
+
+    expect(reportButton).toHaveClass('border');
+    expect(reportButton).toHaveClass('border-red-200');
+    expect(reportButton).toHaveClass('text-red-700');
   });
 
   it('does not expose verification on an anonymous post', () => {

@@ -18,11 +18,12 @@ describe('static SEO crawl files', () => {
     expect(sitemap).toContain('<loc>https://inuni.co.za/files</loc>');
     expect(sitemap).toContain('<loc>https://inuni.co.za/tools</loc>');
     expect(sitemap).toContain(
-      '<loc>https://inuni.co.za/post/99999999-9999-4999-8999-999999999991</loc>',
+      '<loc>https://inuni.co.za/post/engineering-handbook-where-do-i-check-course-rules</loc>',
     );
     expect(sitemap).toContain(
-      '<loc>https://inuni.co.za/post/99999999-9999-4999-8999-999999999992</loc>',
+      '<loc>https://inuni.co.za/post/commerce-handbook-link-for-bcom-and-bbussc</loc>',
     );
+    expect(sitemap).not.toContain('99999999-9999-4999-8999-999999999991');
     expect(sitemap).not.toContain('<loc>https://inuni.co.za/admin</loc>');
     expect(sitemap).not.toContain('<loc>https://inuni.co.za/profile</loc>');
   });

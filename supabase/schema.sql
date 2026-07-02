@@ -48,6 +48,8 @@ create table public.posts (
   author_id uuid not null references public.profiles(id) on delete cascade,
   title text not null
     check (char_length(trim(title)) between 1 and 120),
+  slug text not null unique
+    check (slug ~ '^[a-z0-9]+(-[a-z0-9]+)*$'),
   content text not null
     check (char_length(trim(content)) between 1 and 20000),
   category text not null check (

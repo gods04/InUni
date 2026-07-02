@@ -5,8 +5,12 @@ import {
   isCuratedSeedPostId,
 } from './curatedSeedForum';
 import { mockForumStore } from './mockStore';
+import { getPostSlug, isUuidPostIdentifier, slugifyPostTitle } from './postSlug';
 import { isSupabaseConfigured, supabase } from './supabase';
-import { isMissingAvatarPathError } from './supabaseCompat';
+import {
+  isMissingAvatarPathError,
+  isMissingPostSlugError,
+} from './supabaseCompat';
 import type {
   Category,
   ForumComment,
@@ -28,6 +32,7 @@ interface ProfileRow {
 
 interface PostRow {
   id: string;
+  slug?: string | null;
   title: string;
   content: string;
   category: Category;
@@ -49,8 +54,11 @@ const publicProfileSelectWithAvatar =
   'id, username, display_name, avatar_path, is_uct_verified';
 const publicProfileSelectWithoutAvatar =
   'id, username, display_name, is_uct_verified';
-const postSelect =
+const postSelectWithSlug =
+  'id, slug, title, content, category, author_id, is_anonymous, created_at, updated_at';
+const postSelectWithoutSlug =
   'id, title, content, category, author_id, is_anonymous, created_at, updated_at';
+const postSelect = postSelectWithSlug;
 
 function requireSupabase() {
   if (!supabase) {
@@ -142,6 +150,7 @@ async function getCommentCounts(postIds: string[]): Promise<Map<string, number>>
 function mapPost(row: PostRow, profile: ProfileRow | undefined, commentCount: number): Post {
   return {
     id: row.id,
+    slug: row.slug || slugifyPostTitle(row.title),
     title: row.title,
     content: row.content,
     category: row.category,
@@ -181,24 +190,73 @@ function mapComment(row: CommentRow, profile: ProfileRow | undefined): ForumComm
   };
 }
 
+async function getPostRows(category?: Category): Promise<PostRow[]> {
+  const client = requireSupabase();
+  const query = client
+    .from('posts')
+    .select(postSelectWithSlug)
+    .order('created_at', { ascending: false });
+
+  const result = category ? await query.eq('category', category) : await query;
+
+  if (result.error && isMissingPostSlugError(result.error)) {
+    const fallbackQuery = client
+      .from('posts')
+      .select(postSelectWithoutSlug)
+      .order('created_at', { ascending: false });
+    const fallbackResult = category
+      ? await fallbackQuery.eq('category', category)
+      : await fallbackQuery;
+
+    if (fallbackResult.error) {
+      throw new Error(fallbackResult.error.message);
+    }
+
+    return (fallbackResult.data ?? []) as PostRow[];
+  }
+
+  if (result.error) {
+    throw new Error(result.error.message);
+  }
+
+  return (result.data ?? []) as PostRow[];
+}
+
+async function getPostRowById(postId: string): Promise<PostRow | null> {
+  const client = requireSupabase();
+  const result = await client
+    .from('posts')
+    .select(postSelectWithSlug)
+    .eq('id', postId)
+    .maybeSingle();
+
+  if (result.error && isMissingPostSlugError(result.error)) {
+    const fallbackResult = await client
+      .from('posts')
+      .select(postSelectWithoutSlug)
+      .eq('id', postId)
+      .maybeSingle();
+
+    if (fallbackResult.error) {
+      throw new Error(fallbackResult.error.message);
+    }
+
+    return (fallbackResult.data as PostRow | null) ?? null;
+  }
+
+  if (result.error) {
+    throw new Error(result.error.message);
+  }
+
+  return (result.data as PostRow | null) ?? null;
+}
+
 export async function getPosts(category?: Category): Promise<Post[]> {
   if (!isSupabaseConfigured) {
     return mockForumStore.getPosts(category);
   }
 
-  const client = requireSupabase();
-  const query = client
-    .from('posts')
-    .select(postSelect)
-    .order('created_at', { ascending: false });
-
-  const { data, error } = category ? await query.eq('category', category) : await query;
-
-  if (error) {
-    throw new Error(error.message);
-  }
-
-  const rows = (data ?? []) as PostRow[];
+  const rows = await getPostRows(category);
 
   if (rows.length === 0) {
     return getCuratedSeedPosts(category);
@@ -216,27 +274,50 @@ export async function getPosts(category?: Category): Promise<Post[]> {
   return mergeWithCuratedSeedPosts(posts, category);
 }
 
-export async function getPost(postId: string): Promise<Post | null> {
+export async function getPost(postIdentifier: string): Promise<Post | null> {
   if (!isSupabaseConfigured) {
-    return mockForumStore.getPost(postId);
+    return mockForumStore.getPost(postIdentifier);
   }
 
-  const client = requireSupabase();
-  const { data, error } = await client
-    .from('posts')
-    .select(postSelect)
-    .eq('id', postId)
-    .maybeSingle();
+  if (!isUuidPostIdentifier(postIdentifier)) {
+    const client = requireSupabase();
+    const result = await client
+      .from('posts')
+      .select(postSelectWithSlug)
+      .eq('slug', postIdentifier)
+      .maybeSingle();
 
-  if (error) {
-    throw new Error(error.message);
+    if (result.error && isMissingPostSlugError(result.error)) {
+      const posts = await getPosts();
+      return (
+        posts.find((post) => getPostSlug(post) === postIdentifier) ??
+        getCuratedSeedPost(postIdentifier)
+      );
+    }
+
+    if (result.error) {
+      throw new Error(result.error.message);
+    }
+
+    if (!result.data) {
+      return getCuratedSeedPost(postIdentifier);
+    }
+
+    const row = result.data as PostRow;
+    const [profiles, commentCounts] = await Promise.all([
+      getProfilesMap([row.author_id]),
+      getCommentCounts([row.id]),
+    ]);
+
+    return mapPost(row, profiles.get(row.author_id), commentCounts.get(row.id) ?? 0);
   }
 
-  if (!data) {
-    return getCuratedSeedPost(postId);
+  const row = await getPostRowById(postIdentifier);
+
+  if (!row) {
+    return getCuratedSeedPost(postIdentifier);
   }
 
-  const row = data as PostRow;
   const [profiles, commentCounts] = await Promise.all([
     getProfilesMap([row.author_id]),
     getCommentCounts([row.id]),
@@ -278,11 +359,12 @@ export async function createPost(input: NewPostInput, user: ForumUser): Promise<
   }
 
   const client = requireSupabase();
-  const { data, error } = await client
+  let result = await client
     .from('posts')
     .insert({
       author_id: user.id,
       title: input.title,
+      slug: slugifyPostTitle(input.title),
       content: input.content,
       category: input.category,
       is_anonymous: input.isAnonymous,
@@ -290,11 +372,25 @@ export async function createPost(input: NewPostInput, user: ForumUser): Promise<
     .select('id')
     .single();
 
-  if (error) {
-    throw new Error(error.message);
+  if (result.error && isMissingPostSlugError(result.error)) {
+    result = await client
+      .from('posts')
+      .insert({
+        author_id: user.id,
+        title: input.title,
+        content: input.content,
+        category: input.category,
+        is_anonymous: input.isAnonymous,
+      })
+      .select('id')
+      .single();
   }
 
-  const post = await getPost((data as { id: string }).id);
+  if (result.error) {
+    throw new Error(result.error.message);
+  }
+
+  const post = await getPost((result.data as { id: string }).id);
   if (!post) {
     throw new Error('Post was created but could not be loaded.');
   }
@@ -316,10 +412,11 @@ export async function updatePost(
   }
 
   const client = requireSupabase();
-  const { data, error } = await client
+  let result = await client
     .from('posts')
     .update({
       title: input.title,
+      slug: slugifyPostTitle(input.title),
       content: input.content,
       category: input.category,
       is_anonymous: input.isAnonymous,
@@ -329,15 +426,30 @@ export async function updatePost(
     .select(postSelect)
     .maybeSingle();
 
-  if (error) {
-    throw new Error(error.message);
+  if (result.error && isMissingPostSlugError(result.error)) {
+    result = await client
+      .from('posts')
+      .update({
+        title: input.title,
+        content: input.content,
+        category: input.category,
+        is_anonymous: input.isAnonymous,
+      })
+      .eq('id', postId)
+      .eq('author_id', user.id)
+      .select(postSelectWithoutSlug)
+      .maybeSingle();
   }
 
-  if (!data) {
+  if (result.error) {
+    throw new Error(result.error.message);
+  }
+
+  if (!result.data) {
     throw new Error('You can only edit posts you created.');
   }
 
-  const row = data as PostRow;
+  const row = result.data as PostRow;
   const [profiles, commentCounts] = await Promise.all([
     getProfilesMap([row.author_id]),
     getCommentCounts([row.id]),
@@ -429,21 +541,45 @@ export async function getUserPosts(userId: string): Promise<Post[]> {
   }
 
   const client = requireSupabase();
-  const { data, error } = await client
+  const result = await client
     .from('posts')
-    .select(postSelect)
+    .select(postSelectWithSlug)
     .eq('author_id', userId)
     .order('created_at', { ascending: false });
 
-  if (error) {
-    throw new Error(error.message);
+  if (result.error && isMissingPostSlugError(result.error)) {
+    const fallbackResult = await client
+      .from('posts')
+      .select(postSelectWithoutSlug)
+      .eq('author_id', userId)
+      .order('created_at', { ascending: false });
+
+    if (fallbackResult.error) {
+      throw new Error(fallbackResult.error.message);
+    }
+
+    const rows = (fallbackResult.data ?? []) as PostRow[];
+    const [profiles, commentCounts] = await Promise.all([
+      getProfilesMap(rows.map((row) => row.author_id)),
+      getCommentCounts(rows.map((row) => row.id)),
+    ]);
+
+    return rows.map((row) =>
+      mapPost(row, profiles.get(row.author_id), commentCounts.get(row.id) ?? 0),
+    );
   }
 
-  const rows = (data ?? []) as PostRow[];
+  if (result.error) {
+    throw new Error(result.error.message);
+  }
+
+  const rows = (result.data ?? []) as PostRow[];
   const [profiles, commentCounts] = await Promise.all([
     getProfilesMap(rows.map((row) => row.author_id)),
     getCommentCounts(rows.map((row) => row.id)),
   ]);
 
-  return rows.map((row) => mapPost(row, profiles.get(row.author_id), commentCounts.get(row.id) ?? 0));
+  return rows.map((row) =>
+    mapPost(row, profiles.get(row.author_id), commentCounts.get(row.id) ?? 0),
+  );
 }

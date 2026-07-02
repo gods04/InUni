@@ -10,6 +10,7 @@ import { Seo } from '../components/Seo';
 import { useAuth } from '../hooks/useAuth';
 import { uploadLinkedFiles } from '../lib/fileApi';
 import { createPost } from '../lib/forumApi';
+import { getPostPath } from '../lib/postSlug';
 import { canParticipate } from '../lib/permissions';
 import { validatePost } from '../lib/validation';
 import type { FileUploadDraft } from '../types/files';
@@ -58,7 +59,7 @@ export function CreatePostPage() {
         await uploadLinkedFiles({ type: 'post', postId: post.id }, attachments, user);
       }
 
-      navigate(`/post/${post.id}`);
+      navigate(getPostPath(post));
     } catch (caughtError) {
       setError(caughtError instanceof Error ? caughtError.message : 'Could not create post.');
     } finally {

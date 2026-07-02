@@ -1,5 +1,6 @@
 import { mockComments, mockPosts } from './mockData';
 import { getDisplayName } from './format';
+import { getPostSlug, slugifyPostTitle } from './postSlug';
 import type {
   Category,
   ForumComment,
@@ -98,8 +99,13 @@ export const mockForumStore = {
     );
   },
 
-  async getPost(postId: string): Promise<Post | null> {
-    return getPostsFromStore().find((post) => post.id === postId) ?? null;
+  async getPost(postIdentifier: string): Promise<Post | null> {
+    return (
+      getPostsFromStore().find(
+        (post) =>
+          post.id === postIdentifier || getPostSlug(post) === postIdentifier,
+      ) ?? null
+    );
   },
 
   async getComments(postId: string): Promise<ForumComment[]> {
@@ -114,6 +120,7 @@ export const mockForumStore = {
     const timestamp = new Date().toISOString();
     const post: Post = {
       id: createId('post'),
+      slug: slugifyPostTitle(input.title),
       title: input.title,
       content: input.content,
       category: input.category,
@@ -148,6 +155,7 @@ export const mockForumStore = {
 
     const updatedPost: Post = {
       ...post,
+      slug: slugifyPostTitle(input.title),
       title: input.title,
       content: input.content,
       category: input.category,

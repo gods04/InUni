@@ -12,11 +12,12 @@ const mocks = vi.hoisted(() => ({
 
 const post = {
   id: 'post-1',
+  slug: 'public-question',
   title: 'Public question',
   content: 'Post content should be public.',
   category: 'Questions',
   authorId: 'author-1',
-  authorName: 'Author',
+  authorName: 'Original Poster',
   authorIsUctVerified: true,
   isAnonymous: false,
   createdAt: '2026-06-16T10:00:00.000Z',
@@ -56,7 +57,7 @@ vi.mock('../lib/fileApi', () => ({
 vi.mock('react-router-dom', async () => {
   const actual =
     await vi.importActual<typeof import('react-router-dom')>('react-router-dom');
-  return { ...actual, useParams: () => ({ id: 'post-1' }) };
+  return { ...actual, useParams: () => ({ id: 'public-question' }) };
 });
 
 describe('PostDetailPage public access', () => {
@@ -87,6 +88,8 @@ describe('PostDetailPage public access', () => {
     ).toHaveAttribute('href', '/login');
     expect(mocks.getFilesForPost).not.toHaveBeenCalled();
     expect(mocks.getFilesForComment).not.toHaveBeenCalled();
+    expect(mocks.getPost).toHaveBeenCalledWith('public-question');
+    expect(mocks.getComments).toHaveBeenCalledWith('post-1');
   });
 
   it('renders the back link as a bordered button', async () => {
@@ -147,6 +150,28 @@ describe('PostDetailPage public access', () => {
 
     expect(handbookLink).toHaveAttribute('href', longHandbookUrl);
     expect(screen.getByText('Try this handbook:')).toBeInTheDocument();
+  });
+
+  it('marks comments written by the post author', async () => {
+    mocks.getComments.mockResolvedValue([
+      {
+        ...comment,
+        authorId: 'author-1',
+        authorName: 'Original Poster',
+        content: 'I am the original poster.',
+      },
+    ]);
+
+    render(
+      <MemoryRouter>
+        <PostDetailPage />
+      </MemoryRouter>,
+    );
+
+    expect(
+      await screen.findByText('I am the original poster.'),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Author')).toBeInTheDocument();
   });
 
   it('marks a post as edited when the update timestamp changed', async () => {

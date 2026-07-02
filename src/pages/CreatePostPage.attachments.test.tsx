@@ -48,7 +48,11 @@ describe('CreatePostPage attachments', () => {
     mocks.createPost.mockReset();
     mocks.navigate.mockReset();
     mocks.uploadLinkedFiles.mockReset();
-    mocks.createPost.mockResolvedValue({ id: 'post-1' });
+    mocks.createPost.mockResolvedValue({
+      id: 'post-1',
+      slug: 'question',
+      title: 'Question',
+    });
     mocks.uploadLinkedFiles.mockResolvedValue([]);
   });
 
@@ -80,6 +84,6 @@ describe('CreatePostPage attachments', () => {
         expect.objectContaining({ id: 'user-1' }),
       ),
     );
-    expect(mocks.navigate).toHaveBeenCalledWith('/post/post-1');
+    expect(mocks.navigate).toHaveBeenCalledWith('/post/question');
   });
 });

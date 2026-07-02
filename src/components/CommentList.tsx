@@ -13,6 +13,7 @@ interface CommentListProps {
   onFileDownload?: (file: LinkedFile) => Promise<void> | void;
   onFilePreview?: (file: LinkedFile) => Promise<void> | void;
   onReport?: (target: ReportTarget) => void;
+  postAuthorId?: string;
   reportDisabled?: boolean;
   showReportActions?: boolean;
 }
@@ -23,6 +24,7 @@ export function CommentList({
   onFileDownload,
   onFilePreview,
   onReport,
+  postAuthorId,
   reportDisabled = false,
   showReportActions = true,
 }: CommentListProps) {
@@ -49,6 +51,11 @@ export function CommentList({
                 <span className="font-bold text-slate-900">
                   {comment.authorName}
                 </span>
+                {comment.authorId === postAuthorId ? (
+                  <span className="inline-flex items-center rounded-full bg-brand-50 px-2 py-0.5 text-[0.65rem] font-bold uppercase leading-none text-brand-700">
+                    Author
+                  </span>
+                ) : null}
                 {comment.authorIsUctVerified ? <UctVerifiedBadge /> : null}
                 <span className="text-slate-400">·</span>
                 <span className="text-slate-500">
@@ -58,7 +65,7 @@ export function CommentList({
             </div>
             {!showReportActions ? null : onReport ? (
               <button
-                className="text-xs font-semibold text-slate-500 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex items-center justify-center rounded-full border border-red-200 bg-panel px-2.5 py-1 text-xs font-semibold text-red-700 transition hover:bg-red-50 focus:outline-none focus:ring-4 focus:ring-red-100 disabled:cursor-not-allowed disabled:opacity-60"
                 disabled={reportDisabled}
                 onClick={() =>
                   onReport({ type: 'comment', commentId: comment.id })

@@ -3,6 +3,7 @@ import { getFileReviewCount } from './adminFileApi';
 import { getPreview } from './format';
 import { getLocalTrafficSnapshot } from './localAnalytics';
 import { getOpenReports } from './adminApi';
+import { getPostPath } from './postSlug';
 import type { ModerationReport } from './adminApi';
 import { isSupabaseConfigured, supabase } from './supabase';
 import type { ForumComment, ForumUser, Post, Profile } from '../types/forum';
@@ -113,6 +114,8 @@ function buildRecentActivity({
   profiles: Profile[];
   reports: ModerationReport[];
 }): AdminDashboardActivityItem[] {
+  const postsById = new Map(posts.map((post) => [post.id, post]));
+
   return sortRecentActivity([
     ...reports.map((report) => ({
       id: `report-${report.id}`,
@@ -136,7 +139,7 @@ function buildRecentActivity({
       title: post.title,
       detail: `${post.authorName} posted in ${post.category}`,
       createdAt: post.createdAt,
-      href: `/post/${post.id}`,
+      href: getPostPath(post),
     })),
     ...comments.map((comment) => ({
       id: `comment-${comment.id}`,
@@ -144,7 +147,9 @@ function buildRecentActivity({
       title: getPreview(comment.content),
       detail: `${comment.authorName} commented`,
       createdAt: comment.createdAt,
-      href: `/post/${comment.postId}`,
+      href: postsById.has(comment.postId)
+        ? getPostPath(postsById.get(comment.postId) as Post)
+        : `/post/${comment.postId}`,
     })),
     ...profiles.map((profile) => ({
       id: `signup-${profile.id}`,
@@ -159,6 +164,7 @@ function buildRecentActivity({
 
 interface SupabaseActivityPostRow {
   id: string;
+  slug: string | null;
   title: string;
   category: Post['category'];
   created_at: string;
@@ -250,7 +256,7 @@ async function getSupabaseMetrics(): Promise<AdminDashboardMetrics> {
     getSupabaseCount('files'),
     getRecentRows<SupabaseActivityPostRow>(
       'posts',
-      'id, title, category, created_at',
+      'id, slug, title, category, created_at',
     ),
     getRecentRows<SupabaseActivityCommentRow>(
       'comments',
@@ -288,7 +294,11 @@ async function getSupabaseMetrics(): Promise<AdminDashboardMetrics> {
       title: post.title,
       detail: `New post in ${post.category}`,
       createdAt: post.created_at,
-      href: `/post/${post.id}`,
+      href: getPostPath({
+        id: post.id,
+        slug: post.slug ?? undefined,
+        title: post.title,
+      }),
     })),
     ...recentComments.map((comment) => ({
       id: `comment-${comment.id}`,

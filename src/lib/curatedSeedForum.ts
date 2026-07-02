@@ -1,4 +1,5 @@
 import type { Category, ForumComment, Post } from '../types/forum';
+import { getPostSlug } from './postSlug';
 
 const now = Date.now();
 
@@ -447,8 +448,13 @@ export function getCuratedSeedPosts(category?: Category): Post[] {
     : curatedSeedPosts;
 }
 
-export function getCuratedSeedPost(postId: string): Post | null {
-  return curatedSeedPosts.find((post) => post.id === postId) ?? null;
+export function getCuratedSeedPost(postIdentifier: string): Post | null {
+  return (
+    curatedSeedPosts.find(
+      (post) =>
+        post.id === postIdentifier || getPostSlug(post) === postIdentifier,
+    ) ?? null
+  );
 }
 
 export function isCuratedSeedPostId(postId: string): boolean {

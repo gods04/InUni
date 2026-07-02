@@ -37,6 +37,7 @@ export interface ForumUser {
 
 export interface Post {
   id: string;
+  slug?: string;
   title: string;
   content: string;
   category: Category;

@@ -36,6 +36,7 @@ const testUser: ForumUser = {
 
 const ownPost: Post = {
   id: 'post-1',
+  slug: 'draft-handbook-question',
   title: 'Draft handbook question',
   content: 'Where should I check EBE course rules?',
   category: 'General',
@@ -109,7 +110,7 @@ describe('ProfilePage post management', () => {
     expect(await screen.findByText('Draft handbook question')).toBeInTheDocument();
     expect(
       screen.getByRole('link', { name: 'View Draft handbook question' }),
-    ).toHaveAttribute('href', '/post/post-1');
+    ).toHaveAttribute('href', '/post/draft-handbook-question');
     expect(
       screen.getByRole('button', { name: 'Edit Draft handbook question' }),
     ).toBeInTheDocument();
