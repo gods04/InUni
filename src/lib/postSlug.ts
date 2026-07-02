@@ -20,6 +20,25 @@ export function getPostSlug(post: Pick<Post, 'slug' | 'title'>): string {
   return post.slug || slugifyPostTitle(post.title);
 }
 
+export function getUniquePostSlug(
+  title: string,
+  existingSlugs: string[],
+): string {
+  const baseSlug = slugifyPostTitle(title);
+  const usedSlugs = new Set(existingSlugs);
+
+  if (!usedSlugs.has(baseSlug)) {
+    return baseSlug;
+  }
+
+  let suffix = 2;
+  while (usedSlugs.has(`${baseSlug}-${suffix}`)) {
+    suffix += 1;
+  }
+
+  return `${baseSlug}-${suffix}`;
+}
+
 export function getPostPath(post: Pick<Post, 'id' | 'slug' | 'title'>): string {
   return `/post/${getPostSlug(post)}`;
 }

@@ -5,7 +5,12 @@ import {
   isCuratedSeedPostId,
 } from './curatedSeedForum';
 import { mockForumStore } from './mockStore';
-import { getPostSlug, isUuidPostIdentifier, slugifyPostTitle } from './postSlug';
+import {
+  getPostSlug,
+  getUniquePostSlug,
+  isUuidPostIdentifier,
+  slugifyPostTitle,
+} from './postSlug';
 import { isSupabaseConfigured, supabase } from './supabase';
 import {
   isMissingAvatarPathError,
@@ -48,6 +53,12 @@ interface CommentRow {
   author_id: string;
   content: string;
   created_at: string;
+}
+
+interface PostSlugRow {
+  id: string;
+  slug: string | null;
+  title: string;
 }
 
 const publicProfileSelectWithAvatar =
@@ -222,6 +233,40 @@ async function getPostRows(category?: Category): Promise<PostRow[]> {
   return (result.data ?? []) as PostRow[];
 }
 
+async function getExistingPostSlugs(
+  title: string,
+  excludePostId?: string,
+): Promise<string[]> {
+  const client = requireSupabase();
+  const baseSlug = slugifyPostTitle(title);
+  const result = await client
+    .from('posts')
+    .select('id, slug, title')
+    .like('slug', `${baseSlug}%`);
+
+  if (result.error && isMissingPostSlugError(result.error)) {
+    return [];
+  }
+
+  if (result.error) {
+    throw new Error(result.error.message);
+  }
+
+  return ((result.data ?? []) as PostSlugRow[])
+    .filter((row) => row.id !== excludePostId)
+    .map((row) => row.slug || slugifyPostTitle(row.title));
+}
+
+async function getUniqueSlugForTitle(
+  title: string,
+  excludePostId?: string,
+): Promise<string> {
+  return getUniquePostSlug(
+    title,
+    await getExistingPostSlugs(title, excludePostId),
+  );
+}
+
 async function getPostRowById(postId: string): Promise<PostRow | null> {
   const client = requireSupabase();
   const result = await client
@@ -359,12 +404,13 @@ export async function createPost(input: NewPostInput, user: ForumUser): Promise<
   }
 
   const client = requireSupabase();
+  const slug = await getUniqueSlugForTitle(input.title);
   let result = await client
     .from('posts')
     .insert({
       author_id: user.id,
       title: input.title,
-      slug: slugifyPostTitle(input.title),
+      slug,
       content: input.content,
       category: input.category,
       is_anonymous: input.isAnonymous,
@@ -412,11 +458,12 @@ export async function updatePost(
   }
 
   const client = requireSupabase();
+  const slug = await getUniqueSlugForTitle(input.title, postId);
   let result = await client
     .from('posts')
     .update({
       title: input.title,
-      slug: slugifyPostTitle(input.title),
+      slug,
       content: input.content,
       category: input.category,
       is_anonymous: input.isAnonymous,

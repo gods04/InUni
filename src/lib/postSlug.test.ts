@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getPostPath, slugifyPostTitle } from './postSlug';
+import { getPostPath, getUniquePostSlug, slugifyPostTitle } from './postSlug';
 
 describe('post slug helpers', () => {
   it('turns a post title into a readable Google-friendly URL slug', () => {
@@ -16,5 +16,14 @@ describe('post slug helpers', () => {
         title: 'Engineering handbook: where do I check course rules?',
       }),
     ).toBe('/post/engineering-handbook-where-do-i-check-course-rules');
+  });
+
+  it('adds a numeric suffix when a post title already has the base slug', () => {
+    expect(
+      getUniquePostSlug('New UCT question', [
+        'new-uct-question',
+        'new-uct-question-2',
+      ]),
+    ).toBe('new-uct-question-3');
   });
 });

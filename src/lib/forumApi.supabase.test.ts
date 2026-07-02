@@ -40,6 +40,7 @@ function createQuery(result: QueryResult = { data: null, error: null }) {
     delete: vi.fn(() => query),
     in: vi.fn(() => query),
     insert: vi.fn(() => query),
+    like: vi.fn(() => query),
     maybeSingle: vi.fn(() => Promise.resolve(result)),
     order: vi.fn(() => query),
     select: vi.fn(() => query),
@@ -400,6 +401,10 @@ describe('forumApi Supabase boundary', () => {
   });
 
   it('creates posts against legacy databases before the slug migration is applied', async () => {
+    const existingSlugsQuery = createQuery({
+      data: null,
+      error: { code: '42703', message: 'column posts.slug does not exist' },
+    });
     const insertWithSlugQuery = createQuery({
       data: null,
       error: {
@@ -432,6 +437,7 @@ describe('forumApi Supabase boundary', () => {
     });
     const commentCountQuery = createQuery({ data: [], error: null });
     queueQueries(
+      existingSlugsQuery,
       insertWithSlugQuery,
       legacyInsertQuery,
       loadPostQuery,
@@ -466,7 +472,81 @@ describe('forumApi Supabase boundary', () => {
     });
   });
 
+  it('creates duplicate-titled posts with incrementing slug suffixes', async () => {
+    const existingSlugsQuery = createQuery({
+      data: [
+        {
+          id: 'existing-post-1',
+          slug: 'new-uct-question',
+          title: 'New UCT question',
+        },
+        {
+          id: 'existing-post-2',
+          slug: 'new-uct-question-2',
+          title: 'New UCT question',
+        },
+      ],
+      error: null,
+    });
+    const insertQuery = createQuery({
+      data: { id: 'post-3' },
+      error: null,
+    });
+    const loadPostQuery = createQuery({
+      data: {
+        ...postRow,
+        id: 'post-3',
+        slug: 'new-uct-question-3',
+        title: 'New UCT question',
+      },
+      error: null,
+    });
+    const profileQuery = createQuery({
+      data: [
+        {
+          id: 'owner-1',
+          username: 'student',
+          display_name: 'Student One',
+          avatar_path: null,
+          is_uct_verified: true,
+        },
+      ],
+      error: null,
+    });
+    const commentCountQuery = createQuery({ data: [], error: null });
+    queueQueries(
+      existingSlugsQuery,
+      insertQuery,
+      loadPostQuery,
+      profileQuery,
+      commentCountQuery,
+    );
+
+    const post = await createPost(
+      {
+        title: 'New UCT question',
+        content: 'Where should I ask?',
+        category: 'Questions',
+        isAnonymous: false,
+      },
+      user,
+    );
+
+    expect(existingSlugsQuery.like).toHaveBeenCalledWith(
+      'slug',
+      'new-uct-question%',
+    );
+    expect(insertQuery.insert).toHaveBeenCalledWith(
+      expect.objectContaining({ slug: 'new-uct-question-3' }),
+    );
+    expect(post).toMatchObject({
+      id: 'post-3',
+      slug: 'new-uct-question-3',
+    });
+  });
+
   it('updates posts through the current author boundary and maps edited time', async () => {
+    const existingSlugsQuery = createQuery({ data: [], error: null });
     const updateQuery = createQuery({
       data: {
         ...postRow,
@@ -492,7 +572,7 @@ describe('forumApi Supabase boundary', () => {
       error: null,
     });
     const commentCountQuery = createQuery({ data: [], error: null });
-    queueQueries(updateQuery, profileQuery, commentCountQuery);
+    queueQueries(existingSlugsQuery, updateQuery, profileQuery, commentCountQuery);
 
     const post = await updatePost(
       'post-1',
@@ -518,6 +598,65 @@ describe('forumApi Supabase boundary', () => {
       id: 'post-1',
       title: 'Updated title',
       updatedAt: '2026-06-16T11:00:00.000Z',
+    });
+  });
+
+  it('updates posts with a suffix when the new title collides with another post', async () => {
+    const existingSlugsQuery = createQuery({
+      data: [
+        {
+          id: 'other-post',
+          slug: 'updated-title',
+          title: 'Updated title',
+        },
+      ],
+      error: null,
+    });
+    const updateQuery = createQuery({
+      data: {
+        ...postRow,
+        author_id: 'user-1',
+        slug: 'updated-title-2',
+        title: 'Updated title',
+        content: 'Updated content',
+        category: 'Questions',
+        is_anonymous: true,
+        updated_at: '2026-06-16T11:00:00.000Z',
+      },
+      error: null,
+    });
+    const profileQuery = createQuery({
+      data: [
+        {
+          id: 'user-1',
+          username: 'orange',
+          display_name: 'orange',
+          avatar_path: null,
+          is_uct_verified: false,
+        },
+      ],
+      error: null,
+    });
+    const commentCountQuery = createQuery({ data: [], error: null });
+    queueQueries(existingSlugsQuery, updateQuery, profileQuery, commentCountQuery);
+
+    const post = await updatePost(
+      'post-1',
+      {
+        title: 'Updated title',
+        content: 'Updated content',
+        category: 'Questions',
+        isAnonymous: true,
+      },
+      user,
+    );
+
+    expect(updateQuery.update).toHaveBeenCalledWith(
+      expect.objectContaining({ slug: 'updated-title-2' }),
+    );
+    expect(post).toMatchObject({
+      id: 'post-1',
+      slug: 'updated-title-2',
     });
   });
 
