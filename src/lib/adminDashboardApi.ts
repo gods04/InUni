@@ -6,6 +6,7 @@ import { getOpenReports } from './adminApi';
 import { getPostPath } from './postSlug';
 import type { ModerationReport } from './adminApi';
 import { isSupabaseConfigured, supabase } from './supabase';
+import { isMissingPostSlugError } from './supabaseCompat';
 import type { ForumComment, ForumUser, Post, Profile } from '../types/forum';
 import type { InUniFile } from '../types/files';
 
@@ -164,7 +165,7 @@ function buildRecentActivity({
 
 interface SupabaseActivityPostRow {
   id: string;
-  slug: string | null;
+  slug?: string | null;
   title: string;
   category: Post['category'];
   created_at: string;
@@ -207,6 +208,37 @@ async function getRecentRows<T>(
   }
 
   return (data ?? []) as T[];
+}
+
+async function getRecentPostRows(): Promise<SupabaseActivityPostRow[]> {
+  const client = requireSupabase();
+  const result = await client
+    .from('posts')
+    .select('id, slug, title, category, created_at')
+    .order('created_at', { ascending: false })
+    .limit(recentActivityLimit);
+
+  if (result.error && isMissingPostSlugError(result.error)) {
+    const fallbackResult = await client
+      .from('posts')
+      .select('id, title, category, created_at')
+      .order('created_at', { ascending: false })
+      .limit(recentActivityLimit);
+
+    if (fallbackResult.error) {
+      throw new Error(
+        `Could not load dashboard activity: ${fallbackResult.error.message}`,
+      );
+    }
+
+    return (fallbackResult.data ?? []) as SupabaseActivityPostRow[];
+  }
+
+  if (result.error) {
+    throw new Error(`Could not load dashboard activity: ${result.error.message}`);
+  }
+
+  return (result.data ?? []) as SupabaseActivityPostRow[];
 }
 
 async function getSupabaseCount(
@@ -254,10 +286,7 @@ async function getSupabaseMetrics(): Promise<AdminDashboardMetrics> {
     getSupabaseCount('comments'),
     getSupabaseCount('comments', todayIso),
     getSupabaseCount('files'),
-    getRecentRows<SupabaseActivityPostRow>(
-      'posts',
-      'id, slug, title, category, created_at',
-    ),
+    getRecentPostRows(),
     getRecentRows<SupabaseActivityCommentRow>(
       'comments',
       'id, post_id, content, created_at',
