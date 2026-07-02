@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
+import { createPortal } from 'react-dom';
 import { validateReportReason } from '../lib/validation';
 import type { ReportTarget } from '../types/forum';
 
@@ -70,7 +71,7 @@ export function ReportDialog({
     }
   }
 
-  return (
+  return createPortal(
     <div
       className="fixed inset-0 z-50 grid place-items-center bg-slate-950/40 p-4 backdrop-blur-sm"
       role="presentation"
@@ -129,6 +130,7 @@ export function ReportDialog({
           </div>
         </form>
       </section>
-    </div>
+    </div>,
+    document.body,
   );
 }
