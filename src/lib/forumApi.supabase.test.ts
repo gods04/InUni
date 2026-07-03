@@ -1,5 +1,4 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { curatedSeedComments } from './curatedSeedForum';
 import {
   createComment,
   createPost,
@@ -90,10 +89,6 @@ const user: ForumUser = {
   },
 };
 
-function extractUrls(text: string): string[] {
-  return text.match(/https?:\/\/\S+/g) ?? [];
-}
-
 describe('forumApi Supabase boundary', () => {
   beforeEach(() => {
     mocks.from.mockReset();
@@ -177,227 +172,70 @@ describe('forumApi Supabase boundary', () => {
     );
   });
 
-  it('shows curated UCT seed posts when the production forum is still empty', async () => {
+  it('does not create virtual seeded posts when Supabase has no posts', async () => {
     const postsQuery = createQuery({ data: [], error: null });
     queueQueries(postsQuery);
 
     const posts = await getPosts();
 
-    expect(posts.length).toBeGreaterThan(3);
-    expect(
-      posts.find(
-        (post) =>
-          post.title ===
-          'Exam study spaces: what is actually calm late at night?',
-      ),
-    ).toMatchObject({
-      category: 'Study',
-      title: 'Exam study spaces: what is actually calm late at night?',
-      authorName: 'Maya',
-      authorIsUctVerified: false,
-    });
-    expect(posts.some((post) => post.category === 'Campus Life')).toBe(true);
-    expect(posts.some((post) => post.category === 'Questions')).toBe(true);
+    expect(posts).toEqual([]);
   });
 
-  it('keeps curated seed posts visible after real posts are created', async () => {
-    const postsQuery = createQuery({
-      data: [
-        {
-          id: 'real-post-1',
-          title: 'lonely as fuck',
-          content: 'im looking for a partner because im lonely',
-          category: 'Campus Life',
-          author_id: 'real-user-1',
-          is_anonymous: false,
-          created_at: '2026-06-27T10:00:00.000Z',
-        },
-      ],
+  it('returns no virtual details or comments for missing seed rows', async () => {
+    const postQuery = createQuery({ data: null, error: null });
+    const commentsQuery = createQuery({ data: [], error: null });
+    queueQueries(postQuery, commentsQuery);
+
+    const post = await getPost('engineering-handbook-where-do-i-check-course-rules');
+    const comments = await getComments('99999999-9999-4999-8999-999999999991');
+
+    expect(post).toBeNull();
+    expect(comments).toEqual([]);
+  });
+
+  it('creates comments on migrated seed post ids through Supabase', async () => {
+    const insertQuery = createQuery({
+      data: {
+        id: 'comment-1',
+        post_id: '99999999-9999-4999-8999-999999999991',
+        author_id: 'user-1',
+        content: 'This can be commented on now.',
+        created_at: '2026-07-03T10:00:00.000Z',
+      },
       error: null,
     });
     const profileQuery = createQuery({
       data: [
         {
-          id: 'real-user-1',
-          username: 'ur-dad',
-          display_name: 'ur dad',
+          id: 'user-1',
+          username: 'orange',
+          display_name: 'orange',
           avatar_path: null,
           is_uct_verified: false,
         },
       ],
       error: null,
     });
-    const commentCountQuery = createQuery({ data: [], error: null });
-    queueQueries(postsQuery, profileQuery, commentCountQuery);
+    queueQueries(insertQuery, profileQuery);
 
-    const posts = await getPosts();
-    const realPost = posts.find((post) => post.id === 'real-post-1');
-
-    expect(posts).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          id: 'real-post-1',
-          title: 'lonely as fuck',
-        }),
-        expect.objectContaining({
-          id: '99999999-9999-4999-8999-999999999991',
-          title: 'Engineering handbook: where do I check course rules?',
-        }),
-        expect.objectContaining({
-          id: '99999999-9999-4999-8999-999999999992',
-          title: 'Commerce handbook link for BCom and BBusSc',
-        }),
-      ]),
+    const comment = await createComment(
+      {
+        postId: '99999999-9999-4999-8999-999999999991',
+        content: 'This can be commented on now.',
+      },
+      user,
     );
-    expect(realPost).toMatchObject({
-      id: 'real-post-1',
-      authorName: 'ur dad',
-      commentCount: 0,
+
+    expect(insertQuery.insert).toHaveBeenCalledWith({
+      post_id: '99999999-9999-4999-8999-999999999991',
+      author_id: 'user-1',
+      content: 'This can be commented on now.',
     });
-  });
-
-  it('keeps curated seed authors fictional and avoids third-party source traces', async () => {
-    const postsQuery = createQuery({ data: [], error: null });
-    queueQueries(postsQuery);
-
-    const posts = await getPosts();
-    const forbiddenAuthorNames = [
-      'chenxianjian9',
-      'orange',
-      'yxxche006',
-    ];
-    const forbiddenAuthorIds = [
-      'a32e236a-a142-46c9-acab-c09a282e022a',
-      'b28fdf5b-bc1c-4d94-b111-72a44a21363c',
-      'd2efbdca-986e-4bce-a0a9-1e0b7d3cde6d',
-      '323bc38c-75d0-4f9b-aefc-466c0aa61f96',
-    ];
-    const forbiddenCopyPattern = /Source:|Sources:|Instagram|Facebook|Reddit|u\//i;
-
-    expect(posts).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ authorName: 'Maya' }),
-        expect.objectContaining({ authorName: 'Jeff' }),
-        expect.objectContaining({ authorName: 'Bob' }),
-      ]),
-    );
-    expect(
-      posts.some((post) => forbiddenAuthorNames.includes(post.authorName)),
-    ).toBe(false);
-    expect(
-      posts.some((post) => forbiddenAuthorIds.includes(post.authorId)),
-    ).toBe(false);
-    expect(posts.some((post) => forbiddenCopyPattern.test(post.content))).toBe(
-      false,
-    );
-    expect(
-      posts.flatMap((post) => extractUrls(post.content)).every((url) =>
-        url.startsWith('https://uct.ac.za/'),
-      ),
-    ).toBe(true);
-    expect(
-      posts.flatMap((post) => extractUrls(post.content)).some((url) =>
-        url.includes('/uct_ac_za/405/'),
-      ),
-    ).toBe(false);
-    expect(posts.every((post) => !post.authorIsUctVerified)).toBe(true);
-    expect(
-      curatedSeedComments.some((comment) =>
-        forbiddenAuthorIds.includes(comment.authorId),
-      ),
-    ).toBe(false);
-    expect(
-      curatedSeedComments.every((comment) => !comment.authorIsUctVerified),
-    ).toBe(true);
-  });
-
-  it('includes public UCT handbook resource posts for Engineering and Commerce', async () => {
-    const postsQuery = createQuery({ data: [], error: null });
-    queueQueries(postsQuery);
-
-    const posts = await getPosts('General');
-    const engineering = posts.find(
-      (post) =>
-        post.title === 'Engineering handbook: where do I check course rules?',
-    );
-    const commerce = posts.find(
-      (post) => post.title === 'Commerce handbook link for BCom and BBusSc',
-    );
-
-    expect(engineering).toMatchObject({
-      category: 'General',
-      authorName: 'Maya',
-      isAnonymous: false,
+    expect(comment).toMatchObject({
+      authorName: 'orange',
+      content: 'This can be commented on now.',
+      postId: '99999999-9999-4999-8999-999999999991',
     });
-    expect(engineering?.content).toContain(
-      'https://uct.ac.za/sites/default/files/media/documents/2026-ebe-handbook-7a-final-web.pdf',
-    );
-    expect(engineering?.content).toContain(
-      'https://uct.ac.za/students/prospective-students/undergraduate-prospectus',
-    );
-
-    expect(commerce).toMatchObject({
-      category: 'General',
-      authorName: 'Jeff',
-      isAnonymous: false,
-    });
-    expect(commerce?.content).toContain(
-      'https://uct.ac.za/sites/default/files/media/documents/2026-commerce-handbook-6a-final-web.pdf',
-    );
-    expect(commerce?.content).toContain(
-      'https://uct.ac.za/students/prospective-students/undergraduate-prospectus',
-    );
-  });
-
-  it('filters curated seed posts by category when the production forum is empty', async () => {
-    const postsQuery = createQuery({ data: [], error: null });
-    queueQueries(postsQuery);
-
-    const posts = await getPosts('Questions');
-
-    expect(posts.length).toBeGreaterThan(0);
-    expect(posts.every((post) => post.category === 'Questions')).toBe(true);
-  });
-
-  it('opens curated seed post details and comments when the database has no matching row', async () => {
-    const postQuery = createQuery({ data: null, error: null });
-    const commentsQuery = createQuery({ data: [], error: null });
-    queueQueries(postQuery, commentsQuery);
-
-    const post = await getPost('11111111-1111-4111-8111-111111111111');
-    const comments = await getComments('11111111-1111-4111-8111-111111111111');
-
-    expect(post).toMatchObject({
-      id: '11111111-1111-4111-8111-111111111111',
-      title: 'Exam study spaces: what is actually calm late at night?',
-      commentCount: 2,
-    });
-    expect(comments).toHaveLength(2);
-    expect(comments[0]).toMatchObject({
-      authorName: 'Lena',
-      content: expect.stringContaining('Baxter'),
-    });
-    expect(
-      comments.some((comment) =>
-        ['chenxianjian9', 'orange', 'yxxche006'].includes(comment.authorName),
-      ),
-    ).toBe(false);
-  });
-
-  it('rejects comments on curated seed posts before calling Supabase', async () => {
-    await expect(
-      createComment(
-        {
-          postId: '99999999-9999-4999-8999-999999999991',
-          content: 'you',
-        },
-        user,
-      ),
-    ).rejects.toThrow(
-      'Starter posts are read-only. Create a new post to continue this conversation.',
-    );
-
-    expect(mocks.from).not.toHaveBeenCalled();
   });
 
   it('creates posts against legacy databases before the slug migration is applied', async () => {

@@ -1,9 +1,3 @@
-import {
-  getCuratedSeedComments,
-  getCuratedSeedPost,
-  getCuratedSeedPosts,
-  isCuratedSeedPostId,
-} from './curatedSeedForum';
 import { mockForumStore } from './mockStore';
 import {
   getPostSlug,
@@ -176,18 +170,6 @@ function mapPost(row: PostRow, profile: ProfileRow | undefined, commentCount: nu
   };
 }
 
-function mergeWithCuratedSeedPosts(posts: Post[], category?: Category): Post[] {
-  const postIds = new Set(posts.map((post) => post.id));
-  const seedPosts = getCuratedSeedPosts(category).filter(
-    (post) => !postIds.has(post.id),
-  );
-
-  return [...posts, ...seedPosts].sort(
-    (left, right) =>
-      new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime(),
-  );
-}
-
 function mapComment(row: CommentRow, profile: ProfileRow | undefined): ForumComment {
   return {
     id: row.id,
@@ -303,10 +285,6 @@ export async function getPosts(category?: Category): Promise<Post[]> {
 
   const rows = await getPostRows(category);
 
-  if (rows.length === 0) {
-    return getCuratedSeedPosts(category);
-  }
-
   const [profiles, commentCounts] = await Promise.all([
     getProfilesMap(rows.map((row) => row.author_id)),
     getCommentCounts(rows.map((row) => row.id)),
@@ -316,7 +294,7 @@ export async function getPosts(category?: Category): Promise<Post[]> {
     mapPost(row, profiles.get(row.author_id), commentCounts.get(row.id) ?? 0),
   );
 
-  return mergeWithCuratedSeedPosts(posts, category);
+  return posts;
 }
 
 export async function getPost(postIdentifier: string): Promise<Post | null> {
@@ -334,10 +312,7 @@ export async function getPost(postIdentifier: string): Promise<Post | null> {
 
     if (result.error && isMissingPostSlugError(result.error)) {
       const posts = await getPosts();
-      return (
-        posts.find((post) => getPostSlug(post) === postIdentifier) ??
-        getCuratedSeedPost(postIdentifier)
-      );
+      return posts.find((post) => getPostSlug(post) === postIdentifier) ?? null;
     }
 
     if (result.error) {
@@ -345,7 +320,7 @@ export async function getPost(postIdentifier: string): Promise<Post | null> {
     }
 
     if (!result.data) {
-      return getCuratedSeedPost(postIdentifier);
+      return null;
     }
 
     const row = result.data as PostRow;
@@ -360,7 +335,7 @@ export async function getPost(postIdentifier: string): Promise<Post | null> {
   const row = await getPostRowById(postIdentifier);
 
   if (!row) {
-    return getCuratedSeedPost(postIdentifier);
+    return null;
   }
 
   const [profiles, commentCounts] = await Promise.all([
@@ -388,10 +363,6 @@ export async function getComments(postId: string): Promise<ForumComment[]> {
   }
 
   const rows = (data ?? []) as CommentRow[];
-
-  if (rows.length === 0 && getCuratedSeedPost(postId)) {
-    return getCuratedSeedComments(postId);
-  }
 
   const profiles = await getProfilesMap(rows.map((row) => row.author_id));
 
@@ -453,10 +424,6 @@ export async function updatePost(
     return mockForumStore.updatePost(postId, input, user);
   }
 
-  if (isCuratedSeedPostId(postId)) {
-    throw new Error('Starter posts are read-only.');
-  }
-
   const client = requireSupabase();
   const slug = await getUniqueSlugForTitle(input.title, postId);
   let result = await client
@@ -510,10 +477,6 @@ export async function deletePost(postId: string, user: ForumUser): Promise<void>
     return mockForumStore.deletePost(postId, user);
   }
 
-  if (isCuratedSeedPostId(postId)) {
-    throw new Error('Starter posts are read-only.');
-  }
-
   const client = requireSupabase();
   const { error } = await client
     .from('posts')
@@ -529,12 +492,6 @@ export async function deletePost(postId: string, user: ForumUser): Promise<void>
 export async function createComment(input: NewCommentInput, user: ForumUser): Promise<ForumComment> {
   if (!isSupabaseConfigured) {
     return mockForumStore.createComment(input, user);
-  }
-
-  if (isCuratedSeedPostId(input.postId)) {
-    throw new Error(
-      'Starter posts are read-only. Create a new post to continue this conversation.',
-    );
   }
 
   const client = requireSupabase();

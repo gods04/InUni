@@ -260,7 +260,7 @@ describe('PostCard', () => {
     expect(mocks.createSignedPreviewUrl).not.toHaveBeenCalled();
   });
 
-  it('marks a post as edited when the update timestamp changed', () => {
+  it('does not show an edited badge when the update timestamp changed', () => {
     render(
       <MemoryRouter>
         <PostCard
@@ -273,6 +273,6 @@ describe('PostCard', () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByText('Edited')).toBeInTheDocument();
+    expect(screen.queryByText('Edited')).not.toBeInTheDocument();
   });
 });

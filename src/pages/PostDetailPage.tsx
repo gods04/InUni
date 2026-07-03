@@ -25,10 +25,8 @@ import {
   getComments,
   getPost,
 } from '../lib/forumApi';
-import { isCuratedSeedPostId } from '../lib/curatedSeedForum';
 import { formatRelativeTime } from '../lib/format';
 import { getPostPath } from '../lib/postSlug';
-import { isPostEdited } from '../lib/postDisplay';
 import { canParticipate } from '../lib/permissions';
 import { validateComment } from '../lib/validation';
 import type { FileUploadDraft, LinkedFile } from '../types/files';
@@ -230,7 +228,6 @@ export function PostDetailPage() {
     );
   }
 
-  const isStarterPost = isCuratedSeedPostId(post.id);
   const postPath = getPostPath(post);
 
   return (
@@ -263,9 +260,6 @@ export function PostDetailPage() {
           <span className="badge bg-brand-50 text-brand-700">{post.category}</span>
           {post.isAnonymous ? <span className="badge bg-slate-100 text-slate-700">Anonymous</span> : null}
           <span className="text-xs font-semibold text-slate-500">{formatRelativeTime(post.createdAt)}</span>
-          {isPostEdited(post) ? (
-            <span className="badge bg-slate-100 text-slate-600">Edited</span>
-          ) : null}
         </div>
 
         <h1 className="mt-4 break-words text-3xl font-semibold tracking-normal text-ink">{post.title}</h1>
@@ -298,7 +292,7 @@ export function PostDetailPage() {
 
         <div className="mt-6 border-t border-slate-100 pt-5">
           <div className="flex flex-wrap items-center gap-3">
-            {isStarterPost ? null : user ? (
+            {user ? (
               <button
                 className="danger-button"
                 onClick={() =>
@@ -337,25 +331,14 @@ export function PostDetailPage() {
           filesByCommentId={commentFiles}
           onFileDownload={(file) => openFile(file, 'download')}
           onFilePreview={(file) => openFile(file, 'preview')}
-          onReport={user && !isStarterPost ? openReport : undefined}
+          onReport={user ? openReport : undefined}
           postAuthorId={post.authorId}
           reportDisabled={Boolean(user && !canParticipate(user.profile))}
-          showReportActions={!isStarterPost}
+          showReportActions
         />
 
         {user && !canParticipate(user.profile) ? (
           <BanNotice reason={user.profile.banReason} />
-        ) : isStarterPost ? (
-          <div className="panel grid gap-3 p-4 sm:p-5">
-            <h3 className="text-base font-semibold text-ink">Add a comment</h3>
-            <p className="text-sm leading-6 text-slate-600">
-              Starter posts are read-only. Create a new post if you want to
-              continue this conversation.
-            </p>
-            <Link className="primary-button w-fit" to="/create">
-              Create a new post
-            </Link>
-          </div>
         ) : (
           <form className="panel grid gap-4 p-4 sm:p-5" onSubmit={handleSubmit}>
             <label className="grid gap-2">

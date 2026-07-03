@@ -21,7 +21,6 @@ import { deletePost, getUserPosts, updatePost } from '../lib/forumApi';
 import { getPreview } from '../lib/format';
 import { getPostPath } from '../lib/postSlug';
 import { canParticipate } from '../lib/permissions';
-import { isPostEdited } from '../lib/postDisplay';
 import { validatePost } from '../lib/validation';
 import type { LinkedFile } from '../types/files';
 import { categories, type Category, type Post, type UpdatePostInput } from '../types/forum';
@@ -511,11 +510,6 @@ export function ProfilePage() {
                           </span>
                         ) : null}
                         <span>{new Date(post.createdAt).toLocaleDateString()}</span>
-                        {isPostEdited(post) ? (
-                          <span className="badge bg-slate-100 text-slate-600">
-                            Edited
-                          </span>
-                        ) : null}
                       </div>
 
                       <h3 className="mt-3 break-words text-xl font-semibold tracking-normal text-ink">

@@ -6,7 +6,6 @@ import { classifyFileType } from '../lib/fileValidation';
 import { formatRelativeTime, getPreview } from '../lib/format';
 import { createReport } from '../lib/forumApi';
 import { getPostPath } from '../lib/postSlug';
-import { isPostEdited } from '../lib/postDisplay';
 import { canParticipate } from '../lib/permissions';
 import type { LinkedFile } from '../types/files';
 import type { Category, Post, ReportTarget } from '../types/forum';
@@ -139,9 +138,6 @@ export function PostCard({ post }: { post: Post }) {
           ) : null}
           <span aria-hidden="true" className="text-slate-400">·</span>
           <span>{formatRelativeTime(post.createdAt)}</span>
-          {isPostEdited(post) ? (
-            <span className="badge bg-slate-100 text-slate-600">Edited</span>
-          ) : null}
         </div>
 
         <Link to={postPath} className="group block min-w-0">

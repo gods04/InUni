@@ -174,7 +174,7 @@ describe('PostDetailPage public access', () => {
     expect(screen.getByText('Author')).toBeInTheDocument();
   });
 
-  it('marks a post as edited when the update timestamp changed', async () => {
+  it('does not show an edited badge when the update timestamp changed', async () => {
     mocks.getPost.mockResolvedValue({
       ...post,
       createdAt: '2026-06-16T10:00:00.000Z',
@@ -187,6 +187,7 @@ describe('PostDetailPage public access', () => {
       </MemoryRouter>,
     );
 
-    expect(await screen.findByText('Edited')).toBeInTheDocument();
+    expect(await screen.findByText('Post content should be public.')).toBeInTheDocument();
+    expect(screen.queryByText('Edited')).not.toBeInTheDocument();
   });
 });

@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { PostDetailPage } from './PostDetailPage';
@@ -32,9 +33,9 @@ const user = {
 const seedPost = {
   id: seedPostId,
   title: 'Engineering handbook: where do I check course rules?',
-  content: 'Starter post content.',
+  content: 'Seeded post content.',
   category: 'General',
-  authorId: 'seed-author-maya',
+  authorId: '70000000-0000-4000-8000-000000000001',
   authorName: 'Maya',
   authorIsUctVerified: false,
   isAnonymous: false,
@@ -45,8 +46,8 @@ const seedPost = {
 const seedComment = {
   id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb2',
   postId: seedPostId,
-  authorId: 'seed-author-sam',
-  authorName: 'Sam',
+  authorId: 'student-2',
+  authorName: 'Student Two',
   authorIsUctVerified: false,
   content: 'Also check prerequisite chains before choosing electives.',
   createdAt: '2026-06-27T10:30:00.000Z',
@@ -75,41 +76,47 @@ vi.mock('react-router-dom', async () => {
   return { ...actual, useParams: () => ({ id: seedPostId }) };
 });
 
-describe('PostDetailPage starter posts', () => {
+describe('PostDetailPage seeded posts', () => {
   beforeEach(() => {
     Object.values(mocks).forEach((mock) => mock.mockReset());
     mocks.getPost.mockResolvedValue(seedPost);
     mocks.getComments.mockResolvedValue([seedComment]);
     mocks.getFilesForPost.mockResolvedValue([]);
     mocks.getFilesForComment.mockResolvedValue([]);
+    mocks.createComment.mockResolvedValue({
+      id: 'comment-new',
+      postId: seedPostId,
+      authorId: 'user-1',
+      authorName: 'orange',
+      authorIsUctVerified: false,
+      content: 'Thanks, this helps.',
+      createdAt: '2026-07-03T10:00:00.000Z',
+    });
   });
 
-  it('shows a read-only state instead of a broken comment form', async () => {
+  it('treats seeded real posts like normal posts that can receive comments', async () => {
+    const userAction = userEvent.setup();
+
     render(
       <MemoryRouter>
         <PostDetailPage />
       </MemoryRouter>,
     );
 
-    expect(await screen.findByText('Starter post content.')).toBeInTheDocument();
-    expect(
-      screen.getByText(
-        'Starter posts are read-only. Create a new post if you want to continue this conversation.',
-      ),
-    ).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Create a new post' })).toHaveAttribute(
-      'href',
-      '/create',
+    expect(await screen.findByText('Seeded post content.')).toBeInTheDocument();
+    expect(screen.queryByText(/read-only/i)).not.toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: 'Report' }).length).toBeGreaterThan(0);
+
+    await userAction.type(
+      screen.getByPlaceholderText('Write a helpful reply...'),
+      'Thanks, this helps.',
     );
-    expect(
-      screen.queryByRole('button', { name: 'Post comment' }),
-    ).not.toBeInTheDocument();
-    expect(
-      screen.queryByPlaceholderText('Write a helpful reply...'),
-    ).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Report' })).not.toBeInTheDocument();
-    expect(
-      screen.queryByRole('link', { name: 'Log in to report' }),
-    ).not.toBeInTheDocument();
+    await userAction.click(screen.getByRole('button', { name: 'Post comment' }));
+
+    expect(mocks.createComment).toHaveBeenCalledWith(
+      { postId: seedPostId, content: 'Thanks, this helps.' },
+      user,
+    );
+    expect(await screen.findByText('Thanks, this helps.')).toBeInTheDocument();
   });
 });
