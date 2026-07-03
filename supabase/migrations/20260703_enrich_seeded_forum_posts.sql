@@ -1,192 +1,8 @@
--- Seed useful forum discussions as normal posts.
--- Safe to run on an existing InUni Supabase project, even if the post-slug
--- migration has not been applied yet. These posts use fixed seed-owner accounts
--- so they do not appear to be posted by the site admin. No fake comments are
--- inserted.
-
-create extension if not exists "pgcrypto";
-
-alter table public.posts
-add column if not exists slug text;
-
-alter table public.posts
-drop constraint if exists posts_slug_key;
-
-drop index if exists public.posts_slug_key;
-
-with normalized as (
-  select
-    id,
-    coalesce(
-      nullif(
-        trim(
-          both '-' from regexp_replace(lower(title), '[^a-z0-9]+', '-', 'g')
-        ),
-        ''
-      ),
-      'post'
-    ) as base_slug,
-    row_number() over (
-      partition by coalesce(
-        nullif(
-          trim(
-            both '-' from regexp_replace(lower(title), '[^a-z0-9]+', '-', 'g')
-          ),
-          ''
-        ),
-        'post'
-      )
-      order by created_at, id
-    ) as slug_rank
-  from public.posts
-)
-update public.posts
-set slug = case
-  when normalized.slug_rank = 1 then normalized.base_slug
-  else normalized.base_slug || '-' || normalized.slug_rank::text
-end
-from normalized
-where public.posts.id = normalized.id;
-
-alter table public.posts
-alter column slug set not null;
-
-alter table public.posts
-drop constraint if exists posts_slug_check;
-
-alter table public.posts
-add constraint posts_slug_check
-check (slug ~ '^[a-z0-9]+(-[a-z0-9]+)*$');
-
-alter table public.posts
-add constraint posts_slug_key unique (slug);
-
-with seed_owners (
-  id,
-  email,
-  username,
-  display_name
-) as (
-  values
-    (
-      '70000000-0000-4000-8000-000000000001'::uuid,
-      'seed-maya@inuni.local',
-      'seed_maya',
-      'Maya'
-    ),
-    (
-      '70000000-0000-4000-8000-000000000002'::uuid,
-      'seed-jeff@inuni.local',
-      'seed_jeff',
-      'Jeff'
-    ),
-    (
-      '70000000-0000-4000-8000-000000000003'::uuid,
-      'seed-bob@inuni.local',
-      'seed_bob',
-      'Bob'
-    ),
-    (
-      '70000000-0000-4000-8000-000000000004'::uuid,
-      'seed-priya@inuni.local',
-      'seed_priya',
-      'Priya'
-    ),
-    (
-      '70000000-0000-4000-8000-000000000005'::uuid,
-      'seed-lena@inuni.local',
-      'seed_lena',
-      'Lena'
-    ),
-    (
-      '70000000-0000-4000-8000-000000000006'::uuid,
-      'seed-sam@inuni.local',
-      'seed_sam',
-      'Sam'
-    ),
-    (
-      '70000000-0000-4000-8000-000000000007'::uuid,
-      'seed-noah@inuni.local',
-      'seed_noah',
-      'Noah'
-    )
-)
-insert into auth.users (
-  id,
-  aud,
-  role,
-  email,
-  encrypted_password,
-  email_confirmed_at,
-  raw_app_meta_data,
-  raw_user_meta_data,
-  created_at,
-  updated_at
-)
-select
-  seed_owners.id,
-  'authenticated',
-  'authenticated',
-  seed_owners.email,
-  crypt(gen_random_uuid()::text, gen_salt('bf')),
-  now(),
-  '{"provider":"email","providers":["email"]}'::jsonb,
-  jsonb_build_object(
-    'username',
-    seed_owners.username,
-    'display_name',
-    seed_owners.display_name
-  ),
-  now(),
-  now()
-from seed_owners
-on conflict (id) do update
-set
-  raw_user_meta_data = excluded.raw_user_meta_data,
-  updated_at = now();
-
-with seed_owners (
-  id,
-  username,
-  display_name
-) as (
-  values
-    ('70000000-0000-4000-8000-000000000001'::uuid, 'seed_maya', 'Maya'),
-    ('70000000-0000-4000-8000-000000000002'::uuid, 'seed_jeff', 'Jeff'),
-    ('70000000-0000-4000-8000-000000000003'::uuid, 'seed_bob', 'Bob'),
-    ('70000000-0000-4000-8000-000000000004'::uuid, 'seed_priya', 'Priya'),
-    ('70000000-0000-4000-8000-000000000005'::uuid, 'seed_lena', 'Lena'),
-    ('70000000-0000-4000-8000-000000000006'::uuid, 'seed_sam', 'Sam'),
-    ('70000000-0000-4000-8000-000000000007'::uuid, 'seed_noah', 'Noah')
-)
-insert into public.profiles (
-  id,
-  username,
-  display_name,
-  is_uct_verified,
-  role,
-  is_banned
-)
-select
-  seed_owners.id,
-  seed_owners.username,
-  seed_owners.display_name,
-  false,
-  'student',
-  false
-from seed_owners
-on conflict (id) do update
-set
-  username = excluded.username,
-  display_name = excluded.display_name,
-  is_uct_verified = false,
-  role = 'student',
-  is_banned = false,
-  ban_reason = null;
+-- Replace thin seeded post prompts with useful UCT-specific post bodies.
+-- Run this on the existing Supabase project after 20260703_seed_useful_forum_posts.sql.
 
 with seed_posts (
   id,
-  author_id,
   title,
   slug,
   category,
@@ -196,7 +12,6 @@ with seed_posts (
   values
     (
       '99999999-9999-4999-8999-999999999991'::uuid,
-      '70000000-0000-4000-8000-000000000001'::uuid,
       'Engineering handbook: where do I check course rules?',
       'engineering-handbook-where-do-i-check-course-rules',
       'General',
@@ -213,7 +28,6 @@ with seed_posts (
     ),
     (
       '99999999-9999-4999-8999-999999999992'::uuid,
-      '70000000-0000-4000-8000-000000000002'::uuid,
       'Commerce handbook link for BCom and BBusSc',
       'commerce-handbook-link-for-bcom-and-bbussc',
       'General',
@@ -230,7 +44,6 @@ with seed_posts (
     ),
     (
       '99999999-9999-4999-8999-999999999993'::uuid,
-      '70000000-0000-4000-8000-000000000003'::uuid,
       'Open Day planning: which faculty talks are worth prioritising?',
       'open-day-planning-which-faculty-talks-are-worth-prioritising',
       'Questions',
@@ -247,7 +60,6 @@ with seed_posts (
     ),
     (
       '99999999-9999-4999-8999-999999999994'::uuid,
-      '70000000-0000-4000-8000-000000000004'::uuid,
       'Club and society events: what is actually beginner-friendly?',
       'club-and-society-events-what-is-actually-beginner-friendly',
       'Campus Life',
@@ -267,7 +79,6 @@ with seed_posts (
     ),
     (
       '11111111-1111-4111-8111-111111111111'::uuid,
-      '70000000-0000-4000-8000-000000000001'::uuid,
       'Exam study spaces: what is actually calm late at night?',
       'exam-study-spaces-what-is-actually-calm-late-at-night',
       'Study',
@@ -287,7 +98,6 @@ with seed_posts (
     ),
     (
       '22222222-2222-4222-8222-222222222222'::uuid,
-      '70000000-0000-4000-8000-000000000002'::uuid,
       'Late-night safety checklist before leaving campus',
       'late-night-safety-checklist-before-leaving-campus',
       'Campus Life',
@@ -304,7 +114,6 @@ with seed_posts (
     ),
     (
       '33333333-3333-4333-8333-333333333333'::uuid,
-      '70000000-0000-4000-8000-000000000003'::uuid,
       'Has the UCT Shuttle app been reliable for ETAs?',
       'has-the-uct-shuttle-app-been-reliable-for-etas',
       'Questions',
@@ -321,7 +130,6 @@ with seed_posts (
     ),
     (
       '44444444-4444-4444-8444-444444444444'::uuid,
-      '70000000-0000-4000-8000-000000000005'::uuid,
       'Writing Centre before essay deadlines: worth it?',
       'writing-centre-before-essay-deadlines-worth-it',
       'Study',
@@ -339,7 +147,6 @@ with seed_posts (
     ),
     (
       '55555555-5555-4555-8555-555555555555'::uuid,
-      '70000000-0000-4000-8000-000000000004'::uuid,
       'Student Wellness: what is the fastest way to book help?',
       'student-wellness-what-is-the-fastest-way-to-book-help',
       'Questions',
@@ -359,7 +166,6 @@ with seed_posts (
     ),
     (
       '66666666-6666-4666-8666-666666666666'::uuid,
-      '70000000-0000-4000-8000-000000000006'::uuid,
       'Mini exam-day checklist for campus',
       'mini-exam-day-checklist-for-campus',
       'General',
@@ -377,7 +183,6 @@ with seed_posts (
     ),
     (
       '77777777-7777-4777-8777-777777777777'::uuid,
-      '70000000-0000-4000-8000-000000000007'::uuid,
       'Lost and found: what details help people return items?',
       'lost-and-found-what-details-help-people-return-items',
       'Lost & Found',
@@ -395,7 +200,6 @@ with seed_posts (
     ),
     (
       '88888888-8888-4888-8888-888888888888'::uuid,
-      '70000000-0000-4000-8000-000000000001'::uuid,
       'Exam reset advice: how do you recover before the next paper?',
       'exam-reset-advice-how-do-you-recover-before-the-next-paper',
       'Confessions',
@@ -413,29 +217,12 @@ with seed_posts (
       false
     )
 )
-insert into public.posts (
-  id,
-  author_id,
-  title,
-  slug,
-  content,
-  category,
-  is_anonymous
-)
-select
-  seed_posts.id,
-  seed_posts.author_id,
-  seed_posts.title,
-  seed_posts.slug,
-  seed_posts.content,
-  seed_posts.category,
-  seed_posts.is_anonymous
-from seed_posts
-on conflict (id) do update
+update public.posts
 set
-  author_id = excluded.author_id,
-  title = excluded.title,
-  slug = excluded.slug,
-  content = excluded.content,
-  category = excluded.category,
-  is_anonymous = excluded.is_anonymous;
+  title = seed_posts.title,
+  slug = seed_posts.slug,
+  category = seed_posts.category,
+  content = seed_posts.content,
+  is_anonymous = seed_posts.is_anonymous
+from seed_posts
+where public.posts.id = seed_posts.id;
