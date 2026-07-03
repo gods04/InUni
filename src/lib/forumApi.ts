@@ -55,6 +55,16 @@ interface PostSlugRow {
   title: string;
 }
 
+interface SupabaseMutationError {
+  code?: string;
+  message?: string;
+}
+
+interface PostMutationResult {
+  data: PostRow | null;
+  error: SupabaseMutationError | null;
+}
+
 const publicProfileSelectWithAvatar =
   'id, username, display_name, avatar_path, is_uct_verified';
 const publicProfileSelectWithoutAvatar =
@@ -90,6 +100,22 @@ function getAvatarUrl(path: string | null | undefined): string | null {
 
 function normalizeCategory(category: string): Category {
   return category === 'Study' ? 'Academics' : (category as Category);
+}
+
+function getStoredCategory(category: Category, useLegacyAcademics = false): string {
+  return useLegacyAcademics && category === 'Academics' ? 'Study' : category;
+}
+
+function isLegacyAcademicsCategoryError(
+  error: SupabaseMutationError | null,
+  category: Category,
+): boolean {
+  if (category !== 'Academics' || !error) return false;
+
+  return (
+    error.code === '23514' ||
+    (error.message ?? '').includes('posts_category_check')
+  );
 }
 
 async function getProfilesMap(userIds: string[]): Promise<Map<string, ProfileRow>> {
@@ -380,31 +406,32 @@ export async function createPost(input: NewPostInput, user: ForumUser): Promise<
 
   const client = requireSupabase();
   const slug = await getUniqueSlugForTitle(input.title);
-  let result = await client
-    .from('posts')
-    .insert({
+
+  async function insertPost(includeSlug: boolean, useLegacyAcademics = false) {
+    const payload = {
       author_id: user.id,
       title: input.title,
-      slug,
       content: input.content,
-      category: input.category,
+      category: getStoredCategory(input.category, useLegacyAcademics),
       is_anonymous: input.isAnonymous,
-    })
-    .select('id')
-    .single();
+      ...(includeSlug ? { slug } : {}),
+    };
+
+    return client.from('posts').insert(payload).select('id').single();
+  }
+
+  let result = await insertPost(true);
+
+  if (isLegacyAcademicsCategoryError(result.error, input.category)) {
+    result = await insertPost(true, true);
+  }
 
   if (result.error && isMissingPostSlugError(result.error)) {
-    result = await client
-      .from('posts')
-      .insert({
-        author_id: user.id,
-        title: input.title,
-        content: input.content,
-        category: input.category,
-        is_anonymous: input.isAnonymous,
-      })
-      .select('id')
-      .single();
+    result = await insertPost(false);
+
+    if (isLegacyAcademicsCategoryError(result.error, input.category)) {
+      result = await insertPost(false, true);
+    }
   }
 
   if (result.error) {
@@ -430,33 +457,47 @@ export async function updatePost(
 
   const client = requireSupabase();
   const slug = await getUniqueSlugForTitle(input.title, postId);
-  let result = await client
-    .from('posts')
-    .update({
+
+  async function updatePostRow(
+    includeSlug: boolean,
+    useLegacyAcademics = false,
+  ): Promise<PostMutationResult> {
+    const payload = {
       title: input.title,
-      slug,
       content: input.content,
-      category: input.category,
+      category: getStoredCategory(input.category, useLegacyAcademics),
       is_anonymous: input.isAnonymous,
-    })
-    .eq('id', postId)
-    .eq('author_id', user.id)
-    .select(postSelect)
-    .maybeSingle();
+      ...(includeSlug ? { slug } : {}),
+    };
+
+    const query = client
+      .from('posts')
+      .update(payload)
+      .eq('id', postId)
+      .eq('author_id', user.id);
+
+    const result = includeSlug
+      ? await query.select(postSelect).maybeSingle()
+      : await query.select(postSelectWithoutSlug).maybeSingle();
+
+    return {
+      data: (result.data as PostRow | null) ?? null,
+      error: result.error,
+    };
+  }
+
+  let result = await updatePostRow(true);
+
+  if (isLegacyAcademicsCategoryError(result.error, input.category)) {
+    result = await updatePostRow(true, true);
+  }
 
   if (result.error && isMissingPostSlugError(result.error)) {
-    result = await client
-      .from('posts')
-      .update({
-        title: input.title,
-        content: input.content,
-        category: input.category,
-        is_anonymous: input.isAnonymous,
-      })
-      .eq('id', postId)
-      .eq('author_id', user.id)
-      .select(postSelectWithoutSlug)
-      .maybeSingle();
+    result = await updatePostRow(false);
+
+    if (isLegacyAcademicsCategoryError(result.error, input.category)) {
+      result = await updatePostRow(false, true);
+    }
   }
 
   if (result.error) {
@@ -467,7 +508,7 @@ export async function updatePost(
     throw new Error('You can only edit posts you created.');
   }
 
-  const row = result.data as PostRow;
+  const row = result.data;
   const [profiles, commentCounts] = await Promise.all([
     getProfilesMap([row.author_id]),
     getCommentCounts([row.id]),

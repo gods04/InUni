@@ -311,6 +311,74 @@ describe('forumApi Supabase boundary', () => {
     });
   });
 
+  it('creates academic posts against databases before the category migration is applied', async () => {
+    const existingSlugsQuery = createQuery({ data: [], error: null });
+    const insertAcademicsQuery = createQuery({
+      data: null,
+      error: {
+        code: '23514',
+        message:
+          'new row for relation "posts" violates check constraint "posts_category_check"',
+      },
+    });
+    const insertStudyQuery = createQuery({
+      data: { id: 'post-1' },
+      error: null,
+    });
+    const loadPostQuery = createQuery({
+      data: {
+        ...postRow,
+        id: 'post-1',
+        slug: 'old-database-academic-post',
+        title: 'Old database academic post',
+        category: 'Study',
+      },
+      error: null,
+    });
+    const profileQuery = createQuery({
+      data: [
+        {
+          id: 'owner-1',
+          username: 'student',
+          display_name: 'Student One',
+          avatar_path: null,
+          is_uct_verified: true,
+        },
+      ],
+      error: null,
+    });
+    const commentCountQuery = createQuery({ data: [], error: null });
+    queueQueries(
+      existingSlugsQuery,
+      insertAcademicsQuery,
+      insertStudyQuery,
+      loadPostQuery,
+      profileQuery,
+      commentCountQuery,
+    );
+
+    const post = await createPost(
+      {
+        title: 'Old database academic post',
+        content: 'Will this still publish?',
+        category: 'Academics',
+        isAnonymous: false,
+      },
+      user,
+    );
+
+    expect(insertAcademicsQuery.insert).toHaveBeenCalledWith(
+      expect.objectContaining({ category: 'Academics' }),
+    );
+    expect(insertStudyQuery.insert).toHaveBeenCalledWith(
+      expect.objectContaining({ category: 'Study' }),
+    );
+    expect(post).toMatchObject({
+      category: 'Academics',
+      title: 'Old database academic post',
+    });
+  });
+
   it('creates duplicate-titled posts with incrementing slug suffixes', async () => {
     const existingSlugsQuery = createQuery({
       data: [
