@@ -22,7 +22,7 @@ const post = {
   id: 'post-1',
   title: 'UCT study spaces',
   content: 'Where can we study after hours?',
-  category: 'Study' as const,
+  category: 'Academics' as const,
   authorId: 'user-1',
   authorName: 'Amahle',
   authorAvatarUrl: 'https://example.com/avatar.png',

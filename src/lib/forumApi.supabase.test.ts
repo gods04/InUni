@@ -66,7 +66,7 @@ const postRow = {
   id: 'post-1',
   title: 'Study plan',
   content: 'How are you preparing?',
-  category: 'academics',
+  category: 'Study',
   author_id: 'owner-1',
   is_anonymous: false,
   created_at: '2026-06-16T10:00:00.000Z',
@@ -126,6 +126,7 @@ describe('forumApi Supabase boundary', () => {
       authorAvatarUrl: null,
       authorIsUctVerified: true,
       authorName: 'Student One',
+      category: 'Academics',
       commentCount: 0,
       title: 'Study plan',
     });

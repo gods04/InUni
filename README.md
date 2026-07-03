@@ -22,7 +22,7 @@ React, Vite, TypeScript, Tailwind CSS, React Router, and Supabase.
 - Supabase Row Level Security for public reading and protected participation
 - Browser-based demo mode when Supabase is not configured
 
-The six categories are Study, Campus Life, Questions, Lost & Found,
+The six categories are Academics, Campus Life, Questions, Lost & Found,
 Confessions, and General.
 
 ## Deferred roadmap

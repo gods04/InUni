@@ -54,7 +54,7 @@ create table public.posts (
     check (char_length(trim(content)) between 1 and 20000),
   category text not null check (
     category in (
-      'Study',
+      'Academics',
       'Campus Life',
       'Questions',
       'Lost & Found',

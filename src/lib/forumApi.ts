@@ -34,7 +34,7 @@ interface PostRow {
   slug?: string | null;
   title: string;
   content: string;
-  category: Category;
+  category: string;
   author_id: string;
   is_anonymous: boolean;
   created_at: string;
@@ -86,6 +86,10 @@ function getAvatarUrl(path: string | null | undefined): string | null {
   if (path.startsWith('data:') || path.startsWith('http')) return path;
   const client = requireSupabase();
   return client.storage.from('inuni-avatars').getPublicUrl(path).data.publicUrl;
+}
+
+function normalizeCategory(category: string): Category {
+  return category === 'Study' ? 'Academics' : (category as Category);
 }
 
 async function getProfilesMap(userIds: string[]): Promise<Map<string, ProfileRow>> {
@@ -158,7 +162,7 @@ function mapPost(row: PostRow, profile: ProfileRow | undefined, commentCount: nu
     slug: row.slug || slugifyPostTitle(row.title),
     title: row.title,
     content: row.content,
-    category: row.category,
+    category: normalizeCategory(row.category),
     authorId: row.author_id,
     authorName: getAuthorName(row, profile),
     authorAvatarUrl: row.is_anonymous ? null : getAvatarUrl(profile?.avatar_path),

@@ -14,7 +14,7 @@ import { getPostPath } from '../lib/postSlug';
 import { canParticipate } from '../lib/permissions';
 import { validatePost } from '../lib/validation';
 import type { FileUploadDraft } from '../types/files';
-import { categories, type Category } from '../types/forum';
+import { categories, categoryDescriptions, type Category } from '../types/forum';
 
 export function CreatePostPage() {
   const navigate = useNavigate();
@@ -117,10 +117,14 @@ export function CreatePostPage() {
           />
         </label>
 
-        <label className="grid gap-2">
-          <span className="field-label">Category</span>
+        <div className="grid gap-2">
+          <label className="field-label" htmlFor="post-category">
+            Category
+          </label>
           <select
+            aria-describedby="post-category-description"
             className="field-input"
+            id="post-category"
             value={category}
             onChange={(event) => setCategory(event.target.value as Category)}
           >
@@ -130,7 +134,13 @@ export function CreatePostPage() {
               </option>
             ))}
           </select>
-        </label>
+          <span
+            className="text-sm leading-6 text-slate-600"
+            id="post-category-description"
+          >
+            {categoryDescriptions[category]}
+          </span>
+        </div>
 
         <label className="grid gap-2">
           <span className="field-label">Content</span>

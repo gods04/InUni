@@ -15,7 +15,7 @@ import { UctVerifiedBadge } from './UctVerifiedBadge';
 import { UserAvatar } from './UserAvatar';
 
 const categoryStyles: Record<Category, string> = {
-  Study: 'bg-emerald-50 text-emerald-800',
+  Academics: 'bg-emerald-50 text-emerald-800',
   'Campus Life': 'bg-brand-50 text-brand-700',
   Questions: 'bg-indigo-50 text-indigo-700',
   'Lost & Found': 'bg-amber-50 text-amber-800',

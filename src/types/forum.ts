@@ -1,7 +1,7 @@
 import type { FileUploadDraft, LinkedFile } from './files';
 
 export const categories = [
-  'Study',
+  'Academics',
   'Campus Life',
   'Questions',
   'Lost & Found',
@@ -12,6 +12,21 @@ export const categories = [
 export type Category = (typeof categories)[number];
 
 export type CategoryFilter = Category | 'All';
+
+export const categoryDescriptions: Record<Category, string> = {
+  Academics:
+    'Courses, assignments, exams, faculty admin, study spaces, and academic resources.',
+  'Campus Life':
+    'Societies, events, transport, safety, housing, campus services, and daily student life.',
+  Questions:
+    'Ask other students for practical help, recommendations, or campus-specific advice.',
+  'Lost & Found':
+    'Lost items, found items, collection details, and safe handover posts.',
+  Confessions:
+    'Anonymous campus stories, crushes, social life, and honest student experiences. Keep it respectful.',
+  General:
+    'Anything useful for UCT students that does not fit one of the other sections.',
+};
 
 export type UserRole = 'student' | 'admin';
 

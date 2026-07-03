@@ -59,7 +59,7 @@ describe('HomePage', () => {
         id: 'study-notes',
         title: 'Best way to organize notes before finals?',
         content: 'What study systems are working for everyone?',
-        category: 'Study',
+        category: 'Academics',
       }),
     ]);
   });
@@ -90,7 +90,7 @@ describe('HomePage', () => {
         name: 'Quiet places on campus after 6pm',
       }),
     ).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Study' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Academics' })).toBeInTheDocument();
   });
 
   it('shows a compact empty state when a post search has no matches', async () => {

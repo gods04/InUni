@@ -27,8 +27,12 @@ describe('CategoryTabs', () => {
       'sm:hidden',
     );
 
-    await user.click(screen.getByRole('button', { name: 'Study' }));
+    expect(
+      screen.queryByRole('button', { name: 'Study' }),
+    ).not.toBeInTheDocument();
 
-    expect(onChange).toHaveBeenCalledWith('Study');
+    await user.click(screen.getByRole('button', { name: 'Academics' }));
+
+    expect(onChange).toHaveBeenCalledWith('Academics');
   });
 });

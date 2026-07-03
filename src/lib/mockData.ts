@@ -49,7 +49,7 @@ export const mockPosts: Post[] = [
   {
     id: 'mock-study-notes',
     title: 'Best way to organize notes before finals?',
-    category: 'Study',
+    category: 'Academics',
     content:
       'I am trying to stop keeping everything in one giant doc. What study systems are working for everyone this semester?',
     authorId: 'mock-user-a',

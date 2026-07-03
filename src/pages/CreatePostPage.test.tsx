@@ -24,6 +24,29 @@ vi.mock('../hooks/useAuth', () => ({
 }));
 
 describe('CreatePostPage', () => {
+  it('offers Academics as the academic category and frames Confessions safely', async () => {
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <CreatePostPage />
+      </MemoryRouter>,
+    );
+
+    expect(
+      screen.getByRole('option', { name: 'Academics' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('option', { name: 'Study' }),
+    ).not.toBeInTheDocument();
+
+    await user.selectOptions(screen.getByLabelText('Category'), 'Confessions');
+
+    expect(
+      screen.getByText(/Anonymous campus stories, crushes, social life/i),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Keep it respectful/i)).toBeInTheDocument();
+  });
+
   it('keeps the form and shows validation for a blank title', async () => {
     const user = userEvent.setup();
     render(
