@@ -45,6 +45,10 @@ vi.mock('./pages/ToolsPage', () => ({
   ToolsPage: () => <h1>Student tools</h1>,
 }));
 
+vi.mock('./pages/FoodToolPage', () => ({
+  FoodToolPage: () => <h1>Food tools</h1>,
+}));
+
 describe('MVP navigation', () => {
   it('shows approved public destinations for a signed-out visitor', async () => {
     render(
@@ -70,6 +74,18 @@ describe('MVP navigation', () => {
 
     expect(
       await screen.findByRole('heading', { name: 'Student tools' }),
+    ).toBeInTheDocument();
+  });
+
+  it('renders the public food tool route', async () => {
+    render(
+      <MemoryRouter initialEntries={['/tools/food']}>
+        <App />
+      </MemoryRouter>,
+    );
+
+    expect(
+      await screen.findByRole('heading', { name: 'Food tools' }),
     ).toBeInTheDocument();
   });
 

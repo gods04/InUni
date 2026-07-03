@@ -35,6 +35,11 @@ const CreatePostPage = lazy(() =>
 const FilesPage = lazy(() =>
   import('./pages/FilesPage').then((module) => ({ default: module.FilesPage })),
 );
+const FoodToolPage = lazy(() =>
+  import('./pages/FoodToolPage').then((module) => ({
+    default: module.FoodToolPage,
+  })),
+);
 const HomePage = lazy(() =>
   import('./pages/HomePage').then((module) => ({ default: module.HomePage })),
 );
@@ -104,6 +109,14 @@ export default function App() {
                 <CreatePostPage />
               </PageSuspense>
             </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/tools/food"
+          element={
+            <PageSuspense>
+              <FoodToolPage />
+            </PageSuspense>
           }
         />
         <Route

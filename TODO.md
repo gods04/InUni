@@ -260,8 +260,14 @@ support that community instead of turning the site into a crowded dashboard.
 ## Deferred ideas from the README
 
 - [ ] Word-to-PDF tools.
-- [ ] Food tools.
-- [ ] Budget meals.
-- [ ] South African recipes.
+- [x] Food tools.
+- [x] Budget meals.
+- [x] South African recipes.
+- [x] Add Food tool modes for "What should I eat today?", "What can I make?",
+      and budget-based campus menu lookup.
+- [x] Add structured recipe methods with heat level, step timing, and doneness
+      cues for the food tool.
+- [ ] Replace the starter campus menu data with the real school menu when the
+      menu is available.
 - [ ] Advertising.
 - [ ] Complex analytics.

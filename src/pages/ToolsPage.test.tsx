@@ -25,9 +25,12 @@ describe('ToolsPage', () => {
       'href',
       '/create',
     );
+    expect(screen.getByRole('link', { name: 'Food tools' })).toHaveAttribute(
+      'href',
+      '/tools/food',
+    );
     expect(screen.getByText('Classroom finder')).toBeInTheDocument();
     expect(screen.getByText('Document tools')).toBeInTheDocument();
-    expect(screen.getByText('Food tools')).toBeInTheDocument();
-    expect(screen.getAllByText('Planned')).toHaveLength(3);
+    expect(screen.getAllByText('Planned')).toHaveLength(2);
   });
 });

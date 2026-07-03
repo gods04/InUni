@@ -13,6 +13,8 @@ React, Vite, TypeScript, Tailwind CSS, React Router, and Supabase.
 - Comments
 - Post and comment file attachments
 - Public Shared Files browsing, reporting, and admin approval
+- Public food tools with a meal wheel, fridge-ingredient recipe matching,
+  detailed heat/time recipe steps, and budget-based campus menu suggestions
 - Post and comment reporting with duplicate protection
 - A simple profile with account status, own posts, uploaded files, and profile
   identity controls
@@ -26,8 +28,7 @@ Confessions, and General.
 ## Deferred roadmap
 
 These ideas are intentionally outside version 1 and are recorded for later:
-Word-to-PDF, food tools, budget meals, South African recipes, advertising,
-self-hosted virus scanning, and complex analytics.
+Word-to-PDF, advertising, self-hosted virus scanning, and complex analytics.
 
 ## Run locally
 
@@ -174,6 +175,9 @@ Never put an admin role in signup metadata.
 - `/post/:id` post and comments
 - `/files` shared file library
 - `/create` create a post
+- `/tools` student tools hub
+- `/tools/food` food tools for random meal picks, detailed fridge recipes, and
+  budget menu suggestions
 - `/login` registration and login
 - `/reset-password` password reset link landing page
 - `/profile` current user profile

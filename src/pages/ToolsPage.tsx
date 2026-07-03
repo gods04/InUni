@@ -42,12 +42,17 @@ const activeTools: ActiveTool[] = [
     title: 'Create post',
     to: '/create',
   },
+  {
+    detail: 'Pick a quick meal by budget, time, and cooking access.',
+    icon: Utensils,
+    title: 'Food tools',
+    to: '/tools/food',
+  },
 ];
 
 const plannedTools: PlannedTool[] = [
   { icon: MapPinned, title: 'Classroom finder' },
   { icon: FileText, title: 'Document tools' },
-  { icon: Utensils, title: 'Food tools' },
 ];
 
 export function ToolsPage() {
@@ -73,7 +78,7 @@ export function ToolsPage() {
           </h2>
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {activeTools.map((tool) => {
             const Icon = tool.icon;
 
@@ -112,7 +117,7 @@ export function ToolsPage() {
           </h2>
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-2">
           {plannedTools.map((tool) => {
             const Icon = tool.icon;
 
