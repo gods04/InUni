@@ -77,7 +77,7 @@ describe('adminDashboardApi Supabase boundary', () => {
     mocks.getOpenReports.mockResolvedValue([]);
   });
 
-  it('loads recent posts when the slug migration has not reached Supabase yet', async () => {
+  it('loads recent posts without querying the optional slug column', async () => {
     const totalUsersQuery = countQuery(4);
     const newUsersTodayQuery = countQuery(1);
     const totalPostsQuery = countQuery(2);
@@ -85,14 +85,7 @@ describe('adminDashboardApi Supabase boundary', () => {
     const totalCommentsQuery = countQuery(3);
     const commentsTodayQuery = countQuery(1);
     const totalFilesQuery = countQuery(5);
-    const postsWithSlugQuery = createQuery({
-      data: null,
-      error: { code: '42703', message: 'column posts.slug does not exist' },
-    });
-    const commentsQuery = createQuery({ data: [], error: null });
-    const profilesQuery = createQuery({ data: [], error: null });
-    const filesQuery = createQuery({ data: [], error: null });
-    const legacyPostsQuery = createQuery({
+    const postsQuery = createQuery({
       data: [
         {
           id: 'post-1',
@@ -103,6 +96,9 @@ describe('adminDashboardApi Supabase boundary', () => {
       ],
       error: null,
     });
+    const commentsQuery = createQuery({ data: [], error: null });
+    const profilesQuery = createQuery({ data: [], error: null });
+    const filesQuery = createQuery({ data: [], error: null });
 
     queueQueries(
       totalUsersQuery,
@@ -112,23 +108,19 @@ describe('adminDashboardApi Supabase boundary', () => {
       totalCommentsQuery,
       commentsTodayQuery,
       totalFilesQuery,
-      postsWithSlugQuery,
+      postsQuery,
       commentsQuery,
       profilesQuery,
       filesQuery,
-      legacyPostsQuery,
     );
 
     const metrics = await getAdminDashboardMetrics();
 
-    expect(postsWithSlugQuery.select).toHaveBeenCalledWith(
-      'id, slug, title, category, created_at',
-    );
-    expect(legacyPostsQuery.select).toHaveBeenCalledWith(
+    expect(postsQuery.select).toHaveBeenCalledWith(
       'id, title, category, created_at',
     );
     expect(metrics.recentActivity[0]).toMatchObject({
-      href: '/post/study-plan',
+      href: '/post/post-1',
       kind: 'Post',
       title: 'Study plan',
     });

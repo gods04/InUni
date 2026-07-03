@@ -6,7 +6,6 @@ import { getOpenReports } from './adminApi';
 import { getPostPath } from './postSlug';
 import type { ModerationReport } from './adminApi';
 import { isSupabaseConfigured, supabase } from './supabase';
-import { isMissingPostSlugError } from './supabaseCompat';
 import type { ForumComment, ForumUser, Post, Profile } from '../types/forum';
 import type { InUniFile } from '../types/files';
 
@@ -165,7 +164,6 @@ function buildRecentActivity({
 
 interface SupabaseActivityPostRow {
   id: string;
-  slug?: string | null;
   title: string;
   category: Post['category'];
   created_at: string;
@@ -212,33 +210,17 @@ async function getRecentRows<T>(
 
 async function getRecentPostRows(): Promise<SupabaseActivityPostRow[]> {
   const client = requireSupabase();
-  const result = await client
+  const { data, error } = await client
     .from('posts')
-    .select('id, slug, title, category, created_at')
+    .select('id, title, category, created_at')
     .order('created_at', { ascending: false })
     .limit(recentActivityLimit);
 
-  if (result.error && isMissingPostSlugError(result.error)) {
-    const fallbackResult = await client
-      .from('posts')
-      .select('id, title, category, created_at')
-      .order('created_at', { ascending: false })
-      .limit(recentActivityLimit);
-
-    if (fallbackResult.error) {
-      throw new Error(
-        `Could not load dashboard activity: ${fallbackResult.error.message}`,
-      );
-    }
-
-    return (fallbackResult.data ?? []) as SupabaseActivityPostRow[];
+  if (error) {
+    throw new Error(`Could not load dashboard activity: ${error.message}`);
   }
 
-  if (result.error) {
-    throw new Error(`Could not load dashboard activity: ${result.error.message}`);
-  }
-
-  return (result.data ?? []) as SupabaseActivityPostRow[];
+  return (data ?? []) as SupabaseActivityPostRow[];
 }
 
 async function getSupabaseCount(
@@ -323,11 +305,7 @@ async function getSupabaseMetrics(): Promise<AdminDashboardMetrics> {
       title: post.title,
       detail: `New post in ${post.category}`,
       createdAt: post.created_at,
-      href: getPostPath({
-        id: post.id,
-        slug: post.slug ?? undefined,
-        title: post.title,
-      }),
+      href: `/post/${post.id}`,
     })),
     ...recentComments.map((comment) => ({
       id: `comment-${comment.id}`,
