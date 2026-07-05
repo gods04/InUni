@@ -112,6 +112,11 @@ describe('HomePage', () => {
     expect(screen.getByText('2 sections')).toBeInTheDocument();
     expect(screen.getByText('4 replies')).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Trending now' })).toBeInTheDocument();
+    expect(
+      screen.queryByText(
+        'Academic rules, transport, and campus-life posts rise here when students reply.',
+      ),
+    ).not.toBeInTheDocument();
 
     const trendingTopic = screen.getByRole('button', {
       name: 'Best way to organize notes before finals?',

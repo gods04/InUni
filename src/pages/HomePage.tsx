@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { BookOpen, Layers3, MessageCircle, Plus, Search, Users } from 'lucide-react';
+import { Layers3, MessageCircle, Plus, Search, Users } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { BrandLogo } from '../components/BrandLogo';
 import { CategoryTabs } from '../components/CategoryTabs';
@@ -260,10 +260,6 @@ export function HomePage() {
                 </span>
               </button>
             ))}
-          </div>
-          <div className="rounded-lg border border-line bg-accent-50 px-3 py-3 text-sm leading-6 text-accent-700">
-            <BookOpen aria-hidden="true" className="mb-2 h-4 w-4" />
-            Academic rules, transport, and campus-life posts rise here when students reply.
           </div>
         </aside>
       </section>
