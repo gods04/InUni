@@ -7,8 +7,10 @@ import {
   MapPinned,
   MessageSquarePlus,
   Utensils,
+  Wrench,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { PageHeader } from '../components/PageHeader';
 import { Seo } from '../components/Seo';
 
 interface ActiveTool {
@@ -63,13 +65,12 @@ export function ToolsPage() {
         description="Open UCT student tools on InUni, including the forum, shared files, campus resources, and planned study utilities."
         title="UCT Student Tools | InUni"
       />
-      <section className="border-b border-line pb-6">
-        <p className="text-sm font-semibold text-brand-700">UCT utilities</p>
-        <h1 className="section-title">Student tools</h1>
-        <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-600">
-          Quick study and campus actions without crowding the forum.
-        </p>
-      </section>
+      <PageHeader
+        description="Forum, food, files, and posting tools shaped for quick campus tasks."
+        eyebrow="UCT utilities"
+        icon={Wrench}
+        title="Student tools"
+      />
 
       <section aria-labelledby="available-tools-heading" className="grid gap-3">
         <div>
@@ -85,7 +86,7 @@ export function ToolsPage() {
             return (
               <Link
                 aria-label={tool.title}
-                className="panel group grid min-h-36 gap-4 p-4 transition hover:border-brand-100 hover:bg-brand-50 focus:outline-none focus:ring-4 focus:ring-brand-100"
+                className="panel group grid min-h-36 gap-4 p-4 transition hover:-translate-y-1 hover:border-brand-100 hover:bg-brand-50 hover:shadow-soft focus:outline-none focus:ring-4 focus:ring-brand-100"
                 key={tool.title}
                 to={tool.to}
               >
@@ -122,7 +123,7 @@ export function ToolsPage() {
             const Icon = tool.icon;
 
             return (
-              <article className="panel grid min-h-28 gap-3 p-4" key={tool.title}>
+              <article className="panel grid min-h-28 gap-3 p-4 transition hover:border-brand-100" key={tool.title}>
                 <div className="flex items-start justify-between gap-3">
                   <span className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-slate-100 text-slate-600">
                     <Icon aria-hidden="true" size={20} strokeWidth={2.25} />

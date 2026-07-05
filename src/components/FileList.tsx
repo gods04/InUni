@@ -35,7 +35,7 @@ export function FileList({
 }: FileListProps) {
   if (files.length === 0) {
     return (
-      <div className="rounded-lg border border-dashed border-line bg-white p-5 text-sm text-slate-600">
+      <div className="rounded-lg border border-dashed border-line bg-panel p-5 text-sm text-slate-600">
         {emptyMessage}
       </div>
     );
@@ -50,8 +50,8 @@ export function FileList({
             aria-label={`File ${file.displayFilename}`}
             className={
               variant === 'panel'
-                ? 'panel grid gap-4 p-4 sm:grid-cols-[1fr_auto] sm:items-center'
-                : 'grid gap-4 rounded-lg border border-line bg-slate-50 p-3 sm:grid-cols-[1fr_auto] sm:items-center'
+                ? 'panel group grid gap-4 p-4 transition hover:-translate-y-1 hover:border-brand-100 hover:shadow-soft sm:grid-cols-[1fr_auto] sm:items-center'
+                : 'grid gap-4 rounded-lg border border-line bg-slate-50 p-3 transition hover:border-brand-100 sm:grid-cols-[1fr_auto] sm:items-center'
             }
             key={file.id}
           >

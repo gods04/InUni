@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Clock3, MessageCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { createSignedPreviewUrl } from '../lib/fileApi';
@@ -127,8 +128,9 @@ export function PostCard({ post }: { post: Post }) {
   }
 
   return (
-    <article className="panel relative overflow-hidden transition hover:-translate-y-0.5 hover:border-brand-100 hover:shadow-soft">
-      <div className="flex flex-col gap-4 p-4 sm:p-5">
+    <article className="panel group relative overflow-hidden hover:-translate-y-1 hover:border-brand-100 hover:shadow-soft">
+      <div className="absolute left-0 top-6 hidden h-16 w-1 rounded-r-full bg-brand-100 transition group-hover:bg-brand-600 sm:block" />
+      <div className="flex flex-col gap-4 p-4 sm:p-5 sm:pl-8">
         <div className="flex flex-wrap items-center gap-2 text-xs font-semibold text-slate-500">
           <span className={`badge ${categoryStyles[post.category]}`}>
             {post.category}
@@ -136,12 +138,12 @@ export function PostCard({ post }: { post: Post }) {
           {post.isAnonymous ? (
             <span className="badge bg-slate-100 text-slate-700">Anonymous</span>
           ) : null}
-          <span aria-hidden="true" className="text-slate-400">·</span>
+          <Clock3 aria-hidden="true" className="h-3.5 w-3.5" />
           <span>{formatRelativeTime(post.createdAt)}</span>
         </div>
 
-        <Link to={postPath} className="group block min-w-0">
-          <h2 className="break-words text-2xl font-bold leading-tight tracking-normal text-ink group-hover:text-brand-700">
+        <Link to={postPath} className="block min-w-0">
+          <h2 className="break-words text-xl font-semibold leading-snug tracking-normal text-ink transition group-hover:text-brand-700 sm:text-2xl">
             {post.title}
           </h2>
           <p className="mt-3 min-w-0 break-words text-base leading-7 text-slate-600 [overflow-wrap:anywhere]">
@@ -208,6 +210,7 @@ export function PostCard({ post }: { post: Post }) {
               <UctVerifiedBadge />
             ) : null}
             <span>·</span>
+            <MessageCircle aria-hidden="true" className="h-4 w-4" />
             <span>{post.commentCount} comments</span>
           </div>
           <div

@@ -54,12 +54,14 @@ describe('HomePage', () => {
         title: 'Quiet places on campus after 6pm',
         content: 'The library gets crowded after lectures.',
         category: 'Campus Life',
+        commentCount: 1,
       }),
       makePost({
         id: 'study-notes',
         title: 'Best way to organize notes before finals?',
         content: 'What study systems are working for everyone?',
         category: 'Academics',
+        commentCount: 3,
       }),
     ]);
   });
@@ -93,6 +95,46 @@ describe('HomePage', () => {
     expect(screen.getByRole('button', { name: 'Academics' })).toBeInTheDocument();
   });
 
+  it('shows a calmer live pulse and trending shortcuts for the forum feed', async () => {
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <HomePage />
+      </MemoryRouter>,
+    );
+
+    await screen.findByRole('heading', {
+      name: 'Quiet places on campus after 6pm',
+    });
+
+    expect(screen.getByText('Live pulse')).toBeInTheDocument();
+    expect(screen.getByText('2 posts')).toBeInTheDocument();
+    expect(screen.getByText('2 sections')).toBeInTheDocument();
+    expect(screen.getByText('4 replies')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Trending now' })).toBeInTheDocument();
+
+    const trendingTopic = screen.getByRole('button', {
+      name: 'Best way to organize notes before finals?',
+    });
+    expect(trendingTopic).toHaveAttribute(
+      'title',
+      'Best way to organize notes before finals?',
+    );
+
+    await user.click(trendingTopic);
+
+    expect(
+      screen.getByRole('heading', {
+        name: 'Best way to organize notes before finals?',
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('heading', {
+        name: 'Quiet places on campus after 6pm',
+      }),
+    ).not.toBeInTheDocument();
+  });
+
   it('shows a compact empty state when a post search has no matches', async () => {
     const user = userEvent.setup();
     render(
@@ -114,9 +156,11 @@ describe('HomePage', () => {
     expect(
       screen.getByText('Try another search or category.'),
     ).toBeInTheDocument();
+    const emptyState = screen.getByRole('heading', {
+      name: 'No posts found',
+    }).parentElement ?? document.body;
     expect(
-      within(screen.getByText('No posts found').closest('section') ?? document.body)
-        .queryByRole('link', { name: 'Create post' }),
+      within(emptyState).queryByRole('link', { name: 'Create post' }),
     ).not.toBeInTheDocument();
   });
 

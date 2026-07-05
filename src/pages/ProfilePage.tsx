@@ -8,6 +8,7 @@ import { ErrorState } from '../components/ErrorState';
 import { FileList } from '../components/FileList';
 import { LoadingState } from '../components/LoadingState';
 import { LoginPrompt } from '../components/LoginPrompt';
+import { PageHeader } from '../components/PageHeader';
 import { Seo } from '../components/Seo';
 import { UctVerifiedBadge } from '../components/UctVerifiedBadge';
 import { UserAvatar } from '../components/UserAvatar';
@@ -349,19 +350,24 @@ export function ProfilePage() {
         noindex
         title="Profile | InUni"
       />
-      <section className="panel grid gap-4 overflow-hidden p-5 sm:grid-cols-[auto_1fr_auto] sm:items-center sm:p-7">
-        <UserAvatar
-          name={user.profile.displayName}
-          size="lg"
-          src={user.profile.avatarUrl}
-        />
-        <div>
-          <p className="text-sm font-semibold text-brand-700">Current user</p>
-          <h1 className="mt-1 text-2xl font-semibold tracking-normal text-ink">
-            {user.profile.displayName}
-          </h1>
-          <p className="mt-1 text-sm text-slate-600">{user.email}</p>
-          <div className="mt-3 flex flex-wrap items-center gap-2">
+      <PageHeader
+        action={(
+          <Link className="primary-button" to="/create">
+            Create post
+          </Link>
+        )}
+        description={user.email}
+        eyebrow="Current user"
+        media={(
+          <UserAvatar
+            name={user.profile.displayName}
+            size="lg"
+            src={user.profile.avatarUrl}
+          />
+        )}
+        title={user.profile.displayName}
+      >
+        <div className="flex flex-wrap items-center gap-2">
             {user.profile.isUctVerified ? (
               <UctVerifiedBadge />
             ) : (
@@ -378,11 +384,7 @@ export function ProfilePage() {
               This profile is local demo data. Connect Supabase to use real accounts.
             </p>
           ) : null}
-        </div>
-        <Link className="primary-button" to="/create">
-          Create post
-        </Link>
-      </section>
+      </PageHeader>
 
       <section className="panel grid gap-4 p-5 sm:p-6">
         <div>
@@ -497,7 +499,7 @@ export function ProfilePage() {
               const isSaving = savingPostId === post.id;
 
               return (
-                <article className="panel grid gap-4 p-4 sm:p-5" key={post.id}>
+                <article className="panel group grid gap-4 p-4 transition hover:-translate-y-1 hover:border-brand-100 hover:shadow-soft sm:p-5" key={post.id}>
                   <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2 text-xs font-semibold text-slate-500">

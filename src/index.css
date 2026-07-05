@@ -13,6 +13,14 @@
     --color-brand-100: 225 233 242;
     --color-brand-600: 95 127 163;
     --color-brand-700: 77 107 141;
+    --color-accent-50: 232 248 245;
+    --color-accent-100: 199 236 229;
+    --color-accent-600: 18 135 121;
+    --color-accent-700: 15 118 110;
+    --color-warm-50: 255 247 237;
+    --color-warm-100: 254 215 170;
+    --color-warm-600: 217 119 6;
+    --color-warm-700: 180 83 9;
     --shadow-soft: 29 31 35;
     --shadow-soft-alpha: 0.07;
   }
@@ -28,6 +36,14 @@
       --color-brand-100: 55 72 93;
       --color-brand-600: 143 170 201;
       --color-brand-700: 174 198 225;
+      --color-accent-50: 18 60 58;
+      --color-accent-100: 26 82 76;
+      --color-accent-600: 94 214 190;
+      --color-accent-700: 134 239 212;
+      --color-warm-50: 76 48 18;
+      --color-warm-100: 110 72 24;
+      --color-warm-600: 251 191 36;
+      --color-warm-700: 253 230 138;
       --shadow-soft: 0 0 0;
       --shadow-soft-alpha: 0.28;
     }
@@ -39,6 +55,13 @@
 
   body {
     @apply min-h-screen bg-canvas text-ink antialiased;
+    background:
+      linear-gradient(
+        135deg,
+        rgb(var(--color-canvas) / 1) 0%,
+        rgb(var(--color-canvas) / 1) 48%,
+        rgb(var(--color-accent-50) / 0.52) 100%
+      );
     font-family:
       Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
       sans-serif;
@@ -51,7 +74,8 @@
 
 @layer components {
   .page-shell {
-    @apply mx-auto flex w-full max-w-5xl flex-col gap-7 px-4 py-6 sm:px-6 sm:py-8 lg:px-8;
+    @apply mx-auto flex w-full max-w-6xl flex-col gap-7 px-4 py-6 sm:px-6 sm:py-8 lg:px-8;
+    animation: inuni-page-rise 380ms ease both;
   }
 
   .section-title {
@@ -59,7 +83,7 @@
   }
 
   .panel {
-    @apply rounded-lg border border-line bg-panel shadow-soft;
+    @apply rounded-lg border border-line bg-panel shadow-sm transition duration-300;
   }
 
   .field-label {
@@ -71,11 +95,11 @@
   }
 
   .primary-button {
-    @apply inline-flex min-h-10 items-center justify-center rounded-full bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-600 focus:outline-none focus:ring-4 focus:ring-brand-100 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-600;
+    @apply inline-flex min-h-10 items-center justify-center rounded-full bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-brand-600 focus:outline-none focus:ring-4 focus:ring-brand-100 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-600;
   }
 
   .secondary-button {
-    @apply inline-flex min-h-10 items-center justify-center rounded-full border border-line bg-panel px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-brand-100 hover:bg-brand-50 hover:text-ink focus:outline-none focus:ring-4 focus:ring-brand-100 disabled:cursor-not-allowed disabled:opacity-60;
+    @apply inline-flex min-h-10 items-center justify-center rounded-full border border-line bg-panel px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:-translate-y-0.5 hover:border-brand-100 hover:bg-brand-50 hover:text-ink focus:outline-none focus:ring-4 focus:ring-brand-100 disabled:cursor-not-allowed disabled:opacity-60;
   }
 
   .danger-button {
@@ -88,6 +112,72 @@
 }
 
 @layer utilities {
+  @keyframes inuni-page-rise {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes forum-demo-rise {
+    from {
+      opacity: 0;
+      transform: translateY(14px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes forum-demo-soft-in {
+    from {
+      opacity: 0;
+      transform: scale(0.985);
+    }
+
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  .forum-demo-surface,
+  .forum-demo-toolbar,
+  .forum-demo-tabs {
+    animation: forum-demo-soft-in 420ms ease both;
+  }
+
+  .forum-demo-card {
+    animation: forum-demo-rise 480ms ease both;
+    animation-delay: calc(var(--card-index, 0) * 70ms);
+  }
+
+  .line-clamp-2 {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .page-shell,
+    .forum-demo-surface,
+    .forum-demo-toolbar,
+    .forum-demo-tabs,
+    .forum-demo-card {
+      animation: none;
+      transform: none;
+      transition-duration: 1ms;
+    }
+  }
+
   @media (prefers-color-scheme: dark) {
     .bg-white {
       background-color: rgb(var(--color-panel) / 1);

@@ -1,5 +1,7 @@
 import { useState } from 'react';
+import { ShieldCheck } from 'lucide-react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
+import { PageHeader } from '../components/PageHeader';
 import { Seo } from '../components/Seo';
 import {
   acceptLegalAgreement,
@@ -67,24 +69,17 @@ export function LegalPage() {
         title={`${currentPage.title} | InUni`}
       />
 
-      <section className="panel grid gap-4 p-5 sm:p-7">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <p className="text-sm font-semibold text-brand-700">
-              Version {termsVersion}
-            </p>
-            <h1 className="mt-1 text-3xl font-semibold tracking-normal text-ink">
-              {currentPage.title}
-            </h1>
-            <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">
-              {currentPage.description} This is a practical policy summary and
-              not legal advice.
-            </p>
-          </div>
+      <PageHeader
+        action={(
           <Link className="secondary-button shrink-0" to="/">
             Back to forum
           </Link>
-        </div>
+        )}
+        description={`${currentPage.description} This is a practical policy summary and not legal advice.`}
+        eyebrow={`Version ${termsVersion}`}
+        icon={ShieldCheck}
+        title={currentPage.title}
+      >
 
         <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-800">
           InUni is an independent student community. It is not an official
@@ -106,7 +101,7 @@ export function LegalPage() {
             Community Rules
           </NavLink>
         </nav>
-      </section>
+      </PageHeader>
 
       <section className="panel grid gap-5 p-5 sm:p-7">
         <div className="grid gap-2">

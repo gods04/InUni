@@ -38,6 +38,9 @@ describe('CreatePostPage', () => {
     expect(
       screen.queryByRole('option', { name: 'Study' }),
     ).not.toBeInTheDocument();
+    expect(
+      screen.getByText('Pick the right section before you post.'),
+    ).toBeInTheDocument();
 
     await user.selectOptions(screen.getByLabelText('Category'), 'Confessions');
 

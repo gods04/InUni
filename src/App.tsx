@@ -40,6 +40,11 @@ const FoodToolPage = lazy(() =>
     default: module.FoodToolPage,
   })),
 );
+const ForumDemoPage = lazy(() =>
+  import('./pages/ForumDemoPage').then((module) => ({
+    default: module.ForumDemoPage,
+  })),
+);
 const HomePage = lazy(() =>
   import('./pages/HomePage').then((module) => ({ default: module.HomePage })),
 );
@@ -82,6 +87,14 @@ export default function App() {
           element={
             <PageSuspense>
               <HomePage />
+            </PageSuspense>
+          }
+        />
+        <Route
+          path="/forum-demo"
+          element={
+            <PageSuspense>
+              <ForumDemoPage />
             </PageSuspense>
           }
         />

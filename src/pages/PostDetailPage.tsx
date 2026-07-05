@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
+import { ArrowLeft } from 'lucide-react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { AttachmentPicker } from '../components/AttachmentPicker';
 import { BanNotice } from '../components/BanNotice';
@@ -9,6 +10,7 @@ import { ErrorState } from '../components/ErrorState';
 import { FileList } from '../components/FileList';
 import { LinkedText } from '../components/LinkedText';
 import { LoadingState } from '../components/LoadingState';
+import { PageHeader } from '../components/PageHeader';
 import { ReportDialog } from '../components/ReportDialog';
 import { Seo } from '../components/Seo';
 import { UctVerifiedBadge } from '../components/UctVerifiedBadge';
@@ -251,28 +253,33 @@ export function PostDetailPage() {
         title={`${post.title} | InUni`}
         type="article"
       />
-      <Link className="secondary-button w-fit" to="/">
-        Back to feed
-      </Link>
-
-      <article className="panel min-w-0 p-5 sm:p-7">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="badge bg-brand-50 text-brand-700">{post.category}</span>
-          {post.isAnonymous ? <span className="badge bg-slate-100 text-slate-700">Anonymous</span> : null}
-          <span className="text-xs font-semibold text-slate-500">{formatRelativeTime(post.createdAt)}</span>
-        </div>
-
-        <h1 className="mt-4 break-words text-3xl font-semibold tracking-normal text-ink">{post.title}</h1>
-        <div className="mt-3 text-sm text-slate-500">
-          By <span className="font-bold text-slate-800">{post.authorName}</span>{' '}
-          {!post.isAnonymous && post.authorIsUctVerified ? (
-            <UctVerifiedBadge />
-          ) : null}{' '}
-          ·{' '}
+      <PageHeader
+        action={(
+          <Link className="secondary-button w-fit gap-2" to="/">
+            <ArrowLeft aria-hidden="true" className="h-4 w-4" />
+            Back to feed
+          </Link>
+        )}
+        description={(
+          <>
+            By <span className="font-bold text-slate-800">{post.authorName}</span>{' '}
+            {!post.isAnonymous && post.authorIsUctVerified ? <UctVerifiedBadge /> : null}
+          </>
+        )}
+        eyebrow={post.category}
+        title={post.title}
+      >
+        <div className="flex flex-wrap items-center gap-2 text-xs font-semibold text-slate-500">
+          {post.isAnonymous ? (
+            <span className="badge bg-slate-100 text-slate-700">Anonymous</span>
+          ) : null}
+          <span>{formatRelativeTime(post.createdAt)}</span>
           <span>{post.commentCount} comments</span>
         </div>
+      </PageHeader>
 
-        <div className="mt-6 min-w-0 space-y-4 whitespace-pre-wrap break-words text-base leading-8 text-slate-700 [overflow-wrap:anywhere]">
+      <article className="panel min-w-0 p-5 sm:p-7">
+        <div className="min-w-0 space-y-4 whitespace-pre-wrap break-words text-base leading-8 text-slate-700 [overflow-wrap:anywhere]">
           <LinkedText text={post.content} />
         </div>
 

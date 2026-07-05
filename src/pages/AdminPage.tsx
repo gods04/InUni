@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
+import { Shield } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { ErrorState } from '../components/ErrorState';
 import { FileReviewCountBadge } from '../components/FileReviewCountBadge';
 import { LoadingState } from '../components/LoadingState';
+import { PageHeader } from '../components/PageHeader';
 import { Seo } from '../components/Seo';
 import {
   getAdminDashboardMetrics,
@@ -103,17 +105,9 @@ export function AdminPage() {
         noindex
         title="Admin dashboard | InUni"
       />
-      <section className="panel flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
-        <div>
-          <p className="text-sm font-semibold text-brand-700">
-            Administrator
-          </p>
-          <h1 className="section-title">Admin dashboard</h1>
-          <p className="mt-1 text-sm text-slate-600">
-            Monitor traffic, community activity, and moderation health.
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
+      <PageHeader
+        action={(
+          <>
           <Link className="secondary-button gap-2" to="/admin/reports">
             <span>View reports</span>
             <FileReviewCountBadge
@@ -128,8 +122,13 @@ export function AdminPage() {
           <Link className="secondary-button" to="/admin/users">
             Manage users
           </Link>
-        </div>
-      </section>
+          </>
+        )}
+        description="Monitor traffic, community activity, and moderation health."
+        eyebrow="Administrator"
+        icon={Shield}
+        title="Admin dashboard"
+      />
 
       {error ? <ErrorState message={error} /> : null}
       {loading ? <LoadingState label="Loading admin dashboard..." /> : null}

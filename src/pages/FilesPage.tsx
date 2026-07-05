@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
+import { Files, Search } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { EmptyState } from '../components/EmptyState';
 import { ErrorState } from '../components/ErrorState';
 import { FileList } from '../components/FileList';
 import { FileReportDialog } from '../components/FileReportDialog';
 import { LoadingState } from '../components/LoadingState';
+import { PageHeader } from '../components/PageHeader';
 import { Seo } from '../components/Seo';
 import { useAuth } from '../hooks/useAuth';
 import {
@@ -146,16 +148,20 @@ export function FilesPage() {
         description="Browse approved UCT study notes, templates, PDFs, class resources, and shared student files on InUni."
         title="UCT Shared Files | InUni"
       />
-      <section className="flex flex-col gap-5 border-b border-line pb-7 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h1 className="section-title">Files</h1>
-          <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-600">
-            Approved notes, templates, images, and class resources from the UCT community.
-          </p>
-        </div>
-      </section>
+      <PageHeader
+        description="Approved notes, templates, images, and class resources from the UCT community."
+        eyebrow="Shared study resources"
+        icon={Files}
+        title="Shared files"
+      />
 
       <section className="panel grid min-w-0 gap-4 p-4 sm:p-5">
+        <div className="flex items-center gap-2">
+          <Search aria-hidden="true" className="h-4 w-4 text-brand-700" />
+          <p className="text-sm font-semibold text-slate-700">
+            Search by course, type, faculty, or tag without losing the file list.
+          </p>
+        </div>
         <label className="grid gap-2">
           <span className="field-label">Search shared files</span>
           <input

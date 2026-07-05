@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { EmptyState } from '../components/EmptyState';
+import { PageHeader } from '../components/PageHeader';
 import { Seo } from '../components/Seo';
 import { getCampusMenuItems, getFoodRecipes } from '../lib/foodApi';
 import {
@@ -280,25 +281,18 @@ export function FoodToolPage() {
         title="Food Tools | InUni"
       />
 
-      <section className="flex flex-col gap-4 border-b border-line pb-6 sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex min-w-0 gap-4">
-          <span className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-700">
-            <Utensils aria-hidden="true" size={24} strokeWidth={2.25} />
-          </span>
-          <div className="min-w-0">
-            <p className="text-sm font-semibold text-brand-700">UCT food</p>
-            <h1 className="section-title">Food tools</h1>
-            <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-600">
-              Choose what to eat, turn fridge leftovers into a recipe, or check
-              what your campus budget can buy.
-            </p>
-          </div>
-        </div>
-        <Link className="secondary-button shrink-0" to="/tools">
-          <ArrowLeft aria-hidden="true" size={16} strokeWidth={2.25} />
-          Tools
-        </Link>
-      </section>
+      <PageHeader
+        action={(
+          <Link className="secondary-button shrink-0 gap-2" to="/tools">
+            <ArrowLeft aria-hidden="true" size={16} strokeWidth={2.25} />
+            Tools
+          </Link>
+        )}
+        description="Choose what to eat, turn fridge leftovers into a recipe, or check what your campus budget can buy."
+        eyebrow="UCT food"
+        icon={Utensils}
+        title="Food tools"
+      />
 
       <section className="grid gap-3 sm:grid-cols-3" aria-label="Food tool choices">
         {modeOptions.map((option) => {
@@ -311,7 +305,7 @@ export function FoodToolPage() {
               className={
                 isSelected
                   ? 'panel grid min-h-40 gap-3 border-brand-100 bg-brand-50 p-4 text-left ring-4 ring-brand-100'
-                  : 'panel grid min-h-40 gap-3 p-4 text-left transition hover:border-brand-100 hover:bg-brand-50 focus:outline-none focus:ring-4 focus:ring-brand-100'
+                  : 'panel grid min-h-40 gap-3 p-4 text-left transition hover:-translate-y-1 hover:border-brand-100 hover:bg-brand-50 hover:shadow-soft focus:outline-none focus:ring-4 focus:ring-brand-100'
               }
               key={option.mode}
               onClick={() => chooseMode(option.mode)}

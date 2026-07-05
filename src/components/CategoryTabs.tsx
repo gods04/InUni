@@ -12,7 +12,7 @@ export function CategoryTabs({ value, onChange }: CategoryTabsProps) {
     <div className="relative max-w-full overflow-hidden">
       <div
         aria-label="Filter posts by category"
-        className="flex min-w-0 w-full gap-1 overflow-x-auto rounded-lg border border-line bg-white p-1 pr-10"
+        className="flex min-w-0 w-full gap-1 overflow-x-auto rounded-lg border border-line bg-panel p-1 pr-10 shadow-sm"
         role="group"
       >
         {options.map((category) => {
@@ -21,10 +21,10 @@ export function CategoryTabs({ value, onChange }: CategoryTabsProps) {
           return (
             <button
               className={[
-                'shrink-0 rounded-full border px-3 py-1.5 text-sm font-semibold transition',
+                'shrink-0 rounded-full px-3.5 py-2 text-sm font-semibold transition duration-200',
                 isActive
-                  ? 'border-brand-100 bg-brand-50 text-brand-700'
-                  : 'border-transparent bg-transparent text-slate-600 hover:bg-slate-100 hover:text-ink',
+                  ? 'bg-brand-700 text-white shadow-sm'
+                  : 'text-slate-600 hover:bg-slate-100 hover:text-ink',
               ].join(' ')}
               key={category}
               type="button"

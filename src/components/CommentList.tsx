@@ -30,7 +30,7 @@ export function CommentList({
 }: CommentListProps) {
   if (comments.length === 0) {
     return (
-      <div className="rounded-lg border border-dashed border-line bg-white px-4 py-6 text-sm text-slate-600">
+      <div className="rounded-lg border border-dashed border-line bg-panel px-4 py-6 text-sm text-slate-600">
         No comments yet. Be the first to add something useful.
       </div>
     );
@@ -39,7 +39,7 @@ export function CommentList({
   return (
     <div className="min-w-0 space-y-3">
       {comments.map((comment) => (
-        <article className="min-w-0 rounded-lg border border-line bg-white p-4 shadow-sm" key={comment.id}>
+        <article className="min-w-0 rounded-lg border border-line bg-panel p-4 shadow-sm transition hover:border-brand-100" key={comment.id}>
           <div className="flex items-start justify-between gap-3">
             <div className="flex min-w-0 items-center gap-3">
               <UserAvatar

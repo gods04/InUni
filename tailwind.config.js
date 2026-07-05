@@ -14,6 +14,18 @@ export default {
           600: 'rgb(var(--color-brand-600) / <alpha-value>)',
           700: 'rgb(var(--color-brand-700) / <alpha-value>)',
         },
+        accent: {
+          50: 'rgb(var(--color-accent-50) / <alpha-value>)',
+          100: 'rgb(var(--color-accent-100) / <alpha-value>)',
+          600: 'rgb(var(--color-accent-600) / <alpha-value>)',
+          700: 'rgb(var(--color-accent-700) / <alpha-value>)',
+        },
+        warm: {
+          50: 'rgb(var(--color-warm-50) / <alpha-value>)',
+          100: 'rgb(var(--color-warm-100) / <alpha-value>)',
+          600: 'rgb(var(--color-warm-600) / <alpha-value>)',
+          700: 'rgb(var(--color-warm-700) / <alpha-value>)',
+        },
       },
       boxShadow: {
         soft: '0 12px 36px rgb(var(--shadow-soft) / var(--shadow-soft-alpha))',

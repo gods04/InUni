@@ -1,4 +1,15 @@
 import { useEffect, useId, useState } from 'react';
+import {
+  FileText,
+  Home,
+  LogOut,
+  Menu,
+  PlusCircle,
+  Shield,
+  UserCircle,
+  Wrench,
+  X,
+} from 'lucide-react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { getFileReviewCount } from '../lib/adminFileApi';
@@ -9,21 +20,29 @@ import { LegalAgreementGate } from './LegalAgreementGate';
 
 function navClass({ isActive }: { isActive: boolean }) {
   return [
-    'inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-2 text-sm font-semibold transition',
+    'inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-2 text-sm font-semibold transition duration-200',
     isActive
-      ? 'bg-brand-50 text-brand-700'
-      : 'text-slate-600 hover:bg-slate-100 hover:text-ink',
+      ? 'bg-brand-700 text-white shadow-sm'
+      : 'text-slate-600 hover:-translate-y-0.5 hover:bg-brand-50 hover:text-ink',
   ].join(' ');
 }
 
 function mobileNavClass({ isActive }: { isActive: boolean }) {
   return [
-    'flex min-h-11 items-center justify-between rounded-lg px-3 py-2 text-sm font-semibold transition',
+    'flex min-h-11 items-center justify-between rounded-lg px-3 py-2 text-sm font-semibold transition duration-200',
     isActive
-      ? 'bg-brand-50 text-brand-700'
+      ? 'bg-brand-700 text-white shadow-sm'
       : 'text-slate-700 hover:bg-slate-100 hover:text-ink',
   ].join(' ');
 }
+
+const navItems = [
+  { label: 'Forum', to: '/', end: true, Icon: Home },
+  { label: 'Files', to: '/files', end: false, Icon: FileText },
+  { label: 'Create', to: '/create', end: false, Icon: PlusCircle },
+  { label: 'Tools', to: '/tools', end: false, Icon: Wrench },
+  { label: 'Profile', to: '/profile', end: false, Icon: UserCircle },
+] as const;
 
 export function AppLayout() {
   const mobileMenuId = useId();
@@ -79,24 +98,20 @@ export function AppLayout() {
   function renderNavLinks(className: typeof navClass | typeof mobileNavClass) {
     return (
       <>
-        <NavLink to="/" className={className} end>
-          Forum
-        </NavLink>
-        <NavLink to="/files" className={className}>
-          Files
-        </NavLink>
-        <NavLink to="/create" className={className}>
-          Create
-        </NavLink>
-        <NavLink to="/tools" className={className}>
-          Tools
-        </NavLink>
-        <NavLink to="/profile" className={className}>
-          Profile
-        </NavLink>
+        {navItems.map(({ Icon, end, label, to }) => (
+          <NavLink className={className} end={end} key={to} to={to}>
+            <span className="inline-flex items-center gap-1.5">
+              <Icon aria-hidden="true" className="h-4 w-4" />
+              <span>{label}</span>
+            </span>
+          </NavLink>
+        ))}
         {user?.profile.role === 'admin' ? (
           <NavLink to="/admin" className={className}>
-            <span>Admin</span>
+            <span className="inline-flex items-center gap-1.5">
+              <Shield aria-hidden="true" className="h-4 w-4" />
+              <span>Admin</span>
+            </span>
             <FileReviewCountBadge count={fileReviewCount} />
           </NavLink>
         ) : null}
@@ -111,7 +126,7 @@ export function AppLayout() {
 
   return (
     <div className="min-h-screen">
-      <header className="sticky top-0 z-30 border-b border-line bg-white/90 backdrop-blur-xl">
+      <header className="sticky top-0 z-30 border-b border-line bg-white/90 shadow-sm backdrop-blur-xl">
         <div className="mx-auto flex w-full max-w-none flex-col gap-2 px-4 py-3 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between gap-4">
             <NavLink
@@ -132,10 +147,11 @@ export function AppLayout() {
               {renderNavLinks(navClass)}
               {user ? (
                 <button
-                  className="secondary-button shrink-0"
+                  className="secondary-button shrink-0 gap-2"
                   onClick={() => void logOut()}
                   type="button"
                 >
+                  <LogOut aria-hidden="true" className="h-4 w-4" />
                   Log out
                 </button>
               ) : (
@@ -155,11 +171,11 @@ export function AppLayout() {
               onClick={() => setMobileMenuOpen((current) => !current)}
               type="button"
             >
-              <span aria-hidden="true" className="grid gap-1">
-                <span className="block h-0.5 w-4 rounded-full bg-current" />
-                <span className="block h-0.5 w-4 rounded-full bg-current" />
-                <span className="block h-0.5 w-4 rounded-full bg-current" />
-              </span>
+              {mobileMenuOpen ? (
+                <X aria-hidden="true" className="h-5 w-5" />
+              ) : (
+                <Menu aria-hidden="true" className="h-5 w-5" />
+              )}
             </button>
           </div>
 
@@ -186,10 +202,11 @@ export function AppLayout() {
                 {renderNavLinks(mobileNavClass)}
                 {user ? (
                   <button
-                    className="secondary-button mt-1 w-full justify-center"
+                    className="secondary-button mt-1 w-full justify-center gap-2"
                     onClick={() => void logOut()}
                     type="button"
                   >
+                    <LogOut aria-hidden="true" className="h-4 w-4" />
                     Log out
                   </button>
                 ) : (

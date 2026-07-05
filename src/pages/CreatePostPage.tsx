@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
+import { MessageSquarePlus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { AttachmentPicker } from '../components/AttachmentPicker';
 import { BanNotice } from '../components/BanNotice';
-import { BrandLogo } from '../components/BrandLogo';
 import { ErrorState } from '../components/ErrorState';
 import { LoginPrompt } from '../components/LoginPrompt';
+import { PageHeader } from '../components/PageHeader';
 import { Seo } from '../components/Seo';
 import { useAuth } from '../hooks/useAuth';
 import { uploadLinkedFiles } from '../lib/fileApi';
@@ -93,17 +94,12 @@ export function CreatePostPage() {
         noindex
         title="Create post | InUni"
       />
-      <div className="panel flex items-center gap-4 p-5">
-        <BrandLogo
-          aria-hidden="true"
-          className="h-14 w-14 shrink-0 rounded-lg object-contain"
-          variant="mark"
-        />
-        <div>
-        <h1 className="section-title">Create post</h1>
-        <p className="mt-1 text-sm text-slate-600">Share something useful, ask a question, or post anonymously.</p>
-        </div>
-      </div>
+      <PageHeader
+        description="Share something useful, ask a question, or post with front-end anonymity while keeping account-level accountability."
+        eyebrow="Start a conversation"
+        icon={MessageSquarePlus}
+        title="Create post"
+      />
 
       <form className="panel grid gap-5 p-5 sm:p-7" onSubmit={handleSubmit}>
         <label className="grid gap-2">
@@ -121,6 +117,9 @@ export function CreatePostPage() {
           <label className="field-label" htmlFor="post-category">
             Category
           </label>
+          <p className="text-sm leading-6 text-slate-600">
+            Pick the right section before you post.
+          </p>
           <select
             aria-describedby="post-category-description"
             className="field-input"

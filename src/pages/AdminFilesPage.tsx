@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
+import { FileCheck2 } from 'lucide-react';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { EmptyState } from '../components/EmptyState';
 import { ErrorState } from '../components/ErrorState';
 import { LoadingState } from '../components/LoadingState';
+import { PageHeader } from '../components/PageHeader';
 import { Seo } from '../components/Seo';
 import { UserAvatar } from '../components/UserAvatar';
 import { useAuth } from '../hooks/useAuth';
@@ -200,13 +202,12 @@ export function AdminFilesPage() {
         noindex
         title="File review | InUni"
       />
-      <section className="panel p-5 sm:p-6">
-        <p className="text-sm font-semibold text-brand-700">Administrator</p>
-        <h1 className="section-title">File review</h1>
-        <p className="mt-1 text-sm text-slate-600">
-          Approve Shared Files submissions and review files hidden after reports.
-        </p>
-      </section>
+      <PageHeader
+        description="Approve Shared Files submissions and review files hidden after reports."
+        eyebrow="Administrator"
+        icon={FileCheck2}
+        title="File review"
+      />
 
       <section className="grid gap-4 sm:grid-cols-2">
         <div className="panel p-5">

@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
+import { KeyRound } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import { BrandLogo } from '../components/BrandLogo';
 import { ErrorState } from '../components/ErrorState';
 import { LoadingState } from '../components/LoadingState';
+import { PageHeader } from '../components/PageHeader';
 import { PasswordField } from '../components/PasswordField';
 import { Seo } from '../components/Seo';
 import { useAuth } from '../hooks/useAuth';
@@ -69,24 +70,21 @@ export function ResetPasswordPage() {
 
   if (!hasPasswordRecoverySession) {
     return (
-      <div className="mx-auto w-full max-w-md panel p-5 sm:p-6">
+      <div className="mx-auto grid w-full max-w-md gap-5">
         <Seo
           canonicalPath="/reset-password"
           description="Reset an InUni account password."
           noindex
           title="Reset password | InUni"
         />
-        <BrandLogo
-          alt="InUni"
-          className="h-16 w-auto object-contain"
-          variant="horizontal"
+        <PageHeader
+          description="This password reset link is invalid or has expired."
+          eyebrow="Account recovery"
+          icon={KeyRound}
+          title="Reset link expired"
         />
-        <h1 className="section-title">Reset link expired</h1>
-        <p className="mt-2 text-sm text-slate-600">
-          This password reset link is invalid or has expired.
-        </p>
         <Link
-          className="primary-button mt-5 w-full"
+          className="primary-button w-full"
           to="/login"
           state={{ authMode: 'recovery' }}
         >
@@ -104,17 +102,12 @@ export function ResetPasswordPage() {
         noindex
         title="Reset password | InUni"
       />
-      <div className="panel p-5 sm:p-6">
-        <BrandLogo
-          alt="InUni"
-          className="h-16 w-auto object-contain"
-          variant="horizontal"
-        />
-        <h1 className="section-title">Choose a new password</h1>
-        <p className="mt-1 text-sm text-slate-600">
-          Use at least 6 characters for your new password.
-        </p>
-      </div>
+      <PageHeader
+        description="Use at least 6 characters for your new password."
+        eyebrow="Account recovery"
+        icon={KeyRound}
+        title="Choose a new password"
+      />
 
       <form className="panel grid gap-4 p-5 sm:p-6" onSubmit={handleSubmit}>
         <PasswordField

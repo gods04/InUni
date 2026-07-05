@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
+import { Users } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { EmptyState } from '../components/EmptyState';
 import { ErrorState } from '../components/ErrorState';
 import { LoadingState } from '../components/LoadingState';
+import { PageHeader } from '../components/PageHeader';
 import { Seo } from '../components/Seo';
 import { useAuth } from '../hooks/useAuth';
 import { searchUsers, setUserBan } from '../lib/adminApi';
@@ -117,20 +119,21 @@ export function AdminUsersPage() {
         noindex
         title="User moderation | InUni"
       />
-      <section className="panel p-5 sm:p-6">
-        <Link
-          className="text-sm font-semibold text-brand-700 hover:text-brand-600"
-          to="/admin"
-        >
-          Back to moderation
-        </Link>
-        <h1 className="section-title mt-3">User moderation</h1>
-        <p className="mt-1 text-sm text-slate-600">
-          Search profiles and manage participation restrictions.
-        </p>
+      <PageHeader
+        action={(
+          <Link className="secondary-button" to="/admin">
+            Back to moderation
+          </Link>
+        )}
+        description="Search profiles and manage participation restrictions."
+        eyebrow="Administrator"
+        icon={Users}
+        title="User moderation"
+      />
 
+      <section className="panel p-5 sm:p-6">
         <form
-          className="mt-5 flex flex-col gap-2 sm:flex-row"
+          className="flex flex-col gap-2 sm:flex-row"
           onSubmit={handleSearch}
         >
           <label className="grid flex-1 gap-2">

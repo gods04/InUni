@@ -1,6 +1,8 @@
 import { useCallback, useState } from 'react';
+import { Flag } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { AdminReportsQueue } from '../components/AdminReportsQueue';
+import { PageHeader } from '../components/PageHeader';
 import { Seo } from '../components/Seo';
 
 export function AdminReportsPage() {
@@ -17,20 +19,17 @@ export function AdminReportsPage() {
         noindex
         title="Reports queue | InUni"
       />
-      <section className="panel flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
-        <div>
-          <p className="text-sm font-semibold text-brand-700">
-            Administrator
-          </p>
-          <h1 className="section-title">Reports queue</h1>
-          <p className="mt-1 text-sm text-slate-600">
-            {reportCount} open {reportCount === 1 ? 'report' : 'reports'}
-          </p>
-        </div>
-        <Link className="secondary-button" to="/admin">
-          Admin dashboard
-        </Link>
-      </section>
+      <PageHeader
+        action={(
+          <Link className="secondary-button" to="/admin">
+            Admin dashboard
+          </Link>
+        )}
+        description={`${reportCount} open ${reportCount === 1 ? 'report' : 'reports'}`}
+        eyebrow="Administrator"
+        icon={Flag}
+        title="Reports queue"
+      />
 
       <AdminReportsQueue onReportCountChange={updateReportCount} />
     </div>

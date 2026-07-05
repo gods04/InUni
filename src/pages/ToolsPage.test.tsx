@@ -14,6 +14,9 @@ describe('ToolsPage', () => {
     expect(
       screen.getByRole('heading', { name: 'Student tools' }),
     ).toBeInTheDocument();
+    expect(
+      screen.getByText('Forum, food, files, and posting tools shaped for quick campus tasks.'),
+    ).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Forum' })).toHaveAttribute(
       'href',
       '/',

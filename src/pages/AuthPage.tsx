@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
+import { LogIn } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { BrandLogo } from '../components/BrandLogo';
 import { ErrorState } from '../components/ErrorState';
+import { PageHeader } from '../components/PageHeader';
 import { PasswordField } from '../components/PasswordField';
 import { Seo } from '../components/Seo';
 import { useAuth } from '../hooks/useAuth';
@@ -193,27 +194,24 @@ export function AuthPage() {
         noindex
         title="Log in | InUni"
       />
-      <div className="panel p-5 sm:p-6">
-        <BrandLogo
-          alt="InUni"
-          className="h-16 w-auto object-contain"
-          variant="horizontal"
-        />
-        <h1 className="section-title">
-          {mode === 'login'
-            ? 'Log in'
-            : mode === 'signup'
-              ? 'Sign up'
-              : 'Reset your password'}
-        </h1>
-        <p className="mt-1 text-sm text-slate-600">
-          {mode === 'recovery'
+      <PageHeader
+        description={
+          mode === 'recovery'
             ? 'Enter your account email and we will send you a secure reset link.'
             : isDemoMode
               ? 'Demo mode accepts any email and password locally.'
-              : 'Use Supabase Auth with email and password.'}
-        </p>
-      </div>
+              : 'Use Supabase Auth with email and password.'
+        }
+        eyebrow="UCT student forum access"
+        icon={LogIn}
+        title={
+          mode === 'login'
+            ? 'Log in'
+            : mode === 'signup'
+              ? 'Sign up'
+              : 'Reset your password'
+        }
+      />
 
       <form
         className="panel grid gap-4 p-5 sm:p-6"

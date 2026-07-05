@@ -43,6 +43,9 @@ describe('AuthPage', () => {
       </MemoryRouter>,
     );
 
+    expect(
+      screen.getByText('UCT student forum access'),
+    ).toBeInTheDocument();
     await user.type(screen.getByLabelText('Email'), 'student@uct.ac.za');
     await user.type(screen.getByLabelText('Password'), 'password123');
     await user.click(screen.getByRole('button', { name: 'Log in' }));
