@@ -24,10 +24,15 @@ describe('ContactPage', () => {
     expect(
       screen.getByText('Project inbox coming soon'),
     ).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Share an idea' })).toHaveAttribute(
+    const ideaLinks = screen.getAllByRole('link', { name: 'Share an idea' });
+    expect(ideaLinks).toHaveLength(1);
+    expect(ideaLinks[0]).toHaveAttribute(
       'href',
       '/create',
     );
+    expect(
+      screen.queryByRole('link', { name: 'Create post' }),
+    ).not.toBeInTheDocument();
     expect(screen.queryByText('hello@inuni.co.za')).not.toBeInTheDocument();
     expect(
       screen.queryByRole('link', { name: 'Email InUni' }),

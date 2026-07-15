@@ -18,6 +18,18 @@ function isValidEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
+function getProtectedRouteMessage(from?: string): string | null {
+  if (from === '/create') {
+    return 'Log in to create a post or share something with the forum.';
+  }
+
+  if (from === '/profile') {
+    return 'Log in to view your profile, posts, and uploaded files.';
+  }
+
+  return from ? 'Log in to continue.' : null;
+}
+
 function getAuthErrorMessage(error: string, mode: AuthMode): string {
   const normalizedError = error.toLowerCase();
 
@@ -71,9 +83,13 @@ export function AuthPage() {
   const location = useLocation();
   const authState = location.state as {
     authMode?: AuthMode;
+    from?: string;
     passwordReset?: boolean;
   } | null;
   const passwordReset = authState?.passwordReset;
+  const protectedFromPath =
+    typeof authState?.from === 'string' ? authState.from : undefined;
+  const protectedRouteMessage = getProtectedRouteMessage(protectedFromPath);
   const {
     requestPasswordReset,
     signIn,
@@ -160,7 +176,7 @@ export function AuthPage() {
         return;
       }
 
-      navigate('/profile');
+      navigate(protectedFromPath ?? '/profile');
     } finally {
       setSubmitting(false);
     }
@@ -200,7 +216,7 @@ export function AuthPage() {
             ? 'Enter your account email and we will send you a secure reset link.'
             : isDemoMode
               ? 'Demo mode accepts any email and password locally.'
-              : 'Use Supabase Auth with email and password.'
+              : 'Log in to post, comment, upload files, and manage your profile.'
         }
         eyebrow="UCT student forum access"
         icon={LogIn}
@@ -211,7 +227,13 @@ export function AuthPage() {
               ? 'Sign up'
               : 'Reset your password'
         }
-      />
+      >
+        {protectedRouteMessage ? (
+          <p className="text-sm font-semibold leading-6 text-brand-700">
+            {protectedRouteMessage}
+          </p>
+        ) : null}
+      </PageHeader>
 
       <form
         className="panel grid gap-4 p-5 sm:p-6"

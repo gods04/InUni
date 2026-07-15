@@ -91,12 +91,7 @@ export function ContactPage() {
               <Mail aria-hidden="true" className="h-4 w-4" />
               {contactEmail}
             </a>
-          ) : (
-            <Link className="secondary-button shrink-0 gap-2" to="/create">
-              <MessageSquare aria-hidden="true" className="h-4 w-4" />
-              Create post
-            </Link>
-          )}
+          ) : null}
         </div>
       </PageHeader>
 

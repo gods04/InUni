@@ -98,7 +98,7 @@ describe('FilesPage', () => {
       screen.getByRole('heading', { name: 'Shared files' }),
     ).toBeInTheDocument();
     expect(
-      screen.getByText('Search by course, type, faculty, or tag without losing the file list.'),
+      screen.getByText('Find notes by course, file type, faculty, or tag.'),
     ).toBeInTheDocument();
     expect(await screen.findByText('guide.pdf')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Newest' })).toBeInTheDocument();

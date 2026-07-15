@@ -159,7 +159,7 @@ export function FilesPage() {
         <div className="flex items-center gap-2">
           <Search aria-hidden="true" className="h-4 w-4 text-brand-700" />
           <p className="text-sm font-semibold text-slate-700">
-            Search by course, type, faculty, or tag without losing the file list.
+            Find notes by course, file type, faculty, or tag.
           </p>
         </div>
         <label className="grid gap-2">

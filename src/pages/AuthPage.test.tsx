@@ -4,8 +4,11 @@ import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthPage } from './AuthPage';
 
-const { requestPasswordReset, signIn, signInWithGoogle, signUp } = vi.hoisted(
+const { authViewState, requestPasswordReset, signIn, signInWithGoogle, signUp } = vi.hoisted(
   () => ({
+    authViewState: {
+      isDemoMode: true,
+    },
     requestPasswordReset: vi.fn().mockResolvedValue({
       message:
         'If an account exists for that email, a password reset link has been sent.',
@@ -22,7 +25,7 @@ vi.mock('../hooks/useAuth', () => ({
     signIn,
     signInWithGoogle,
     signUp,
-    isDemoMode: true,
+    isDemoMode: authViewState.isDemoMode,
   }),
 }));
 
@@ -33,6 +36,7 @@ describe('AuthPage', () => {
     signIn.mockClear();
     signInWithGoogle.mockClear();
     signUp.mockClear();
+    authViewState.isDemoMode = true;
   });
 
   it('submits the login form', async () => {
@@ -137,6 +141,35 @@ describe('AuthPage', () => {
 
     expect(passwordInput).toHaveAttribute('type', 'password');
     expect(signIn).toHaveBeenCalledWith('student@uct.ac.za', 'password123');
+  });
+
+  it('uses student-facing login copy instead of provider terminology', () => {
+    authViewState.isDemoMode = false;
+
+    render(
+      <MemoryRouter>
+        <AuthPage />
+      </MemoryRouter>,
+    );
+
+    expect(
+      screen.getByText('Log in to post, comment, upload files, and manage your profile.'),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/Supabase Auth/i)).not.toBeInTheDocument();
+  });
+
+  it('explains when a protected action sends visitors to login', () => {
+    render(
+      <MemoryRouter
+        initialEntries={[{ pathname: '/login', state: { from: '/create' } }]}
+      >
+        <AuthPage />
+      </MemoryRouter>,
+    );
+
+    expect(
+      screen.getByText('Log in to create a post or share something with the forum.'),
+    ).toBeInTheDocument();
   });
 
   it('starts Google login from the login form without requiring email or password', async () => {
