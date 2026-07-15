@@ -49,6 +49,10 @@ vi.mock('./pages/FoodToolPage', () => ({
   FoodToolPage: () => <h1>Food tools</h1>,
 }));
 
+vi.mock('./pages/ContactPage', () => ({
+  ContactPage: () => <h1>Contact InUni</h1>,
+}));
+
 describe('MVP navigation', () => {
   it('shows approved public destinations for a signed-out visitor', async () => {
     render(
@@ -86,6 +90,18 @@ describe('MVP navigation', () => {
 
     expect(
       await screen.findByRole('heading', { name: 'Food tools' }),
+    ).toBeInTheDocument();
+  });
+
+  it('renders contact as a quiet public route', async () => {
+    render(
+      <MemoryRouter initialEntries={['/contact']}>
+        <App />
+      </MemoryRouter>,
+    );
+
+    expect(
+      await screen.findByRole('heading', { name: 'Contact InUni' }),
     ).toBeInTheDocument();
   });
 

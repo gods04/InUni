@@ -35,5 +35,9 @@ describe('ToolsPage', () => {
     expect(screen.getByText('Classroom finder')).toBeInTheDocument();
     expect(screen.getByText('Document tools')).toBeInTheDocument();
     expect(screen.getAllByText('Planned')).toHaveLength(2);
+    expect(screen.getByText('Help build InUni')).toBeInTheDocument();
+    expect(
+      screen.getByRole('link', { name: 'Contact InUni' }),
+    ).toHaveAttribute('href', '/contact');
   });
 });

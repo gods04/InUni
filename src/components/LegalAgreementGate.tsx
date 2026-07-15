@@ -6,7 +6,12 @@ import {
   termsVersion,
 } from '../lib/legalAgreement';
 
-const legalPolicyPaths = new Set(['/privacy', '/terms', '/community-rules']);
+const publicReadablePaths = new Set([
+  '/privacy',
+  '/terms',
+  '/community-rules',
+  '/contact',
+]);
 
 export function LegalAgreementGate() {
   const location = useLocation();
@@ -16,7 +21,7 @@ export function LegalAgreementGate() {
     setAccepted(hasAcceptedLegalAgreement());
   }, [location.pathname]);
 
-  if (accepted || legalPolicyPaths.has(location.pathname)) {
+  if (accepted || publicReadablePaths.has(location.pathname)) {
     return null;
   }
 

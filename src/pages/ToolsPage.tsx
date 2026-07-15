@@ -4,6 +4,7 @@ import {
   BookOpen,
   FileText,
   Files,
+  Handshake,
   MapPinned,
   MessageSquarePlus,
   Utensils,
@@ -139,6 +140,26 @@ export function ToolsPage() {
             );
           })}
         </div>
+      </section>
+
+      <section className="panel grid gap-4 border-accent-100 bg-accent-50 p-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:p-5">
+        <div className="flex min-w-0 gap-3">
+          <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-panel text-accent-700">
+            <Handshake aria-hidden="true" size={20} strokeWidth={2.25} />
+          </span>
+          <div className="min-w-0">
+            <h2 className="text-base font-semibold text-ink">
+              Help build InUni
+            </h2>
+            <p className="mt-1 text-sm leading-6 text-slate-600">
+              Ideas, bugs, campus group collaborations, and student help can go
+              through one quiet project contact.
+            </p>
+          </div>
+        </div>
+        <Link className="secondary-button justify-center" to="/contact">
+          Contact InUni
+        </Link>
       </section>
     </div>
   );

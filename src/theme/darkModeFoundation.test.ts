@@ -24,4 +24,10 @@ describe('dark mode foundation', () => {
     expect(css).toContain('.text-slate-600');
     expect(css).toContain('.border-slate-100');
   });
+
+  it('keeps translucent light surface utilities dark enough in dark mode', () => {
+    expect(css).toContain('.bg-slate-50\\/70');
+    expect(css).toContain('.bg-slate-50\\/50');
+    expect(css).toContain('.bg-slate-100\\/60');
+  });
 });

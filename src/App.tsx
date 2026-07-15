@@ -27,6 +27,11 @@ const AdminUsersPage = lazy(() =>
 const AuthPage = lazy(() =>
   import('./pages/AuthPage').then((module) => ({ default: module.AuthPage })),
 );
+const ContactPage = lazy(() =>
+  import('./pages/ContactPage').then((module) => ({
+    default: module.ContactPage,
+  })),
+);
 const CreatePostPage = lazy(() =>
   import('./pages/CreatePostPage').then((module) => ({
     default: module.CreatePostPage,
@@ -137,6 +142,14 @@ export default function App() {
           element={
             <PageSuspense>
               <ToolsPage />
+            </PageSuspense>
+          }
+        />
+        <Route
+          path="/contact"
+          element={
+            <PageSuspense>
+              <ContactPage />
             </PageSuspense>
           }
         />

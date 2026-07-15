@@ -242,6 +242,12 @@ export function AppLayout() {
         >
           Community Rules
         </NavLink>
+        <NavLink
+          className="font-semibold text-brand-700 hover:text-brand-600"
+          to="/contact"
+        >
+          Contact
+        </NavLink>
       </footer>
       <LegalAgreementGate />
     </div>

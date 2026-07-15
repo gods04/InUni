@@ -218,8 +218,20 @@
       background-color: rgb(24 31 40 / 1);
     }
 
+    .bg-slate-50\/70 {
+      background-color: rgb(24 31 40 / 0.92);
+    }
+
+    .bg-slate-50\/50 {
+      background-color: rgb(24 31 40 / 0.82);
+    }
+
     .bg-slate-100 {
       background-color: rgb(31 39 50 / 1);
+    }
+
+    .bg-slate-100\/60 {
+      background-color: rgb(31 39 50 / 0.86);
     }
 
     .bg-slate-300 {

@@ -118,6 +118,10 @@ describe('AppLayout', () => {
     expect(
       screen.getByRole('link', { name: 'Community Rules' }),
     ).toHaveAttribute('href', '/community-rules');
+    expect(screen.getByRole('link', { name: 'Contact' })).toHaveAttribute(
+      'href',
+      '/contact',
+    );
   });
 
   it('leaves the admin nav link unbadged when no files need review', async () => {
@@ -279,7 +283,7 @@ describe('AppLayout', () => {
     window.localStorage.removeItem(legalAgreementStorageKey);
     authState.user = null;
 
-    for (const path of ['/privacy', '/terms', '/community-rules']) {
+    for (const path of ['/privacy', '/terms', '/community-rules', '/contact']) {
       const { unmount } = render(
         <MemoryRouter initialEntries={[path]}>
           <Routes>
