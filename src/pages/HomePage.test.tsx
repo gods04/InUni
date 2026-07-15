@@ -50,6 +50,13 @@ describe('HomePage', () => {
     mocks.getPosts.mockReset();
     mocks.getPosts.mockResolvedValue([
       makePost({
+        id: 'shuttle-delays',
+        title: 'Jammie shuttle delays from lower campus',
+        content: 'Has anyone found a more reliable afternoon route?',
+        category: 'Questions',
+        commentCount: 0,
+      }),
+      makePost({
         id: 'quiet-spaces',
         title: 'Quiet places on campus after 6pm',
         content: 'The library gets crowded after lectures.',
@@ -108,8 +115,8 @@ describe('HomePage', () => {
     });
 
     expect(screen.getByText('Live pulse')).toBeInTheDocument();
-    expect(screen.getByText('2 posts')).toBeInTheDocument();
-    expect(screen.getByText('2 sections')).toBeInTheDocument();
+    expect(screen.getByText('3 posts')).toBeInTheDocument();
+    expect(screen.getByText('3 sections')).toBeInTheDocument();
     expect(screen.getByText('4 replies')).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Trending now' })).toBeInTheDocument();
     expect(
@@ -138,6 +145,72 @@ describe('HomePage', () => {
         name: 'Quiet places on campus after 6pm',
       }),
     ).not.toBeInTheDocument();
+  });
+
+  it('lets students switch between hot, new, and unanswered campus views', async () => {
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <HomePage />
+      </MemoryRouter>,
+    );
+
+    await screen.findByRole('heading', {
+      name: 'Quiet places on campus after 6pm',
+    });
+
+    expect(
+      screen.getByRole('group', { name: 'Choose feed view' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('Active threads with the most recent student replies.'),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Unanswered' }));
+
+    expect(
+      screen.getByRole('heading', {
+        name: 'Jammie shuttle delays from lower campus',
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('heading', {
+        name: 'Best way to organize notes before finals?',
+      }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByText('Questions that still need a first reply.'),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'New' }));
+
+    expect(
+      screen.getByRole('heading', {
+        name: 'Best way to organize notes before finals?',
+      }),
+    ).toBeInTheDocument();
+  });
+
+  it('surfaces academic quick starts without crowding the main feed', async () => {
+    render(
+      <MemoryRouter>
+        <HomePage />
+      </MemoryRouter>,
+    );
+
+    await screen.findByRole('heading', {
+      name: 'Quiet places on campus after 6pm',
+    });
+
+    expect(
+      screen.getByRole('heading', { name: 'Academic hub' }),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Course codes')).toBeInTheDocument();
+    expect(screen.getByText('Faculty admin')).toBeInTheDocument();
+    expect(screen.getByText('Exam prep')).toBeInTheDocument();
+    expect(
+      screen.getByRole('link', { name: 'Ask an academic question' }),
+    ).toHaveAttribute('href', '/create');
   });
 
   it('shows a compact empty state when a post search has no matches', async () => {

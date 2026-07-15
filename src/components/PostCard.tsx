@@ -135,6 +135,11 @@ export function PostCard({ post }: { post: Post }) {
           <span className={`badge ${categoryStyles[post.category]}`}>
             {post.category}
           </span>
+          {post.commentCount === 0 ? (
+            <span className="badge border border-warm-100 bg-warm-50 text-warm-700">
+              Needs first reply
+            </span>
+          ) : null}
           {post.isAnonymous ? (
             <span className="badge bg-slate-100 text-slate-700">Anonymous</span>
           ) : null}

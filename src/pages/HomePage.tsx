@@ -1,5 +1,16 @@
 import { useEffect, useState } from 'react';
-import { Layers3, MessageCircle, Plus, Search, Users } from 'lucide-react';
+import {
+  BookOpen,
+  Clock3,
+  Flame,
+  GraduationCap,
+  HelpCircle,
+  Layers3,
+  MessageCircle,
+  Plus,
+  Search,
+  Users,
+} from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { BrandLogo } from '../components/BrandLogo';
 import { CategoryTabs } from '../components/CategoryTabs';
@@ -13,19 +24,74 @@ import { getFilesForPost } from '../lib/fileApi';
 import { getPosts } from '../lib/forumApi';
 import { categoryDescriptions, type Category, type CategoryFilter, type Post } from '../types/forum';
 
+type FeedView = 'Hot' | 'New' | 'Unanswered';
+
+const feedViews: Array<{
+  description: string;
+  label: FeedView;
+  Icon: typeof Flame;
+}> = [
+  {
+    description: 'Active threads with the most recent student replies.',
+    label: 'Hot',
+    Icon: Flame,
+  },
+  {
+    description: 'Newest campus posts as they arrive.',
+    label: 'New',
+    Icon: Clock3,
+  },
+  {
+    description: 'Questions that still need a first reply.',
+    label: 'Unanswered',
+    Icon: HelpCircle,
+  },
+];
+
 function pluralize(count: number, singular: string, plural = `${singular}s`) {
   return `${count} ${count === 1 ? singular : plural}`;
+}
+
+function getPostTimestamp(post: Post) {
+  return new Date(post.createdAt).getTime();
+}
+
+function getHotScore(post: Post) {
+  const hoursOld = Math.max(0, (Date.now() - getPostTimestamp(post)) / 36e5);
+  const recencyBoost = Math.max(0, 24 - hoursOld) / 8;
+
+  return post.commentCount * 8 + recencyBoost;
+}
+
+function sortPostsForFeed(posts: Post[], feedView: FeedView) {
+  const scopedPosts =
+    feedView === 'Unanswered'
+      ? posts.filter((post) => post.commentCount === 0)
+      : [...posts];
+
+  if (feedView === 'New' || feedView === 'Unanswered') {
+    return scopedPosts.sort(
+      (first, second) => getPostTimestamp(second) - getPostTimestamp(first),
+    );
+  }
+
+  return scopedPosts.sort((first, second) => {
+    const scoreDifference = getHotScore(second) - getHotScore(first);
+    if (scoreDifference !== 0) return scoreDifference;
+    return getPostTimestamp(second) - getPostTimestamp(first);
+  });
 }
 
 export function HomePage() {
   const { user } = useAuth();
   const [category, setCategory] = useState<CategoryFilter>('All');
+  const [feedView, setFeedView] = useState<FeedView>('Hot');
   const [searchQuery, setSearchQuery] = useState('');
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const normalizedSearchQuery = searchQuery.trim().toLowerCase();
-  const visiblePosts = normalizedSearchQuery
+  const matchedPosts = normalizedSearchQuery
     ? posts.filter((post) =>
         [
           post.title,
@@ -35,14 +101,17 @@ export function HomePage() {
         ].some((value) => value.toLowerCase().includes(normalizedSearchQuery)),
       )
     : posts;
+  const visiblePosts = sortPostsForFeed(matchedPosts, feedView);
   const totalReplies = posts.reduce((total, post) => total + post.commentCount, 0);
   const activeSections = new Set(posts.map((post) => post.category)).size;
+  const unansweredPosts = posts.filter((post) => post.commentCount === 0).length;
   const trendingPosts = [...posts]
-    .sort((first, second) => second.commentCount - first.commentCount)
+    .sort((first, second) => getHotScore(second) - getHotScore(first))
     .slice(0, 4);
 
   function searchTrendingPost(post: Post) {
     setCategory('All');
+    setFeedView('Hot');
     setSearchQuery(post.title);
   }
 
@@ -51,8 +120,18 @@ export function HomePage() {
       return 'Search is scanning across the loaded campus conversations.';
     }
 
+    if (feedView === 'Unanswered') {
+      return 'Questions that still need a first reply.';
+    }
+
+    if (feedView === 'New') {
+      return category === 'All'
+        ? 'Newest campus posts as they arrive.'
+        : `Newest ${category.toLowerCase()} posts as they arrive.`;
+    }
+
     if (category === 'All') {
-      return 'A calm scan of the newest useful posts across campus.';
+      return 'Active threads with the most recent student replies.';
     }
 
     return categoryDescriptions[category];
@@ -121,7 +200,7 @@ export function HomePage() {
         }}
         title="InUni | UCT Student Forum"
       />
-      <section className="panel overflow-hidden">
+      <section className="panel campus-pulse-card overflow-hidden border-brand-100 bg-gradient-to-br from-panel via-brand-50/55 to-accent-50/70">
         <div className="grid gap-5 p-5 sm:p-6 lg:grid-cols-[minmax(0,1fr)_18rem] lg:items-center">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-3">
@@ -140,9 +219,39 @@ export function HomePage() {
             <p className="mt-3 max-w-2xl text-base leading-7 text-slate-600">
               Questions, campus updates, academic help, and honest student conversations.
             </p>
+            <div className="mt-5 grid gap-2 sm:grid-cols-3">
+              <Link
+                className="rounded-lg border border-brand-100 bg-white/75 px-3 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:-translate-y-0.5 hover:border-brand-600 hover:text-ink"
+                to="/create"
+              >
+                Ask a course question
+              </Link>
+              <button
+                className="rounded-lg border border-accent-100 bg-white/75 px-3 py-3 text-left text-sm font-semibold text-slate-700 shadow-sm transition hover:-translate-y-0.5 hover:border-accent-600 hover:text-ink"
+                onClick={() => {
+                  setCategory('Campus Life');
+                  setFeedView('New');
+                  setSearchQuery('');
+                }}
+                type="button"
+              >
+                Campus updates
+              </button>
+              <button
+                className="rounded-lg border border-warm-100 bg-white/75 px-3 py-3 text-left text-sm font-semibold text-slate-700 shadow-sm transition hover:-translate-y-0.5 hover:border-warm-600 hover:text-ink"
+                onClick={() => {
+                  setCategory('Questions');
+                  setFeedView('Unanswered');
+                  setSearchQuery('');
+                }}
+                type="button"
+              >
+                Help someone first
+              </button>
+            </div>
           </div>
 
-          <div className="grid gap-3 rounded-lg border border-line bg-slate-50 p-4">
+          <div className="grid gap-3 rounded-lg border border-brand-100 bg-white/80 p-4 shadow-sm">
             <div className="flex items-center justify-between gap-3">
               <span className="text-sm font-semibold text-slate-700">
                 Live pulse
@@ -175,6 +284,9 @@ export function HomePage() {
                 </p>
               </div>
             </div>
+            <div className="rounded-lg border border-line bg-panel px-3 py-2 text-xs font-semibold text-slate-500">
+              {unansweredPosts} open asks waiting for a first reply
+            </div>
           </div>
         </div>
       </section>
@@ -205,9 +317,43 @@ export function HomePage() {
 
           <CategoryTabs value={category} onChange={setCategory} />
 
-          <p className="panel px-4 py-3 text-sm leading-6 text-slate-600">
-            {getCategorySummary()}
-          </p>
+          <div className="panel campus-pulse-card grid gap-3 p-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+            <div className="min-w-0">
+              <p className="text-xs font-bold uppercase text-brand-700">
+                Campus pulse
+              </p>
+              <p className="mt-1 text-sm leading-6 text-slate-600">
+                {getCategorySummary()}
+              </p>
+            </div>
+            <div
+              aria-label="Choose feed view"
+              className="grid grid-cols-3 gap-1 rounded-lg border border-line bg-slate-50 p-1"
+              role="group"
+            >
+              {feedViews.map(({ description, Icon, label }) => {
+                const isActive = feedView === label;
+
+                return (
+                  <button
+                    className={[
+                      'inline-flex min-h-10 items-center justify-center gap-1.5 rounded-md px-2 text-xs font-bold transition',
+                      isActive
+                        ? 'bg-panel text-ink shadow-sm ring-1 ring-brand-100'
+                        : 'text-slate-500 hover:bg-panel hover:text-ink',
+                    ].join(' ')}
+                    key={label}
+                    onClick={() => setFeedView(label)}
+                    title={description}
+                    type="button"
+                  >
+                    <Icon aria-hidden="true" className="h-3.5 w-3.5" />
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
 
           {error ? <ErrorState message={error} /> : null}
           {loading ? <LoadingState label="Loading posts..." /> : null}
@@ -238,29 +384,60 @@ export function HomePage() {
           ) : null}
         </div>
 
-        <aside className="panel grid h-fit gap-3 p-4">
-          <div className="flex items-center gap-2">
-            <Layers3 aria-hidden="true" className="h-4 w-4 text-brand-700" />
-            <h2 className="text-base font-semibold text-ink">Trending now</h2>
-          </div>
-          <div className="grid gap-2">
-            {trendingPosts.map((post) => (
-              <button
-                aria-label={post.title}
-                className="flex min-h-12 items-center justify-between gap-3 rounded-lg border border-line bg-slate-50 px-3 py-2 text-left text-sm font-semibold text-slate-700 transition hover:border-brand-100 hover:bg-brand-50 hover:text-ink"
-                key={post.id}
-                onClick={() => searchTrendingPost(post)}
-                title={post.title}
-                type="button"
-              >
-                <span className="line-clamp-2 min-w-0">{post.title}</span>
-                <span className="inline-flex shrink-0 items-center gap-1 text-xs text-slate-500">
-                  <MessageCircle aria-hidden="true" className="h-4 w-4" />
-                  {post.commentCount}
+        <aside className="grid h-fit gap-4">
+          <section className="panel campus-pulse-card grid gap-3 p-4">
+            <div className="flex items-center gap-2">
+              <Layers3 aria-hidden="true" className="h-4 w-4 text-brand-700" />
+              <h2 className="text-base font-semibold text-ink">Trending now</h2>
+            </div>
+            <div className="grid gap-2">
+              {trendingPosts.map((post) => (
+                <button
+                  aria-label={post.title}
+                  className="flex min-h-12 items-center justify-between gap-3 rounded-lg border border-line bg-slate-50 px-3 py-2 text-left text-sm font-semibold text-slate-700 transition hover:-translate-y-0.5 hover:border-brand-100 hover:bg-brand-50 hover:text-ink"
+                  key={post.id}
+                  onClick={() => searchTrendingPost(post)}
+                  title={post.title}
+                  type="button"
+                >
+                  <span className="line-clamp-2 min-w-0">{post.title}</span>
+                  <span className="inline-flex shrink-0 items-center gap-1 text-xs text-slate-500">
+                    <MessageCircle aria-hidden="true" className="h-4 w-4" />
+                    {post.commentCount}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </section>
+
+          <section className="panel campus-pulse-card grid gap-4 overflow-hidden border-accent-100 bg-accent-50 p-4">
+            <div className="flex items-center gap-2">
+              <GraduationCap
+                aria-hidden="true"
+                className="h-4 w-4 text-accent-700"
+              />
+              <h2 className="text-base font-semibold text-ink">Academic hub</h2>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {['Course codes', 'Faculty admin', 'Exam prep'].map((item) => (
+                <span
+                  className="rounded-full border border-accent-100 bg-panel px-2.5 py-1 text-xs font-bold text-accent-700"
+                  key={item}
+                >
+                  {item}
                 </span>
-              </button>
-            ))}
-          </div>
+              ))}
+            </div>
+            <div className="rounded-lg border border-accent-100 bg-panel p-3">
+              <BookOpen aria-hidden="true" className="h-4 w-4 text-accent-700" />
+              <p className="mt-2 text-sm font-semibold leading-6 text-slate-700">
+                Module questions, assignment rules, study spaces, and deadline help.
+              </p>
+            </div>
+            <Link className="secondary-button justify-center" to="/create">
+              Ask an academic question
+            </Link>
+          </section>
         </aside>
       </section>
     </div>

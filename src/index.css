@@ -159,6 +159,10 @@
     animation-delay: calc(var(--card-index, 0) * 70ms);
   }
 
+  .campus-pulse-card {
+    animation: forum-demo-soft-in 420ms ease both;
+  }
+
   .line-clamp-2 {
     display: -webkit-box;
     overflow: hidden;
@@ -171,7 +175,8 @@
     .forum-demo-surface,
     .forum-demo-toolbar,
     .forum-demo-tabs,
-    .forum-demo-card {
+    .forum-demo-card,
+    .campus-pulse-card {
       animation: none;
       transform: none;
       transition-duration: 1ms;
@@ -185,6 +190,14 @@
 
     .bg-white\/90 {
       background-color: rgb(var(--color-panel) / 0.9);
+    }
+
+    .bg-white\/80 {
+      background-color: rgb(var(--color-panel) / 0.8);
+    }
+
+    .bg-white\/75 {
+      background-color: rgb(var(--color-panel) / 0.75);
     }
 
     .primary-button {

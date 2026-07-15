@@ -119,6 +119,19 @@ describe('PostCard', () => {
     expect(screen.getByLabelText('Post actions')).toHaveTextContent('Log in to report');
   });
 
+  it('marks unanswered posts as needing a first reply', () => {
+    render(
+      <MemoryRouter>
+        <PostCard post={{ ...post, commentCount: 0 }} />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByText('Needs first reply')).toBeInTheDocument();
+    expect(screen.getByLabelText('Post metadata')).toHaveTextContent(
+      '0 comments',
+    );
+  });
+
   it('links to the post comments from the card actions', () => {
     render(
       <MemoryRouter>
