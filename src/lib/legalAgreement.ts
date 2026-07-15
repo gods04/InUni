@@ -1,4 +1,4 @@
-export const termsVersion = '2026-07-01';
+export const termsVersion = '2026-07-15';
 export const legalAgreementStorageKey = 'inuni.legalAgreement';
 
 interface StoredLegalAgreement {

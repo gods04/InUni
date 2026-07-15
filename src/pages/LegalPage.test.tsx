@@ -10,7 +10,7 @@ describe('LegalPage', () => {
     window.localStorage.clear();
   });
 
-  it('explains the terms, privacy notice, and community rules', () => {
+  it('explains the terms page separately from privacy and rules', () => {
     render(
       <MemoryRouter>
         <LegalPage />
@@ -31,22 +31,22 @@ describe('LegalPage', () => {
       screen.getByRole('link', { name: 'Community Rules' }),
     ).toHaveAttribute('href', '/community-rules');
     expect(screen.getByText(/InUni is an independent student community/i)).toBeInTheDocument();
-    expect(screen.getByText(/University of Cape Town/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/University of Cape Town/i).length).toBeGreaterThan(0);
     expect(
-      screen.getByRole('heading', { name: 'User content and moderation' }),
+      screen.getByRole('heading', { name: 'Using InUni' }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('heading', {
-        name: 'What personal information we process',
-      }),
+      screen.getByRole('heading', { name: 'No official advice' }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('heading', { name: 'Community Rules' }),
-    ).toBeInTheDocument();
-    expect(screen.getByText(/POPIA/i)).toBeInTheDocument();
+      screen.queryByRole('heading', { name: 'Information we collect' }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('heading', { name: 'Academic honesty' }),
+    ).not.toBeInTheDocument();
   });
 
-  it('uses privacy-first page chrome for the privacy route', () => {
+  it('uses privacy-specific content for the privacy route', () => {
     render(
       <MemoryRouter initialEntries={['/privacy']}>
         <LegalPage />
@@ -56,10 +56,17 @@ describe('LegalPage', () => {
     expect(
       screen.getByRole('heading', { name: 'Privacy Policy' }),
     ).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: 'Information we collect' }),
+    ).toBeInTheDocument();
     expect(screen.getByText(/account email, display name/i)).toBeInTheDocument();
+    expect(screen.getByText(/anonymous display option/i)).toBeInTheDocument();
+    expect(
+      screen.queryByRole('heading', { name: 'No official advice' }),
+    ).not.toBeInTheDocument();
   });
 
-  it('uses community-first page chrome for the community rules route', () => {
+  it('uses community-specific content for the community rules route', () => {
     render(
       <MemoryRouter initialEntries={['/community-rules']}>
         <LegalPage />
@@ -69,7 +76,27 @@ describe('LegalPage', () => {
     expect(
       screen.getByRole('heading', { name: 'Community Rules' }),
     ).toBeInTheDocument();
-    expect(screen.getByText(/Do not post harassment/i)).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: 'Academic honesty' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/Optional anonymous posting is for display only/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('heading', { name: 'Information we collect' }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('shows the current legal version date', () => {
+    render(
+      <MemoryRouter initialEntries={['/terms']}>
+        <LegalPage />
+      </MemoryRouter>,
+    );
+
+    expect(
+      screen.getByText(`Version ${termsVersion}`),
+    ).toBeInTheDocument();
   });
 
   it('lets visitors accept the current terms version from the page', async () => {
