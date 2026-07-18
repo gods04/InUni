@@ -1,0 +1,6 @@
+<svg width="330" height="92" viewBox="28 32 330 92" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <path d="M40 45V80C40 99 55 114 74 114C93 114 108 99 108 80V45" stroke="#1D1F23" stroke-width="14" stroke-linecap="round"/>
+  <path d="M74 67V89" stroke="#128779" stroke-width="10" stroke-linecap="round"/>
+  <circle cx="74" cy="47" r="7" fill="#128779"/>
+  <text x="152" y="94" fill="#1D1F23" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="58" font-weight="800" letter-spacing="-0.7">InUni</text>
+</svg>

@@ -134,7 +134,7 @@ export function AppLayout() {
               className="shrink-0"
               to="/"
             >
-              <span className="flex h-10 w-[124px] items-center overflow-hidden">
+              <span className="flex h-10 w-36 items-center overflow-hidden">
                 <BrandLogo
                   alt="InUni"
                   className="h-10 w-auto object-contain"

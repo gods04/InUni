@@ -12,12 +12,12 @@ const logoSources: Record<
   { darkTheme: string; lightTheme: string }
 > = {
   horizontal: {
-    darkTheme: '/brand/inuni-logo-horizontal.png',
-    lightTheme: '/brand/inuni-logo-horizontal-dark.png',
+    darkTheme: '/brand/inuni-logo-horizontal-on-dark.svg',
+    lightTheme: '/brand/inuni-logo-horizontal.svg',
   },
   mark: {
-    darkTheme: '/brand/inuni-favicon.png',
-    lightTheme: '/brand/inuni-logo-mark-dark.png',
+    darkTheme: '/brand/inuni-logo-mark-on-dark.svg',
+    lightTheme: '/brand/inuni-logo-mark.svg',
   },
 };
 

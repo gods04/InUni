@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { BrandLogo } from './BrandLogo';
 
 describe('BrandLogo', () => {
-  it('uses the light horizontal logo in dark system themes', () => {
+  it('uses the light horizontal logo by default and the on-dark logo in dark system themes', () => {
     render(<BrandLogo alt="InUni" className="h-10 w-auto" variant="horizontal" />);
 
     const image = screen.getByRole('img', { name: 'InUni' });
@@ -12,14 +12,14 @@ describe('BrandLogo', () => {
       'source[media="(prefers-color-scheme: dark)"]',
     );
 
-    expect(image).toHaveAttribute('src', '/brand/inuni-logo-horizontal-dark.png');
+    expect(image).toHaveAttribute('src', '/brand/inuni-logo-horizontal.svg');
     expect(darkSource).toHaveAttribute(
       'srcset',
-      '/brand/inuni-logo-horizontal.png',
+      '/brand/inuni-logo-horizontal-on-dark.svg',
     );
   });
 
-  it('uses a visible mark asset in dark system themes', () => {
+  it('uses the light mark by default and the on-dark mark in dark system themes', () => {
     const { container } = render(
       <BrandLogo aria-hidden="true" className="h-14 w-14" variant="mark" />,
     );
@@ -29,7 +29,10 @@ describe('BrandLogo', () => {
       'source[media="(prefers-color-scheme: dark)"]',
     );
 
-    expect(image).toHaveAttribute('src', '/brand/inuni-logo-mark-dark.png');
-    expect(darkSource).toHaveAttribute('srcset', '/brand/inuni-favicon.png');
+    expect(image).toHaveAttribute('src', '/brand/inuni-logo-mark.svg');
+    expect(darkSource).toHaveAttribute(
+      'srcset',
+      '/brand/inuni-logo-mark-on-dark.svg',
+    );
   });
 });
